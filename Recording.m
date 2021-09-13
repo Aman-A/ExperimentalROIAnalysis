@@ -10,6 +10,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         filedir char {mustBeTextScalar} % full path to directory containing file
         filepath char {mustBeTextScalar} % full path to file
         format char {mustBeTextScalar}    % image file format
+        time_start
         loaded = false 
         imsize % [rows x columns x time points]
     end
@@ -45,6 +46,9 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             obj.filedir = fullfile(data_fold,exp_date,reporter,dish,...
                                     condition);            
             obj.filepath = fullfile(obj.filedir,img_name); 
+            d = dir(obj.filepath);             
+            [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
+            obj.time_start = datetime(Y,M,D,H,MI,S);
         end
         function load(obj,print_status)
             if nargin < 2
@@ -56,7 +60,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                error('Other file formats not implemented yet');  
             end
             obj.loaded = true; 
-            obj.imsize = size(obj.vals); 
+            obj.imsize = size(obj.vals);             
             if print_status > 0
                 fprintf('Loaded %g x %g x %g image stack from %s\n',...
                          obj.imsize,obj.filepath); 

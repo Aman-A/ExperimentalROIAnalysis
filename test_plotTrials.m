@@ -16,7 +16,7 @@ exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                   units,sampling_rate); % automatically converts to frames
 roi_set_filename = 'RoiSet_pos1.zip'; 
 % Optional settings
-show_diff_image = []; % can include [1,2,3]
+show_diff_image = [3]; % can include [1,2,3]
 filt_width = 0; 
 funcs = {'mean','std','baseline','deltaF_F0'}; 
 roi_func_mode = 'combine';

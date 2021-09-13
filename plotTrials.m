@@ -1,4 +1,4 @@
-function [deltaF_F0,peaks_deltaF_F0,mean_peak_deltaF_F0,std_peak_deltaF_F0] = ...
+function [deltaF_F0,peaks_deltaF_F0,mean_peak_deltaF_F0,std_peak_deltaF_F0,trial_times] = ...
                 plotTrials(data_fold,exp_date,reporter,dish,condition,position,...
                    img_names,exp_settings,roi_set_filename,...
                    show_diff_image,filt_width,funcs,roi_func_mode,... % Optional 
@@ -32,6 +32,7 @@ fig = figure;
 trace_axis = gca; 
 func_outputs = cell(1,num_trials); 
 deltaF_F0 = cell(1,num_trials); 
+trial_times = NaT(1,num_trials); 
 for i = 1:num_trials
     img_namei = img_names{i}; 
     datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
@@ -40,6 +41,7 @@ for i = 1:num_trials
                    save_processed_data,load_processed_data);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
+    trial_times(i) = datai.Recording.time_start; 
 end
 deltaF_F0 = cell2mat(deltaF_F0); 
 peaks_deltaF_F0 = max(deltaF_F0,[],1); % peaks within trial

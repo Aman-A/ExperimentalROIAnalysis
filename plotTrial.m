@@ -57,7 +57,7 @@ else
         output_data.Settings = exp_settings;    
         output_data.ROIs = rois; 
         output_data.funcs = funcs; 
-        output_data.func_output = func_output;       
+        output_data.func_output = func_output;            
         save(save_data_filename,'-STRUCT','output_data'); 
         fprintf('Saved data to %s\n',save_data_filename); 
     end

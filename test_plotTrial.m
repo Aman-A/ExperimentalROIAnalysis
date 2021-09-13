@@ -21,7 +21,7 @@ filt_width = 0;
 funcs = {'mean','std','baseline','deltaF_F0'}; 
 roi_func_mode = 'combine';
 save_processed_data = 1;
-load_processed_data = 1;
+load_processed_data = 0;
 figure; 
 trace_axis = gca;
 plotTrial(data_fold,exp_date,reporter,dish,condition,position,img_name,exp_settings,...
