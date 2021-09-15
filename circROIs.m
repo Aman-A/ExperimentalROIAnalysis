@@ -23,8 +23,13 @@ classdef circROIs < handle % Set of circular ROIs
                 obj.roi_set_filepath = pwd; % assume in current directory
             end
             if nargin > 0
-                obj.roi_set_filename = roi_set_filename; 
-                obj.roi_set_filepath = fullfile(obj.roi_set_filedir,roi_set_filename);
+                split_roi_set_filename = strsplit(roi_set_filename,'.'); 
+                if length(split_roi_set_filename) == 1
+                    obj.roi_set_filename = [roi_set_filename '.zip']; % add file extension (assume zip) 
+                else
+                    obj.roi_set_filename = roi_set_filename; 
+                end                
+                obj.roi_set_filepath = fullfile(obj.roi_set_filedir,obj.roi_set_filename);
                 ROIarray = ReadImageJROI(obj.roi_set_filepath); % load .zip ROI set
                 obj.num_rois = length(ROIarray); 
                 obj.loaded = true;

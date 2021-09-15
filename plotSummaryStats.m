@@ -1,4 +1,4 @@
-function plotSummaryStats(data_array,time_starts,conditions,name,units)
+function plotSummaryStats(data_array,time_starts,conditions,name,units,varargin)
 %PLOTSUMMARYSTATS ...
 %
 %   Inputs
@@ -14,9 +14,19 @@ function plotSummaryStats(data_array,time_starts,conditions,name,units)
 %   ---------------
 
 % AUTHOR    : Aman Aberra
+in.data_fold = './'; % default current directory
+in.exp_date = '';
+in.reporter = '';
+in.dish = '';
+in.save_fig = 1; 
+in.formats = {'fig','png'}; 
+in.resolutions = {[],'-r300'};
+in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(data_array);
 mean_vals = cellfun(@mean,data_array,'UniformOutput',1);
 std_vals = cellfun(@std,data_array,'UniformOutput',1);
+%% Plot to current figure
+fig = gcf; 
 errorbar(mean_vals,std_vals,'-ko','LineWidth',2);
 hold on;
 ax = gca;
@@ -37,3 +47,28 @@ box(ax,'off'); grid(ax,'on');
 text(1:num_conditions,ones(1,num_conditions)*(ax.YLim(1)+0.05*diff(ax.YLim)),...
      cellfun(@(x) sprintf('%.0f min',x),time_starts,'UniformOutput',0),...
      'FontSize',14);
+% Add title 
+title_str = '';
+if ~isempty(in.exp_date)
+   title_str = [title_str 'Date: ' in.exp_date];     
+end
+if ~isempty(in.reporter)
+   title_str = [title_str ' ,' in.reporter];    
+end
+if ~isempty(in.dish)
+   title_str = [title_str ' ,' in.dish];    
+end
+title(title_str,'Interpreter','none'); 
+if in.save_fig
+    rep_chars = {' ','{','}','\','/'}; % replace in quantity name for file saving
+    empty_chars = repmat({''},1,length(rep_chars));
+   if isempty(in.exp_date) || isempty(in.reporter) || isempty(in.dish)
+       fig_dir = fullfile(in.data_fold,'figs'); 
+       fig_name = regexprep(name,rep_chars,empty_chars); % remove spaces
+   else
+       fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,'figs');       
+       fig_name = [regexprep(name,rep_chars,empty_chars) '_' in.exp_date '_' in.reporter '_' in.dish]; 
+   end   
+   printFig(fig,fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions);  
+end
+end

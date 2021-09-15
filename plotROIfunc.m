@@ -30,7 +30,7 @@ else
     unit_str = 'sec'; 
 end
 
-hold on;
+hold(ax,'on'); 
 if strcmp(func_output.roi_mode,'combine')    
     display_names = {func_output.img_name};
     title_str = sprintf('%s: Baseline = %.1f a.u.',...
@@ -44,12 +44,11 @@ else
 end
 lns = plot(ax,x,func_output.(func_name)); % plot trace/s
 set(lns,{'DisplayName'},display_names); % set legend names
-hold(ax,'on');
 % shadedErrorBar(x,mean(func_output.(func_name),2),std(func_output.(func_name),0,2),{'-k'}); hold on;
 names = {ax.Children.DisplayName}; 
 ind_stim_times = strcmp(names,'Stim times');
 if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis
-    plot(stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
+    plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
         'r.','MarkerSize',8,'DisplayName','Stim times'); 
     names = {ax.Children.DisplayName};
     ind_stim_times = strcmp(names,'Stim times');

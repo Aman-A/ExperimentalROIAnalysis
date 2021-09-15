@@ -3,8 +3,8 @@ data_fold = '/Volumes/BACKUPDRIVE/Dartmouth_data';
 exp_date= '20210911'; 
 reporter = 'GluSnFr3';
 dish = 'dish4'; 
-condition = '5nM_DTX'; % 'control', '5nM_DTX', '50nM_DTX'
-position = 'Pos1'; 
+condition = 'post50_wash'; % 'control', '5nM_DTX', '50nM_DTX'
+position = 'Pos3'; 
 img_names = {}; % use all images in condition folder
 % img_names = {'DTX5.fits','DTX5_1.fits'}; % or specify in cell array
 stim_vals = 3; % frames - 3 sec delay (100 Hz sampling time)
@@ -14,7 +14,7 @@ units = 'sec'; % specify units 'frames' or 'sec'
 sampling_rate = 100; % sampling rate (frames/sec)
 exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                   units,sampling_rate); % automatically converts to frames
-roi_set_filename = 'RoiSet_pos1.zip'; 
+roi_set_filename = 'RoiSet_pos3.zip'; 
 % Optional settings
 show_diff_image = [3]; % can include [1,2,3]
 filt_width = 0; 

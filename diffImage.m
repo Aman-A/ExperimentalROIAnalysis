@@ -1,5 +1,6 @@
-function [mean_bsline_img,peak_stim_img,diff_img] = diffImage(img,settings,...
-                                                              cmap,include_plots,filt_width)
+function [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
+                                                                        settings,...
+                                                                        varargin)
 %DIFFIMAGE Plots mean baseline, peak during stim window, and difference
 %images
 %  
@@ -17,6 +18,8 @@ function [mean_bsline_img,peak_stim_img,diff_img] = diffImage(img,settings,...
 %       baseline_wind : integer or double
 %                   window (frames or time length) in which to calculate
 %                   baseline before stimuli
+%   Optional Inputs 
+%   --------------- 
 %   cmap : string or N x 3 array
 %          specify colormap as string or N x 3 RGB array
 %   include_plots : integer array
@@ -25,8 +28,6 @@ function [mean_bsline_img,peak_stim_img,diff_img] = diffImage(img,settings,...
 %   filt_width : double
 %               width (std) of symmetric gaussian spatial filter, NOTE:
 %               REQUIRES IMAGE PROCESSING TOOLBOX
-%   Optional Inputs 
-%   --------------- 
 %   Outputs 
 %   ------- 
 %   Examples 
@@ -36,50 +37,84 @@ function [mean_bsline_img,peak_stim_img,diff_img] = diffImage(img,settings,...
 if nargin < 2
     settings = Settings(300,100,100,'frames',100);    
 end
-if nargin < 3
-   cmap = 'inferno'; % specify colormap as string or N x 3 RGB array
-end
-if nargin < 4
-   include_plots = [3]; % include indices of plots 1: baseline,2: pk,3: pk-baseline 
-end
-if nargin < 5
-   filt_width = 0; 
-end
+in.cmap = 'inferno';
+in.include_plots = [3];
+in.filt_width = 0;
+in.formats = {'png'};
+in.resolutions = {'-r300'};
+in.save_fig = 0;
+in.fig_dir = './figs'; % default to current directory
+in.fig_settings = {'Units','normalized','Position',[1 0.1667 0.75 0.744],...
+                    'Color','k'};
+in.cb_settings = {'Color','w','FontSize',14};
+in.title_settings = {'Interpreter','none','Color','w'}; 
+in = sl.in.processVarargin(in,varargin);
 
-mean_bsline_img = mean(img.vals(:,:,settings.baseline_wind_inds),3); 
-peak_stim_img = max(img.vals(:,:,settings.stim_wind_inds),[],3); 
-if filt_width > 0
-    mean_bsline_img = imgaussfilt(mean_bsline_img,filt_width); %,'FilterSize',filt_wind);
-    peak_stim_img = imgaussfilt(peak_stim_img,filt_width); %,'FilterSize',filt_wind);
-    filt_str = sprintf('filter window %g',filt_width);
+mean_bsline_img = mean(img.vals(:,:,settings.baseline_wind_inds),3);
+peak_stim_img = max(img.vals(:,:,settings.stim_wind_inds),[],3);
+if in.filt_width > 0
+    mean_bsline_img = imgaussfilt(mean_bsline_img,in.filt_width); %,'FilterSize',filt_wind);
+    peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);
+    filt_str = sprintf('filter window %g',in.filt_width);
 else
-    filt_str = 'filter off';
+    filt_str = 'filtering off';
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 diff_img = peak_stim_img-mean_bsline_img;
+fig_hands = {}; 
 %% Plot
-if any(include_plots==1) % Mean baseline image
-    figure('Units','normalized','Position',[1 0.1667 0.75 0.744]); 
+if any(in.include_plots==1) % Mean baseline image
+    fig = figure(in.fig_settings{:});
     % subplot(3,1,1);
-    imagesc(mean_bsline_img); axis equal; axis off; colormap(cmap); colorbar;
-    title(sprintf('%s: Mean baseline (frames %g to %g), %s',img.img_name,...
-                    settings.baseline_wind_inds(1),settings.baseline_wind_inds(end),...
-                    filt_str),'Interpreter','none'); 
+    title_str = sprintf('%s: Mean baseline (frames %g to %g), %s',img.img_name,...
+                        settings.baseline_wind_inds(1),settings.baseline_wind_inds(end),...
+                        filt_str);
+    plot_img(mean_bsline_img,title_str,in.cmap,in.cb_settings,in.title_settings);            
+    fig_hands = [fig_hands,fig];
+    fig_name = sprintf('bsline_meanF_%g-%g',settings.baseline_wind_inds(1),...
+                                           settings.baseline_wind_inds(end));   
+    fig.Name = fig_name; % assign name to fig for external use
+    if in.save_fig
+        printFig(fig,in.fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions)
+    end
 end
-if any(include_plots==2) % Peak image
+if any(in.include_plots==2) % Peak image
     % subplot(3,1,2);
-    figure('Units','normalized','Position',[1 0.1667 0.75 0.744]); 
-    imagesc(peak_stim_img); axis equal; axis off; colormap(cmap); colorbar;
-    title(sprintf('%s: Peak during stim (frames %g to %g), %s',img.img_name,...
-                  settings.stim_wind_inds(1),settings.stim_wind_inds(end),filt_str),...
-                  'Interpreter','none');
+    fig = figure(in.fig_settings{:});
+    title_str = sprintf('%s: Peak during stim (frames %g to %g), %s',img.img_name,...
+                        settings.stim_wind_inds(1),settings.stim_wind_inds(end),filt_str);    
+    plot_img(peak_stim_img,title_str,in.cmap,in.cb_settings,in.title_settings);            
+    fig_hands = [fig_hands,fig];
+    fig_name = sprintf('peakF_%g-%g',settings.stim_wind_inds(1),...
+                                    settings.stim_wind_inds(end));
+    fig.Name = fig_name; % assign name to fig for external use
+    if in.save_fig
+        printFig(fig,in.fig_dir,fig_name,'formats',in.formats,...
+                 'resolutions',in.resolutions)
+    end
 end
-if any(include_plots==3) % Difference image
-    % subplot(3,1,3); 
-    figure('Units','normalized','Position',[1 0.1667 0.75 0.744]); 
-    imagesc(diff_img); axis equal; axis off; colormap(cmap); colorbar;
-    title(sprintf('%s: Peak - mean baseline, %s',img.img_name,filt_str),...
-          'Interpreter','none'); 
-    axis([0 size(diff_img,2) 0 size(diff_img,1)]); 
+if any(in.include_plots==3) % Difference image
+    % subplot(3,1,3);
+    fig = figure(in.fig_settings{:});
+    title_str = sprintf('%s: Peak - mean baseline, %s',img.img_name,filt_str);
+    plot_img(diff_img,title_str,in.cmap,in.cb_settings,in.title_settings);        
+    fig_hands = [fig_hands,fig];
+    fig_name = sprintf('peakF-bslineF_%g-%g_%g-%g',settings.baseline_wind_inds(1),...
+                        settings.baseline_wind_inds(end),...
+                        settings.stim_wind_inds(1),...
+                        settings.stim_wind_inds(end));
+    fig.Name = fig_name; % assign name to fig for external use
+    if in.save_fig
+        printFig(fig,in.fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions)
+    end
 end
+    function plot_img(vals,title_str,cmap,cb_settings,title_settings)
+        imagesc(vals)
+        ax = gca; 
+        axis(ax,'equal','off'); hold(ax,'on'); 
+        colormap(cmap); 
+        colorbar(cb_settings{:});
+        axis([0 size(vals,2) 0 size(vals,1)]);
+        title(title_str,title_settings{:}); 
+    end
 end

@@ -4,9 +4,9 @@ data_fold = '/Volumes/BACKUPDRIVE/Dartmouth_data';
 exp_date= '20210911'; 
 reporter = 'GluSnFr3';
 dish = 'dish4'; 
-condition = 'control';
+condition = '50nM_DTX';
 position = 'Pos1'; 
-img_name = 'DTX0.fits'; 
+img_name = 'DTX50_5.fits'; 
 stim_vals = 3; % frames - 3 sec delay (100 Hz sampling time)
 stim_wind = 1; % window
 baseline_wind = 1; % frames before stim/s to take baseline
@@ -14,14 +14,14 @@ units = 'sec'; % specify units 'frames' or 'sec'
 sampling_rate = 100; % sampling rate (frames/sec)
 exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                   units,sampling_rate); % automatically converts to frames
-roi_set_filename = 'RoiSet_pos1.zip'; 
+roi_set_filename = 'RoiSet_pos3.zip'; 
 % Optional settings
-show_diff_image = []; % can include [1,2,3] for [baseline,peak,diff]
+show_diff_image = [1,2,3]; % can include [1,2,3] for [baseline,peak,diff]
 filt_width = 0; 
 funcs = {'mean','std','baseline','deltaF_F0'}; 
 roi_func_mode = 'combine';
 save_processed_data = 1;
-load_processed_data = 0;
+load_processed_data = 1;
 figure; 
 trace_axis = gca;
 plotTrial(data_fold,exp_date,reporter,dish,condition,position,img_name,exp_settings,...

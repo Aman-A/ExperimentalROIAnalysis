@@ -24,7 +24,10 @@ if ischar(in.resolutions) % single resolution for all files
 end
 assert(num_files == length(in.resolutions),...
     'Need to specify resolution for each format being saved');
-
+if ~exist(file_dir,'dir')
+   mkdir(file_dir); 
+   fprintf('Created figure directory: %s\n',file_dir); 
+end
 for i = 1:num_files
     formati = in.formats{i};
     resi = in.resolutions{i};
@@ -44,7 +47,7 @@ for i = 1:num_files
         end
     end
 end
-print_str = [sprintf('Saved %s to %s in formats:',file_name,file_dir),...
+print_str = [sprintf('Saved %s to %s in formats: ',file_name,file_dir),...
               sprintf('%s ',in.formats{:}),'\n'];
 if in.print_level > 0
     fprintf(print_str)

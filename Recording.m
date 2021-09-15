@@ -37,18 +37,24 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                obj.format = format;
             else
                split_obj_name = strsplit(img_name,'.'); 
+               obj.img_name = split_obj_name{1};
                if length(split_obj_name) == 1
-                   error('Must include file format in img_name or as input argument'); 
-               else
+                   % Assume fits
+                   obj.format = 'fits'; 
+               else                   
                    obj.format = split_obj_name{2};
                end
             end
             obj.filedir = fullfile(data_fold,exp_date,reporter,dish,...
                                     condition);            
-            obj.filepath = fullfile(obj.filedir,img_name); 
-            d = dir(obj.filepath);             
-            [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
-            obj.time_start = datetime(Y,M,D,H,MI,S);
+            obj.filepath = fullfile(obj.filedir,[obj.img_name,'.', obj.format]); 
+            if exist(obj.filepath,'file')
+                d = dir(obj.filepath);             
+                [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
+                obj.time_start = datetime(Y,M,D,H,MI,S);
+            else
+               error('%s does not exist\n',obj.filepath);  
+            end
         end
         function load(obj,print_status)
             if nargin < 2
@@ -56,8 +62,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             end
             if strcmp(obj.format,'fits')
                 obj.vals = fitsread(obj.filepath); 
-                obj.vals = flipud(obj.vals); 
-                fprintf('Flipping y axis, check!!\n'); 
+%                 obj.vals = flipud(obj.vals); 
+%                 fprintf('Flipping y axis, check!!\n'); 
             else
                error('Other file formats not implemented yet');  
             end
