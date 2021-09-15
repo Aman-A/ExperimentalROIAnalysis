@@ -24,16 +24,17 @@ img = Recording(img_name,position,condition,dish,reporter,exp_date,data_fold);
 save_data_filename = fullfile(img.filedir,sprintf('%s-%s-data.mat',...
                                                   img_name_no_ext,...
                                                   roi_set_filename_no_ext));
-if exist(save_data_filename,'file') && load_processed_data && ~any(show_diff_image)
-    % Load processed data (skips showing diff image, so must be empty/set
-    % to zeros)
+if exist(save_data_filename,'file') && load_processed_data
+    % Load processed data (skips showing diff image, even if set in
+    % show_diff_image)
     output_data = load(save_data_filename); 
     func_output = output_data.func_output;
     fprintf('Loaded processed data from %s\n',save_data_filename); 
 else
     img.load();  % Load image data
     %% Output peak image
-    [~,~,diff_img] = diffImage(img,exp_settings,'inferno',show_diff_image,filt_width); % Plot peak pixel values - baseline
+    [~,~,diff_img] = diffImage(img,exp_settings,'inferno',show_diff_image,...
+                               filt_width); % Plot peak pixel values - baseline
     ax = gca;                        
     %% Load saved ROIs
     rois = circROIs(roi_set_filename,[img.filedir filesep '..']); % assume directory above data for this condition
