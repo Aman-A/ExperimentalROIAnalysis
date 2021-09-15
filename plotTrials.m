@@ -1,4 +1,4 @@
-function [deltaF_F0,peaks_deltaF_F0,mean_peak_deltaF_F0,std_peak_deltaF_F0,trial_times] = ...
+function [deltaF_F0,peaks_deltaF_F0,mean_peak_deltaF_F0,std_peak_deltaF_F0,trial_times,bslines] = ...
                 plotTrials(data_fold,exp_date,reporter,dish,condition,position,...
                    img_names,exp_settings,roi_set_filename,...
                    varargin)
@@ -33,6 +33,7 @@ trace_axis = gca;
 func_outputs = cell(1,num_trials); 
 deltaF_F0 = cell(1,num_trials); 
 trial_times = NaT(1,num_trials); 
+bslines = zeros(1,num_trials); 
 for i = 1:num_trials
     img_namei = img_names{i}; 
     datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
@@ -41,6 +42,7 @@ for i = 1:num_trials
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
     trial_times(i) = datai.Recording.time_start; 
+    bslines(i) = datai.func_output.baseline;
 end
 deltaF_F0 = cell2mat(deltaF_F0); 
 peaks_deltaF_F0 = max(deltaF_F0,[],1); % peaks within trial
@@ -48,6 +50,8 @@ mean_peak_deltaF_F0 = mean(peaks_deltaF_F0);
 std_peak_deltaF_F0 = std(peaks_deltaF_F0,0);
 fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
          condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
+fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
+        exp_settings.baseline_wind,mean(bslines),std(bslines,0));
 if in.save_fig
    fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,'figs');       
    fig_name = sprintf('%s_%s_%gtrials',condition,in.plot_func,num_trials);

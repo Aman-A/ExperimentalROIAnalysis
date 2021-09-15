@@ -54,67 +54,10 @@ mean_bsline_img = mean(img.vals(:,:,settings.baseline_wind_inds),3);
 peak_stim_img = max(img.vals(:,:,settings.stim_wind_inds),[],3);
 if in.filt_width > 0
     mean_bsline_img = imgaussfilt(mean_bsline_img,in.filt_width); %,'FilterSize',filt_wind);
-    peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);
-    filt_str = sprintf('filter window %g',in.filt_width);
-else
-    filt_str = 'filtering off';
+    peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 diff_img = peak_stim_img-mean_bsline_img;
-fig_hands = {}; 
-%% Plot
-if any(in.include_plots==1) % Mean baseline image
-    fig = figure(in.fig_settings{:});
-    % subplot(3,1,1);
-    title_str = sprintf('%s: Mean baseline (frames %g to %g), %s',img.img_name,...
-                        settings.baseline_wind_inds(1),settings.baseline_wind_inds(end),...
-                        filt_str);
-    plot_img(mean_bsline_img,title_str,in.cmap,in.cb_settings,in.title_settings);            
-    fig_hands = [fig_hands,fig];
-    fig_name = sprintf('bsline_meanF_%g-%g',settings.baseline_wind_inds(1),...
-                                           settings.baseline_wind_inds(end));   
-    fig.Name = fig_name; % assign name to fig for external use
-    if in.save_fig
-        printFig(fig,in.fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions)
-    end
-end
-if any(in.include_plots==2) % Peak image
-    % subplot(3,1,2);
-    fig = figure(in.fig_settings{:});
-    title_str = sprintf('%s: Peak during stim (frames %g to %g), %s',img.img_name,...
-                        settings.stim_wind_inds(1),settings.stim_wind_inds(end),filt_str);    
-    plot_img(peak_stim_img,title_str,in.cmap,in.cb_settings,in.title_settings);            
-    fig_hands = [fig_hands,fig];
-    fig_name = sprintf('peakF_%g-%g',settings.stim_wind_inds(1),...
-                                    settings.stim_wind_inds(end));
-    fig.Name = fig_name; % assign name to fig for external use
-    if in.save_fig
-        printFig(fig,in.fig_dir,fig_name,'formats',in.formats,...
-                 'resolutions',in.resolutions)
-    end
-end
-if any(in.include_plots==3) % Difference image
-    % subplot(3,1,3);
-    fig = figure(in.fig_settings{:});
-    title_str = sprintf('%s: Peak - mean baseline, %s',img.img_name,filt_str);
-    plot_img(diff_img,title_str,in.cmap,in.cb_settings,in.title_settings);        
-    fig_hands = [fig_hands,fig];
-    fig_name = sprintf('peakF-bslineF_%g-%g_%g-%g',settings.baseline_wind_inds(1),...
-                        settings.baseline_wind_inds(end),...
-                        settings.stim_wind_inds(1),...
-                        settings.stim_wind_inds(end));
-    fig.Name = fig_name; % assign name to fig for external use
-    if in.save_fig
-        printFig(fig,in.fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions)
-    end
-end
-    function plot_img(vals,title_str,cmap,cb_settings,title_settings)
-        imagesc(vals)
-        ax = gca; 
-        axis(ax,'equal','off'); hold(ax,'on'); 
-        colormap(cmap); 
-        colorbar(cb_settings{:});
-        axis([0 size(vals,2) 0 size(vals,1)]);
-        title(title_str,title_settings{:}); 
-    end
+fig_hands = plotDiffImage(mean_bsline_img,peak_stim_img,diff_img,img.img_name,...
+               settings,in);
 end

@@ -31,27 +31,27 @@ if exist(save_data_filename,'file') && in.load_processed_data
     output_data = load(save_data_filename); 
     func_output = output_data.func_output;
     fprintf('Loaded processed data from %s\n',save_data_filename); 
+    % Plot baseline, peak, diff images
+    fig_hands = plotDiffImage(output_data.mean_bsline_img,output_data.peak_stim_img,...
+                  output_data.diff_img,img.img_name,exp_settings,...
+                  'include_plots',in.show_diff_image,'filt_width',in.filt_width);               
+    addROIoverlayAndSave(fig_hands,output_data.ROIs,in.save_fig,fig_dir,img.img_name);
 else
     img.load();  % Load image data
     %% Output peak image
-    [~,~,diff_img,fig_hands] = diffImage(img,exp_settings,'cmap','inferno',... % Plot peak pixel values - baseline
-                               'include_plots',in.show_diff_image,...
-                               'filt_width',in.filt_width);                          
+    [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
+                                                        exp_settings,...                                                        
+                                                        'include_plots',...
+                                                        in.show_diff_image,...
+                                                        'filt_width',...
+                                                        in.filt_width);                          
     %% Load saved ROIs
     rois = circROIs(roi_set_filename,[img.filedir filesep '..']); % assume directory above data for this condition
     % Recenter using peak after stim
     rois.recenterROIsLoop(diff_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     if any(in.show_diff_image)
-        % Overlay on diff image
-        for i = 1:length(fig_hands)
-            ax = fig_hands(i).Children(end); 
-            rois.plot('y',ax,0); % plot starting
-            rois.plot('g',ax,1); % plot current after shift
-            if in.save_fig  % Save images with ROI overlays (if exist)        
-               printFig(fig_hands(i),fig_dir,[img.img_name,'_',fig_hands(i).Name],...
-                     'formats','png','resolutions','-r300') 
-            end
-        end
+        % Overlay on diff image and save        
+        addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,img.img_name);
     else
         fprintf('Skipping diff image plot\n'); 
     end   
@@ -63,6 +63,9 @@ else
     output_data.Recording = img.unload(); % save with data unloaded, reduce HD usage
     output_data.Settings = exp_settings;    
     output_data.ROIs = rois; 
+    output_data.mean_bsline_img = mean_bsline_img;
+    output_data.peak_stim_img = peak_stim_img;
+    output_data.diff_img = diff_img; 
     output_data.funcs = in.funcs; 
     output_data.func_output = func_output;            
     %% Save processed data    
@@ -73,13 +76,24 @@ else
 end
 %% Plot data
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
-                exp_settings.sampling_rate,trace_axis); 
-trace_axis.YLim = [-0.2 1.2];             
+                exp_settings.sampling_rate,trace_axis);          
+trace_axis.YLim = [-0.2 1.2];         
 drawnow; 
 if in.save_fig > 1 % set to 2 to plot individual trials
    fig = gcf;
    fig_name = [img.img_name '_' in.plot_func]; 
    printFig(fig,fig_dir,fig_name); 
+end
+end
+function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name)
+for i = 1:length(fig_hands)
+    ax = fig_hands(i).Children(end);
+    rois.plot('y',ax,0); % plot starting
+    rois.plot('g',ax,1); % plot current after shift
+    if save_fig  % Save images with ROI overlays (if exist)
+        printFig(fig_hands(i),fig_dir,[img_name,'_',fig_hands(i).Name],...
+            'formats','png','resolutions','-r300')
+    end
 end
 end
                     

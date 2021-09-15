@@ -43,20 +43,23 @@ xlabel('Condition');
 ax.XLim = [0.5 num_conditions + 0.5];
 % ax.YLim(1) = 0;
 box(ax,'off'); grid(ax,'on');
-% Add time labels for each condition
-text(1:num_conditions,ones(1,num_conditions)*(ax.YLim(1)+0.05*diff(ax.YLim)),...
-     cellfun(@(x) sprintf('%.0f min',x),time_starts,'UniformOutput',0),...
-     'FontSize',14);
+if ~isempty(time_starts)
+    assert(length(time_starts) == num_conditions,'Number of times does not match number of conditions'); 
+    % Add time labels for each condition
+    text(1:num_conditions,ones(1,num_conditions)*(ax.YLim(1)+0.05*diff(ax.YLim)),...
+         cellfun(@(x) sprintf('%.0f min',x),time_starts,'UniformOutput',0),...
+         'FontSize',14);
+end
 % Add title 
 title_str = '';
 if ~isempty(in.exp_date)
    title_str = [title_str 'Date: ' in.exp_date];     
 end
 if ~isempty(in.reporter)
-   title_str = [title_str ' ,' in.reporter];    
+   title_str = [title_str ', ' in.reporter];    
 end
 if ~isempty(in.dish)
-   title_str = [title_str ' ,' in.dish];    
+   title_str = [title_str ', ' in.dish];    
 end
 title(title_str,'Interpreter','none'); 
 if in.save_fig

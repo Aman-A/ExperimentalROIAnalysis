@@ -47,13 +47,17 @@ set(lns,{'DisplayName'},display_names); % set legend names
 % shadedErrorBar(x,mean(func_output.(func_name),2),std(func_output.(func_name),0,2),{'-k'}); hold on;
 names = {ax.Children.DisplayName}; 
 ind_stim_times = strcmp(names,'Stim times');
-if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis
+if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
     plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
         'r.','MarkerSize',8,'DisplayName','Stim times'); 
     names = {ax.Children.DisplayName};
     ind_stim_times = strcmp(names,'Stim times');
     all_inds = 1:length(ax.Children); 
     ax.Children = ax.Children([all_inds(~ind_stim_times),find(ind_stim_times)]); 
+else    
+%     global_peak = max([ax.Children(~ind_stim_times).YData],[],'all'); 
+%     ax.Children(ind_stim_times).YData = global_peak*1.05; 
+    ax.Children(ind_stim_times).YData = ax.YLim(2)*0.99*ones(1,length(stim_frames)); 
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); ylabel(ax,'\Delta F/F_{0}')
 box(ax,'off'); 
