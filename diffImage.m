@@ -64,20 +64,22 @@ if any(include_plots==1) % Mean baseline image
     imagesc(mean_bsline_img); axis equal; axis off; colormap(cmap); colorbar;
     title(sprintf('%s: Mean baseline (frames %g to %g), %s',img.img_name,...
                     settings.baseline_wind_inds(1),settings.baseline_wind_inds(end),...
-                    filt_str)); 
+                    filt_str),'Interpreter','none'); 
 end
 if any(include_plots==2) % Peak image
     % subplot(3,1,2);
     figure('Units','normalized','Position',[1 0.1667 0.75 0.744]); 
     imagesc(peak_stim_img); axis equal; axis off; colormap(cmap); colorbar;
     title(sprintf('%s: Peak during stim (frames %g to %g), %s',img.img_name,...
-                  settings.stim_wind_inds(1),settings.stim_wind_inds(end),filt_str)); 
+                  settings.stim_wind_inds(1),settings.stim_wind_inds(end),filt_str),...
+                  'Interpreter','none');
 end
 if any(include_plots==3) % Difference image
     % subplot(3,1,3); 
     figure('Units','normalized','Position',[1 0.1667 0.75 0.744]); 
     imagesc(diff_img); axis equal; axis off; colormap(cmap); colorbar;
-    title(sprintf('%s: Peak - mean baseline, %s',img.img_name,filt_str)); 
+    title(sprintf('%s: Peak - mean baseline, %s',img.img_name,filt_str),...
+          'Interpreter','none'); 
     axis([0 size(diff_img,2) 0 size(diff_img,1)]); 
 end
 end
