@@ -24,7 +24,8 @@ img = Recording(img_name,position,condition,dish,reporter,exp_date,data_fold);
 save_data_filename = fullfile(img.filedir,sprintf('%s-%s-data.mat',...
                                                   img_name_no_ext,...
                                                   roi_set_filename_no_ext));
-fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,'figs');                                               
+fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
+                    ['figs_',roi_set_filename_no_ext]);                                               
 if exist(save_data_filename,'file') && in.load_processed_data
     % Load processed data (skips showing diff image, even if set in
     % show_diff_image)

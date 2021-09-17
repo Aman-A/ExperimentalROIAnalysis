@@ -6,6 +6,7 @@ function plotSummaryStats(data_array,time_starts,conditions,name,units,varargin)
 %   data_array : cell array
 %                each cell includes vector of scalar metric computed for
 %                each trial within that condition
+%   time_starts : 
 %   Optional Inputs
 %   ---------------
 %   Outputs
@@ -14,13 +15,13 @@ function plotSummaryStats(data_array,time_starts,conditions,name,units,varargin)
 %   ---------------
 
 % AUTHOR    : Aman Aberra
-in.data_fold = './'; % default current directory
 in.exp_date = '';
 in.reporter = '';
 in.dish = '';
 in.save_fig = 1; 
 in.formats = {'fig','png'}; 
 in.resolutions = {[],'-r300'};
+in.fig_dir = fullfile(getDataFold(),'figs');       
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(data_array);
 mean_vals = cellfun(@mean,data_array,'UniformOutput',1);
@@ -65,13 +66,11 @@ title(title_str,'Interpreter','none');
 if in.save_fig
     rep_chars = {' ','{','}','\','/'}; % replace in quantity name for file saving
     empty_chars = repmat({''},1,length(rep_chars));
-   if isempty(in.exp_date) || isempty(in.reporter) || isempty(in.dish)
-       fig_dir = fullfile(in.data_fold,'figs'); 
+   if isempty(in.exp_date) || isempty(in.reporter) || isempty(in.dish)       
        fig_name = regexprep(name,rep_chars,empty_chars); % remove spaces
-   else
-       fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,'figs');       
+   else       
        fig_name = [regexprep(name,rep_chars,empty_chars) '_' in.exp_date '_' in.reporter '_' in.dish]; 
    end   
-   printFig(fig,fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions);  
+   printFig(fig,in.fig_dir,fig_name,'formats',in.formats,'resolutions',in.resolutions);  
 end
 end

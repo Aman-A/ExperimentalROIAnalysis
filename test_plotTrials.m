@@ -1,5 +1,5 @@
 %% Script to plot multiple trials in same condition 
-data_fold = '/Volumes/BACKUPDRIVE/Dartmouth_data';
+data_fold = getDataFold();
 exp_date= '20210914';
 reporter = 'GluSnFr3';
 dish = 'dish1';
