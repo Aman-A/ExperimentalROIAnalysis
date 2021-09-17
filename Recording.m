@@ -62,8 +62,10 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             end
             if strcmp(obj.format,'fits')
                 obj.vals = fitsread(obj.filepath); 
-%                 obj.vals = flipud(obj.vals); 
-%                 fprintf('Flipping y axis, check!!\n'); 
+                if ispc
+                    obj.vals = flipud(obj.vals); 
+                    fprintf('Flipping y axis, check!!\n'); 
+                end
             else
                error('Other file formats not implemented yet');  
             end
