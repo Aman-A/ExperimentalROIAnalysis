@@ -7,11 +7,14 @@ in.show_diff_image = [];
 in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
                % ROI positions
 
-in.funcs = {'mean','std','baseline','deltaF_F0'}; % functions to compute
+in.funcs = {'baseline','deltaF_F0'}; % functions to compute
 in.plot_func = 'deltaF_F0'; % function to plot in ROI (plotROIfunc)
 in.roi_func_mode = 'combine';
 in.save_processed_data = 1;
 in.load_processed_data = 0; 
+in.y_lim = [-0.2 1.2];
+in.roi_func_fig_size = [19.8 9.1];
+in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
@@ -78,17 +81,19 @@ end
 %% Plot data
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                 exp_settings.sampling_rate,trace_axis);          
-trace_axis.YLim = [-0.2 1.2];         
+trace_axis.YLim = in.y_lim;         
+fig = trace_axis.Parent;
+fig.Units = in.roi_func_fig_units;
+fig.Position(3:4) = in.roi_func_fig_size;
 drawnow; 
-if in.save_fig > 1 % set to 2 to plot individual trials
-   fig = gcf;
+if in.save_fig > 1 % set to 2 to plot individual trials   
    fig_name = [img.img_name '_' in.plot_func]; 
    printFig(fig,fig_dir,fig_name); 
 end
 end
 function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name)
 for i = 1:length(fig_hands)
-    ax = fig_hands(i).Children(end);
+    ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
     rois.plot('g',ax,1); % plot current after shift
     if save_fig  % Save images with ROI overlays (if exist)

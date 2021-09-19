@@ -12,8 +12,12 @@ in.plot_func = 'deltaF_F0';
 in.roi_func_mode = 'combine';
 in.save_processed_data = 1;
 in.load_processed_data = 0; 
+in.y_lim = [-0.2 1.2];
+in.roi_func_fig_size = [19.8 9.1];
+in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; 
 in = sl.in.processVarargin(in,varargin); 
+%% Get file names within condition if not input
 filedir = fullfile(data_fold,exp_date,reporter,dish,condition);            
 if isempty(img_names) % assume all .fits files are relevant trial data
     d = dir(filedir); 
@@ -52,8 +56,10 @@ fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
          condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
 fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
         exp_settings.baseline_wind,mean(bslines),std(bslines,0));
-if in.save_fig
-   fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,'figs');       
+if in.save_fig   
+   [~,roi_set_filename_no_ext] = fileparts(roi_set_filename);    
+   fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
+                    ['figs_',roi_set_filename_no_ext]);       
    fig_name = sprintf('%s_%s_%gtrials',condition,in.plot_func,num_trials);
    printFig(trace_fig,fig_dir,fig_name); 
 end
