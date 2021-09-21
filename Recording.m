@@ -36,13 +36,13 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             if nargin > 8
                obj.format = format;
             else
-               split_obj_name = strsplit(img_name,'.'); 
-               obj.img_name = split_obj_name{1};
-               if length(split_obj_name) == 1
-                   % Assume fits
-                   obj.format = 'fits'; 
+               split_obj_name = strsplit(img_name,'.');                
+               if length(split_obj_name) == 1                   
+                   obj.img_name = split_obj_name{1};
+                   obj.format = 'fits'; % Assume fits
                else                   
-                   obj.format = split_obj_name{2};
+                   obj.img_name = strjoin(split_obj_name(1:end-1),'.');
+                   obj.format = split_obj_name{end}; % file extension
                end
             end
             obj.filedir = fullfile(data_fold,exp_date,reporter,dish,...
@@ -66,6 +66,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 
 %                 end
+            elseif strcmp(obj.format,'tiff')
+                obj.vals = imread(obj.filepath,obj.format); 
             else
                error('Other file formats not implemented yet');  
             end
