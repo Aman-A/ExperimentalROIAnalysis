@@ -59,7 +59,12 @@ else
 %     ax.Children(ind_stim_times).YData = global_peak*1.05; 
     ax.Children(ind_stim_times).YData = ax.YLim(2)*0.99*ones(1,length(stim_frames)); 
 end
-xlabel(ax,sprintf('time (%s)',unit_str)); ylabel(ax,'\Delta F/F_{0}')
+xlabel(ax,sprintf('time (%s)',unit_str)); 
+if strcmp(func_name,'deltaF_F0')
+    ylabel(ax,'\Delta F/F_{0}')
+else
+   ylabel(ax,func_name);  
+end
 box(ax,'off'); 
 title(ax,title_str,'Interpreter','none'); 
 % legend(ax.Children(~ind_stim_times)); 

@@ -2,7 +2,8 @@ function [deltaF_F0,peaks_deltaF_F0,mean_peak_deltaF_F0,std_peak_deltaF_F0,trial
                 plotTrials(data_fold,exp_date,reporter,dish,condition,position,...
                    img_names,exp_settings,roi_set_filename,...
                    varargin)
-%PLOTTRIALS Plot set of trials on same axis   
+%PLOTTRIALS Plot set of trials on same axis  
+%TODO: make arrays compatible with roi_func_mode 'separate'
 in.show_diff_image = []; 
 in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
                % ROI positions
