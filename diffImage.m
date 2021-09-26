@@ -49,7 +49,7 @@ in.fig_settings = {'Units','normalized','Position',[1 0.1667 0.75 0.744],...
 in.cb_settings = {'Color','w','FontSize',14};
 in.title_settings = {'Interpreter','none','Color','w'}; 
 in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
-in.cax_lims = [0.4 0.99]; % color limits, units defined in cax_mode
+in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
 in = sl.in.processVarargin(in,varargin);
 
 mean_bsline_img = mean(img.vals(:,:,settings.baseline_wind_inds),3);

@@ -21,15 +21,41 @@ in.dish = '';
 in.save_fig = 1; 
 in.formats = {'fig','png'}; 
 in.resolutions = {[],'-r300'};
-in.fig_dir = fullfile(getDataFold(),'figs');       
+in.fig_dir = fullfile(getDataFold(),'figs');   
+% in.rm_anova = 0;
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(data_array);
 mean_vals = cellfun(@mean,data_array,'UniformOutput',1);
 std_vals = cellfun(@std,data_array,'UniformOutput',1);
+% if in.rm_anova 
+%     % Run Repeated Measures ANOVA
+% %     data_table = cell2table(data_array);
+%     data_table = table(); 
+%     for i = 1:num_conditions
+%         data_table = [data_table;[num2cell(data_array{i}'),... % values
+%                                   num2cell((1:length(data_array{i}))'),... % trial indices
+%                                   repmat(conditions(i),length(data_array{i}),1)]]; % condition name
+%     end
+%     data_table.Properties.VariableNames = {'response','trial','condition'};
+%     % linear mixed-effects model, fixed-effects term for condition    
+%     lme = fitlme(data_table,'response ~ 1 + condition');
+%     lme2 = fitlme(data_table,'response ~ 1 + condition + (1 | trial)'); % include random effect for trial
+%     lme3 = fitlme(data_table,'response ~ 1 + condition + (-1 + condition | trial)'); % include interaction between condition and trial
+%     lme4 = fitlme(data_table,'response ~ 1 + condition + (1 | trial) + (-1 + condition | trial)'); % include interaction between condition and trial
+%     lme5 = fitlme(data_table,'response ~ 1 + condition + (condition | trial)');
+%     
+% end
+data_mat = nan(length(data_array),max(cellfun(@length,data_array,'UniformOutput',1))); 
+for i = 1:length(data_array)
+   data_mat(i,1:length(data_array{i})) = data_array{i}; 
+end
 %% Plot to current figure
 fig = gcf; 
-errorbar(mean_vals,std_vals,'-ko','LineWidth',2);
-hold on;
+errorbar(mean_vals,std_vals,'-','LineWidth',1.5,...
+         'Marker','o','Color',0.8*ones(1,3));
+hold on;     
+scatter(1:num_conditions,data_mat','k.','SizeData',60,...
+        'jitter','on','jitterAmount',0.05);      
 ax = gca;
 ax.FontSize = 16;
 ax.XTick = 1:num_conditions;

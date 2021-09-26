@@ -25,8 +25,8 @@ img = Recording(img_name,position,condition,dish,reporter,exp_date,data_fold);
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
 [~,roi_set_filename_no_ext] = fileparts(roi_set_filename);    
-save_data_filename = fullfile(img.filedir,sprintf('%s-%s-data.mat',...
-                                                  img_name_no_ext,...
+save_data_filename = fullfile(img.filedir,sprintf('%s-%s-%s-data.mat',...
+                                                  img_name_no_ext,in.roi_func_mode,...
                                                   roi_set_filename_no_ext));
 fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
                     ['figs_',roi_set_filename_no_ext]);                                               
@@ -84,7 +84,10 @@ plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                 exp_settings.sampling_rate,trace_axis);          
 trace_axis.YLim = in.y_lim;     
 if ~isempty(in.x_lim)
-   trace_axis.XLim = in.x_lim;  
+   trace_axis.XLim = in.x_lim;     
+end
+if ~isempty(in.y_lim)            
+    trace_axis.YLim = in.y_lim;         
 end
 fig = trace_axis.Parent;
 fig.Units = in.roi_func_fig_units;
