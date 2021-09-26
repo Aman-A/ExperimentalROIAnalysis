@@ -48,7 +48,14 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                     (obj.stim_vals - obj.baseline_wind - 1):(obj.stim_vals - 1); 
             end
         end
-        
+        function convert2Time(obj)
+            if strcmp(obj.units,'frames')
+               obj.stim_vals = obj.stim_vals/obj.sampling_rate; 
+               obj.stim_wind = obj.stim_wind/obj.sampling_rate; 
+               obj.baseline_wind = obj.baseline_wind/obj.sampling_rate;                
+               obj.units = 'sec';
+            end            
+        end
     end
     
 end

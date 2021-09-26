@@ -13,6 +13,7 @@ in.roi_func_mode = 'combine';
 in.save_processed_data = 1;
 in.load_processed_data = 0; 
 in.y_lim = [-0.2 1.2];
+in.x_lim = []; 
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; 

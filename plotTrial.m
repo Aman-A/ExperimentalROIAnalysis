@@ -13,6 +13,7 @@ in.roi_func_mode = 'combine';
 in.save_processed_data = 1;
 in.load_processed_data = 0; 
 in.y_lim = [-0.2 1.2];
+in.x_lim = []; 
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
@@ -81,7 +82,10 @@ end
 %% Plot data
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                 exp_settings.sampling_rate,trace_axis);          
-trace_axis.YLim = in.y_lim;         
+trace_axis.YLim = in.y_lim;     
+if ~isempty(in.x_lim)
+   trace_axis.XLim = in.x_lim;  
+end
 fig = trace_axis.Parent;
 fig.Units = in.roi_func_fig_units;
 fig.Position(3:4) = in.roi_func_fig_size;
