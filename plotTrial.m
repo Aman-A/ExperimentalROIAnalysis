@@ -14,10 +14,11 @@ in.save_processed_data = 1;
 in.load_processed_data = 0; 
 in.y_lim = [-0.2 1.2];
 in.x_lim = []; 
-in.recenterROIs = true; 
+in.recenterROIs = 'diff'; 
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
+in.close_img_after_save = 0; 
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
@@ -46,7 +47,8 @@ if exist(save_data_filename,'file') && in.load_processed_data
     fig_hands = plotDiffImage(output_data.mean_bsline_img,output_data.peak_stim_img,...
                   output_data.diff_img,img.img_name,exp_settings,...
                   'include_plots',in.show_diff_image,'filt_width',in.filt_width);               
-    addROIoverlayAndSave(fig_hands,output_data.ROIs,in.save_fig,fig_dir,img.img_name);
+    addROIoverlayAndSave(fig_hands,output_data.ROIs,in.save_fig,fig_dir,img.img_name,...
+                         in.close_img_after_save);
 else
     img.load();  % Load image data
     %% Output peak image
@@ -68,12 +70,24 @@ else
         end
     end
     % Recenter using peak after stim
-    if in.recenterROIs
-        rois.recenterROIsLoop(diff_img,0,1); % recenter to peak value repeatedly until no further shift occurs
+    if in.recenterROIs ~= 0
+        if ischar(in.recenterROIs) 
+            if strcmp(in.recenterROIs,'diff')
+                recenter_img = diff_img;
+            elseif strcmp(in.recenterROIs,'peak')
+                recenter_img = peak_stim_img;
+            elseif strcmp(in.recenterROIs,'baseline')
+                recenter_img = mean_bsline_img;
+            end
+        elseif in.recenterROIs == 1
+            recenter_img = diff_img; % recenter on peak_stim_img by default if no mode specified
+        end
+        rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     end
     if any(in.show_diff_image)
         % Overlay on diff image and save        
-        addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,img.img_name);
+        addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,img.img_name,...
+                             in.close_img_after_save);
     else
         fprintf('Skipping diff image plot\n'); 
     end   
@@ -114,7 +128,7 @@ if in.save_fig > 1 % set to 2 to plot individual trials
    printFig(fig,fig_dir,fig_name); 
 end
 end
-function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name)
+function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name,close_after_save)
 for i = 1:length(fig_hands)
     ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
@@ -122,6 +136,9 @@ for i = 1:length(fig_hands)
     if save_fig  % Save images with ROI overlays (if exist)
         printFig(fig_hands(i),fig_dir,[img_name,'_',fig_hands(i).Name],...
             'formats','png','resolutions','-r300')
+        if close_after_save
+            close(fig_hands(i));
+        end
     end
 end
 end

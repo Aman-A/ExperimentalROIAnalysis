@@ -15,9 +15,11 @@ in.save_processed_data = 1;
 in.load_processed_data = 0; 
 in.y_lim = [-0.2 1.2];
 in.x_lim = []; 
+in.recenterROIs = 'diff'; 
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; 
+in.close_img_after_save = 0; 
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
 filedir = fullfile(data_fold,exp_date,reporter,dish,condition);            

@@ -24,7 +24,7 @@ function [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
 %          specify colormap as string or N x 3 RGB array
 %   include_plots : integer array
 %                   Specify which plots to include, can include 1, 2, 3 in
-%                   any order
+%                   any order (1 - Baseline, 2 - Peak, 3 - Difference)
 %   filt_width : double
 %               width (std) of symmetric gaussian spatial filter, NOTE:
 %               REQUIRES IMAGE PROCESSING TOOLBOX

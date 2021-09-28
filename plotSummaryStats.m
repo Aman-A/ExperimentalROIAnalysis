@@ -50,9 +50,10 @@ for i = 1:length(data_array)
    data_mat(i,1:length(data_array{i})) = data_array{i}; 
 end
 %% Plot to current figure
+rng(1); % ensure consistent jitter for identical data
 fig = gcf; 
-errorbar(mean_vals,std_vals,'-','LineWidth',1.5,...
-         'Marker','o','Color',0.8*ones(1,3));
+errorbar(mean_vals,std_vals,'-','LineWidth',2,...
+         'Marker','o','Color',0.6*ones(1,3));
 hold on;     
 scatter(1:num_conditions,data_mat','ko','MarkerFaceColor','k','SizeData',12,...
         'jitter','on','jitterAmount',0.05);      

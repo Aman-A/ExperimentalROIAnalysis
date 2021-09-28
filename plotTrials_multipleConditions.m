@@ -1,6 +1,6 @@
 function output = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish,...
                                        conditions,positions,img_names,exp_settings,...
-                                       roi_set_filenames,plot_settings)
+                                       roi_set_filenames,plot_settings,varargin)
 %PLOTTRIALS_MULTIPLECONDITIONS ... 
 %  
 %   Inputs 
@@ -13,7 +13,8 @@ function output = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-
+in.save_summary_data = 1;
+in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(conditions);
 output = struct();
 output.deltaF_F0_all = cell(1,num_conditions); 
@@ -49,5 +50,13 @@ end
 % get start time of first trial within condition relative to first trial
 % overall
 output.rel_times_cond_starts = cellfun(@(x) minutes(x(1)-output.trial_times_all{1}(1)),output.trial_times_all,'UniformOutput',0);
-
+if in.save_summary_data
+    summary_data_file = sprintf('%s_%s_%s_%s.mat',exp_date,reporter,dish,...
+                                                  roi_set_filenames{1});
+    summary_data_filepath = fullfile(data_fold,exp_date,reporter,dish,summary_data_file);
+    save(summary_data_filepath,'output','exp_date','reporter','dish','conditions',...
+                           'positions','img_names','exp_settings',...
+                           'roi_set_filenames','plot_settings');
+    fprintf('Saved summary data to %s\n',summary_data_file);
+end
 end
