@@ -35,7 +35,8 @@ for i = 1:num_conditions
     output.deltaF_F0_all{i} = deltaF_F0; 
     output.peaks_deltaF_F0_all{i} = peaks_deltaF_F0;
     [~,pk_inds] = max(deltaF_F0(exp_settings.stim_wind_inds,:),[],1);
-    output.peak_times_all{i} = pk_inds/exp_settings.sampling_rate;
+    % Time of peak in sec relative to first stimulus
+    output.peak_times_all{i} = exp_settings.convert2Time(exp_settings.stim_wind_inds(pk_inds) - exp_settings.stim_vals(1));
     output.poststim_ints_all{i} = trapz(exp_settings.stim_wind/exp_settings.sampling_rate,...
                                 deltaF_F0(exp_settings.stim_wind_inds,:));
     output.mean_peaks(i) = mean_peak_deltaF_F0;

@@ -18,36 +18,72 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
        vals % make sure raw data isn't altered after being loaded
     end
     methods
-        function obj = Recording(img_name,position,condition,dish,reporter,...
-                                exp_date,data_fold,format)
-            if nargin > 0
-                obj.img_name = img_name;
-                obj.position = position; 
-                obj.condition = condition;
-                obj.dish = dish;
-                obj.reporter = reporter; 
-                obj.exp_date = exp_date;                 
-            end            
-            if nargin > 7
-                obj.data_fold = data_fold;
+        function obj = Recording(img_name,varargin)
+%             Recording(img_name,position,condition,dish,reporter,...
+%                                 exp_date,data_fold,format)
+            % Optional arguments to specify source of data and/or location
+            % within default file structure            
+            in.condition = '';
+            in.dish = '';
+            in.reporter = '';
+            in.exp_date = '';
+            in.data_fold = ''; % top level folder for experiment data, should follow
+                               % a defined file_structure. 'default' is
+                               % only one implemented currently. Leave
+                               % empty if using absolute/relative path to
+                               % specify file location within img_name
+                               % string
+            in.position = ''; 
+            in.format = '';
+            in.file_structure = 'default'; % <exp_date>/<reporter>/<dish>/<condition>
+                                           % other structures not implemented
+            in = sl.in.processVarargin(in,varargin);       
+            % Get object properties
+            obj.exp_date = in.exp_date;
+            obj.reporter = in.reporter;
+            obj.dish = in.dish;
+            obj.condition = in.condition;            
+            obj.data_fold = in.data_fold;
+            obj.position = in.position; % (not used currently)
+            % Check if file path is in img name
+            [path_to_img,name,ext] = fileparts(img_name); 
+            if isempty(path_to_img)
+                if isempty(obj.data_fold) 
+                    % No path in file name and no data_fold given, 
+                    % assume file is in current directory
+                    obj.filedir = '.';
+                else
+                    % Build directory path using experiment properties, 
+                    % e.g. data_fold/exp_date/reporter/dish/condition
+                    if strcmp(in.file_structure,'default')                        
+                        assert(all([~isempty(obj.exp_date),~isempty(obj.reporter),...
+                                    ~isempty(obj.dish),~isempty(obj.condition)]),...
+                                    ['If specifying data_fold, need to input exp_date,',...
+                                    'reporter, dish, and condition\n']);
+                        obj.filedir = fullfile(obj.data_fold,obj.exp_date,...
+                                                obj.reporter,obj.dish,obj.condition);                                            
+                    else
+                        error('%s file_structure not implemented',in.file_structure);
+                    end
+                end                
             else
-                obj.data_fold = pwd; % assume current directory is root
+               % File name includes path, assume relative path to current
+               % directory
+               obj.filedir = path_to_img;               
             end
-            if nargin > 8
-               obj.format = format;
+            obj.img_name = name;
+            % Get file format
+            if isempty(in.format)
+                if isempty(ext)                   
+                   obj.format = '.fits'; % assume .fits
+                else
+                    obj.format = ext;
+                end                
             else
-               split_obj_name = strsplit(img_name,'.');                
-               if length(split_obj_name) == 1                   
-                   obj.img_name = split_obj_name{1};
-                   obj.format = 'fits'; % Assume fits
-               else                   
-                   obj.img_name = strjoin(split_obj_name(1:end-1),'.');
-                   obj.format = split_obj_name{end}; % file extension
-               end
-            end
-            obj.filedir = fullfile(data_fold,exp_date,reporter,dish,...
-                                    condition);            
-            obj.filepath = fullfile(obj.filedir,[obj.img_name,'.', obj.format]); 
+               obj.format = in.format; 
+            end                        
+            % Build full path to file
+            obj.filepath = fullfile(obj.filedir,[obj.img_name,obj.format]); 
             if exist(obj.filepath,'file')
                 d = dir(obj.filepath);             
                 [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
@@ -60,13 +96,13 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             if nargin < 2
                print_status = 1; 
             end
-            if strcmp(obj.format,'fits')
+            if strcmp(obj.format,'.fits')
                 obj.vals = fitsread(obj.filepath); 
 %                 if ispc
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 
 %                 end
-            elseif strcmp(obj.format,'tiff')
+            elseif strcmp(obj.format,'.tiff')
                 obj.vals = imread(obj.filepath,obj.format); 
             else
                error('Other file formats not implemented yet');  

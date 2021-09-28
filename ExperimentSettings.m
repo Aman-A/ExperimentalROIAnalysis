@@ -35,8 +35,8 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
             end
             % add window indices
             if length(obj.stim_vals) > 1 
-                obj.stim_wind_inds = zeros(length(obj.stim_vals),obj.stim_wind); 
-                obj.baseline_wind_inds = zeros(length(obj.baseline_wind_inds),obj.baseline_wind); 
+                obj.stim_wind_inds = zeros(length(obj.stim_vals),obj.stim_wind+1); 
+                obj.baseline_wind_inds = zeros(length(obj.baseline_wind_inds),obj.baseline_wind+1); 
                 for i = 1:length(obj.stim_vals)
                     obj.stim_wind_inds(i,:) = (obj.stim_vals(i)+1):(obj.stim_vals(i) + obj.stim_wind + 1);
                     obj.baseline_wind_inds(i,:) = ...
@@ -48,13 +48,19 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                     (obj.stim_vals - obj.baseline_wind - 1):(obj.stim_vals - 1); 
             end
         end
-        function convert2Time(obj)
-            if strcmp(obj.units,'frames')
-               obj.stim_vals = obj.stim_vals/obj.sampling_rate; 
-               obj.stim_wind = obj.stim_wind/obj.sampling_rate; 
-               obj.baseline_wind = obj.baseline_wind/obj.sampling_rate;                
-               obj.units = 'sec';
-            end            
+        function varargout = convert2Time(obj,frames_val)
+            % Converts contents of object to time units (sec) or converts 
+            % given vector of frames to times if input as second argument
+            if nargin == 1
+                if strcmp(obj.units,'frames')
+                   obj.stim_vals = obj.stim_vals/obj.sampling_rate; 
+                   obj.stim_wind = obj.stim_wind/obj.sampling_rate; 
+                   obj.baseline_wind = obj.baseline_wind/obj.sampling_rate;                
+                   obj.units = 'sec';                   
+                end           
+            elseif nargin == 2
+                varargout = {frames_val/obj.sampling_rate}; 
+            end
         end
     end
     

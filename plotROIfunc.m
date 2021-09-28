@@ -37,7 +37,10 @@ if strcmp(func_output.roi_mode,'combine')
                          func_output.img_name,func_output.baseline);
 else
     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
-                            func_output.rois.names,'UniformOutput',0)';
+                            func_output.rois.names,'UniformOutput',0);
+    if isrow(display_names)
+       display_names = display_names'; % make column vector for setting DisplayName below
+    end
     title_str = sprintf('%s: Baseline = %.1f ± %.1f a.u.',...
                         func_output.img_name,mean(func_output.baseline),...
                         std(func_output.baseline,0));

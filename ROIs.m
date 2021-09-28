@@ -1,0 +1,289 @@
+classdef ROIs < handle % Set of circular ROIs
+    properties
+        % circle ROI properties
+         x0 % original center x's
+         y0 % original center y's
+         x  % current center x's
+         y  % current center y's
+         radius % radius in pixels        
+        % Rectangular ROI properties
+         r0 % original edge positions [min row, max row, min column, max column]        
+         r  % current edge positions [min row, max row, min column, max column]
+        names % names from ImageJ
+        num_rois % number of rois
+        types % Cell array of ROItypes, e.g. 'Oval'/'Circle' or 'Rectangle'
+        roi_set_filename char {mustBeTextScalar} % file name
+        roi_set_filedir char {mustBeTextScalar} % directory
+        roi_set_filepath char {mustBeTextScalar} % full path
+        loaded = false 
+        y_inverted = false; 
+    end
+    methods
+        function obj = ROIs(file_or_roi_array,varargin)            
+            % Inputs:
+            %   file_or_roi_array : matrix/cell array or string
+            %                       Input list of ROIs in cell array,
+            %                       syntax defined below, or filename of
+            %                       ImageJ ROIs saved as zip file to be
+            %                       loaded
+            % Optional inputs:
+            in.roi_set_filedir = pwd; % directory from which to load ImageJ roi file
+            in.print_status = 1; 
+            in.names = {}; 
+            in = sl.in.processVarargin(in,varargin);
+            if ischar(file_or_roi_array)
+               roi_set_filename = file_or_roi_array; 
+               load_roi = true;
+            else
+               obj.roi_set_filename = 'none';
+               load_roi = false;
+            end
+            obj.roi_set_filedir = in.roi_set_filedir;
+            
+            if load_roi
+                split_roi_set_filename = strsplit(roi_set_filename,'.'); 
+                if length(split_roi_set_filename) == 1
+                    obj.roi_set_filename = [roi_set_filename '.zip']; % add file extension (assume zip) 
+                else
+                    obj.roi_set_filename = roi_set_filename; 
+                end                
+                obj.roi_set_filepath = fullfile(obj.roi_set_filedir,obj.roi_set_filename);
+                ROIarray = ReadImageJROI(obj.roi_set_filepath); % load .zip ROI set
+                obj.num_rois = length(ROIarray);         
+                obj.loaded = true;
+                if in.print_status > 0
+                    fprintf('Loaded %g ROIs from %s\n',obj.num_rois,obj.roi_set_filepath); 
+                end
+                % Process ROIs into easier to work with format
+                obj.processROIs(ROIarray);                     
+            else
+                if iscell(file_or_roi_array) % cell array of ROIs defined with row vectors
+                    % allows for ROI array with mixed shapes
+                    error('Cell array input not implemented yet'); 
+%                     obj.num_rois = length(file_or_roi_array);  
+%                     if isempty(in.names)
+%                        obj.names = arrayfun(@(x) sprintf('ROI%g',x),0:obj.num_rois-1,...
+%                                             'UniformOutput',0)';
+%                     end
+%                     obj.types = cell(obj.num_rois,1);
+%                     for i = 1:obj.num_rois
+%                         if length(file_or_roi_array{i}) == 3 % Circle
+%                             % format: [center x, center y, radius]
+%                             obj.x0 = file_or_roi_array{i}(1);
+%                             obj.x = obj.x0;
+%                             obj.y0 = file_or_roi_array{i}(1);
+%                             obj.y = obj.y0;
+%                             obj.radius = file_or_roi_array{i}(3);  
+%                             obj.types{i} = 'Circle';
+%                         elseif length(file_or_roi_array{i}) == 4 % Rectangle
+%                             % format: [min row, max row, min column, max column]
+%                             obj.r0 = file_or_roi_array{i};
+%                             obj.r = obj.r0;
+%                             obj.types{i} = 'Rectangle';
+%                         end
+%                     end
+                else % ROIs of single type defined with array
+                    obj.num_rois = size(file_or_roi_array,1);  
+                    if isempty(in.names)
+                       obj.names = arrayfun(@(x) sprintf('ROI%g',x),0:obj.num_rois-1,...
+                                            'UniformOutput',0)';
+                    end
+                    if size(file_or_roi_array,2) == 3 % Circle
+                        % format: [center x, center y, radius]
+                        obj.x0 = file_or_roi_array(:,1);
+                        obj.x = obj.x0;
+                        obj.y0 = file_or_roi_array(:,2);
+                        obj.y = obj.y0;
+                        obj.radius = file_or_roi_array(:,3);                        
+                        obj.types = repmat({'Circle'},obj.num_rois,1);
+                    elseif size(file_or_roi_array,2) == 4 % Rectangle
+                        % format: [min row, max row, min column, max column]
+                        obj.r0 = file_or_roi_array;
+                        obj.r = obj.r0;
+                        obj.types = repmat({'Rectangle'},obj.num_rois,1);
+                    end
+                end
+                obj.loaded = false;
+            end 
+        end
+        function processROIs(obj,ROIarray)
+            % Process ImageJ ROI array output by ReadImageJROI.m function
+            % to easier to work with format 
+            roi_types = cellfun(@(x) x.strType,ROIarray,'UniformOutput',0);         
+            obj.types = roi_types;
+            if all(strcmp(roi_types,roi_types{1})) % All ROIs have same shape
+                % format of vnRectBounds ['nTop', 'nLeft', 'nBottom', 'nRight']                
+                if strcmp(roi_types{1},'Oval') % assume circle
+                    obj.radius = cellfun(@(x) (x.vnRectBounds(4) - x.vnRectBounds(2))/2,...
+                                        ROIarray,'UniformOutput',1)';
+                    obj.x0 = cellfun(@(x,r) floor(x.vnRectBounds(2) + r + 1),...
+                                        ROIarray,num2cell(obj.radius)','UniformOutput',1)'; % get middle pixel row and column
+                    obj.y0 = cellfun(@(x,r) floor(x.vnRectBounds(3) - r + 1),...
+                                        ROIarray,num2cell(obj.radius)','UniformOutput',1)'; % imagej is 0 indexed, add 1                                        
+                    obj.x = obj.x0; % current is same as original initially
+                    obj.y = obj.y0; % current is same as original initially
+                    obj.names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';                    
+                elseif strcmp(roi_types{1},'Rectangle')
+                    % TODO: finish
+                else
+                    error('Other shapes not implemented');
+                end
+            else % ROIs have different shapes, process individually
+                error('Non-uniform shape ROIarray not implemented')
+            end
+        end
+        function shift_dists = recenterROIs(obj,vals,print_status)
+            %   Inputs 
+            %   ------ 
+            %   obj : instance of ROIs class
+            %   img : M x N image matrix
+            %         Image to use to recenter ROIs
+            %   print_status : integer
+            %                   set to 0 for no output, 1 to print
+            %                   distances shifted for all ROIs
+            if nargin < 3
+               print_status = 0;  
+            end                        
+            x_new = zeros(obj.num_rois,1); y_new = zeros(obj.num_rois,1);
+            for i = 1:obj.num_rois                
+                mask = getMask(obj,size(vals,[1 2]),i); % single mask for all ROIs
+                mask_inds = find(mask==1);
+                [~,max_ind] = max(vals(mask_inds));
+                max_ind = mask_inds(max_ind);
+                [y_new(i),x_new(i)] = ind2sub(size(mask),max_ind);
+            end            
+            shift_dists = sqrt((x_new-obj.x).^2 + (y_new-obj.y).^2);
+            if print_status > 0
+                fprintf('ROI shift distances:\n');
+                for i = 1:obj.num_rois
+                    fprintf('%s: %g pixels\n',obj.names{i},...
+                        shift_dists(i));
+                end
+            end
+            obj.x = x_new;
+            obj.y = y_new;
+        end
+        function shift_dists = recenterROIsLoop(obj,vals,mean_shift_threshold,print_status)
+           if nargin < 4
+              print_status = 0; 
+           end
+            if nargin < 3
+              mean_shift_threshold = 0; % keep recentering until mean shift is <= this value
+           end
+           shift_dists = mean_shift_threshold*ones(obj.num_rois,1)+1;            
+           num_shifts = 0;
+           while mean(shift_dists) > mean_shift_threshold
+              shift_dists = obj.recenterROIs(vals,print_status-1); 
+              num_shifts = num_shifts + 1; 
+           end
+           if print_status > 0
+               fprintf('After %g shifts, final mean shift = %.2g pixels\n',num_shifts,mean(shift_dists));
+           end
+        end
+        function [mask,mask_rows,mask_cols] = getMask(obj,imsize,roi_inds)
+            %GETMASK Outputs composite mask for all input  ROIs
+            %
+            %   Inputs
+            %   ------
+            %   Optional Inputs
+            %   ---------------
+            %   Outputs
+            %   -------
+            %   Examples
+            %   ---------------
+            
+            % AUTHOR    : Aman Aberra
+            % Get masks
+            % ImageJ includes pixels in which *center* of pixel falls within ROI
+            % Ex: for 5 x 5 circle (radius = 2.5), area should = 21 (4
+            % corners from square circumscribing circle are excluded)
+            if nargin < 3
+               roi_inds = 1:obj.num_rois; 
+            end
+            if all(strcmp(obj.types,'Circle')) || all(strcmp(obj.types,'Oval'))
+                xi = obj.x(roi_inds); yi = obj.y(roi_inds); radiusi = obj.radius(roi_inds);
+                [X,Y] = meshgrid(1:imsize(2)+0.5,1:imsize(1)+0.5); % shift to middle of pixels, change to 1 index
+                xyr = permute([xi,yi,radiusi],[3,2,1]); % transpose to put different ROIs in 3rd dimension
+                mask_log = any(hypot(X - xyr(1, 1, :), Y - xyr(1, 2, :)) <= xyr(1, 3, :), 3);
+                mask = nan(imsize); 
+                mask(mask_log) = 1; 
+            elseif all(strcmp(obj.types,'Rectangle'))
+                % format: r = [min row, max row, min column, max column]        
+                mask = nan(imsize);
+                if iscell(obj.r)
+                    tic
+                    for i = 1:length(roi_inds)
+%                        min_rowi = obj.r{i}(1); max_rowi = obj.r{i}(2);
+%                        min_coli = obj.r{i}(3); max_coli = obj.r{i}(4); 
+                       min_rowi = obj.r(roi_inds(i),1); max_rowi = obj.r(roi_inds(i),2);
+                       min_coli = obj.r(roi_inds(i),3); max_coli = obj.r(roi_inds(i),4); 
+                       mask(min_rowi:max_rowi,min_coli:max_coli) = 1; % include pixels within ith roi 
+                    end
+                    toc
+                else
+                    for i = 1:length(roi_inds)
+                       min_rowi = obj.r(roi_inds(i),1); max_rowi = obj.r(roi_inds(i),2);
+                       min_coli = obj.r(roi_inds(i),3); max_coli = obj.r(roi_inds(i),4); 
+                       mask(min_rowi:max_rowi,min_coli:max_coli) = 1; % include pixels within ith roi 
+                    end
+                    % slower method?
+%                     ri = permute(obj.r(roi_inds,:),[3,2,1]); % transpose to put different ROIs in 3rd dimension
+%                     [X,Y] = meshgrid(1:imsize(2)+0.5,1:imsize(1)+0.5); % shift to middle of pixels, change to 1 index                    
+%                     mask = any(X >= ri(1,3,:) & X <= ri(1,4,:) & ...
+%                                Y >= ri(1,1,:) & Y <= ri(1,2,:), 3);                
+%                                       
+                end                    
+            else
+                error('getMask not implemented yet for non-uniform ROI arrays'); 
+            end            
+            mask_inds = find(mask==1);
+            [mask_rows,mask_cols] = ind2sub(size(mask),mask_inds);
+        end
+        
+        function plot(obj,col,ax,plot_current,num_pts) % plot current ROIs to axis ax 
+                                          % with num_pts points in each
+                                          % curve
+            if nargin < 5
+                num_pts = 30;
+            end
+            if nargin < 4
+               plot_current = 1; % 1 for current, 0 for starting ROI positions
+            end
+            if nargin < 3                
+                figure;
+                ax = gca; % make new axis
+            end
+            if nargin < 2
+                col = 'y';
+            end
+            theta = linspace(0,2*pi,num_pts);
+            hold on; % add to ax
+            for i = 1:obj.num_rois
+                if strcmp(obj.types{i},'Oval') || strcmp(obj.types{i},'Circle')
+                    if plot_current
+                        xi = obj.x(i); yi = obj.y(i);
+                    else
+                        xi = obj.x0(i); yi = obj.y0(i);
+                    end
+                    x_ptsi = obj.radius(i)*cos(theta) + xi;
+                    y_ptsi = obj.radius(i)*sin(theta) + yi;
+                elseif strcmp(obj.types{i},'Rectangle')
+                    if plot_current
+                        ri = obj.r(i,:);                        
+                    else
+                        ri = obj.r0(i,:); 
+                    end
+                    x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
+                    y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
+                end
+                plot(ax,x_ptsi,y_ptsi,'-','Color',col)
+            end
+        end
+        function invert_y(obj,imsize)
+            obj.y0 = imsize(1) - obj.y0;
+            obj.y = imsize(1) - obj.y;
+            fprintf('Flipping y coordinate of imported ROIs, check!!\n');
+            obj.y_inverted = true;
+        end
+    end
+end

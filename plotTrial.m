@@ -1,5 +1,5 @@
 function output_data = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
-                                 img_name,exp_settings,roi_set_filename,trace_axis,...
+                                 img_name,exp_settings,rois_or_roi_set_filename,trace_axis,...
                                  varargin)
 % Plot single trial difference image and response over time in ROIs
 
@@ -14,6 +14,7 @@ in.save_processed_data = 1;
 in.load_processed_data = 0; 
 in.y_lim = [-0.2 1.2];
 in.x_lim = []; 
+in.recenterROIs = true; 
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
@@ -21,10 +22,15 @@ in = sl.in.processVarargin(in,varargin);
 %% Load trial data
 % Hold off on loading image in case processed data exists and
 % load_processed_data == 1
-img = Recording(img_name,position,condition,dish,reporter,exp_date,data_fold); 
+img = Recording(img_name,'position',position,'condition',condition,'dish',dish,...
+                'reporter',reporter,'exp_date',exp_date,'data_fold',data_fold); 
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
-[~,roi_set_filename_no_ext] = fileparts(roi_set_filename);    
+if ischar(rois_or_roi_set_filename)
+    [~,roi_set_filename_no_ext] = fileparts(rois_or_roi_set_filename);    
+else
+    roi_set_filename_no_ext = 'custom';
+end
 save_data_filename = fullfile(img.filedir,sprintf('%s-%s-%s-data.mat',...
                                                   img_name_no_ext,in.roi_func_mode,...
                                                   roi_set_filename_no_ext));
@@ -51,9 +57,20 @@ else
                                                         'filt_width',...
                                                         in.filt_width);                          
     %% Load saved ROIs
-    rois = circROIs(roi_set_filename,[img.filedir filesep '..']); % assume directory above data for this condition
+    rois = ROIs(rois_or_roi_set_filename,'roi_set_filedir',...
+                [img.filedir filesep '..']); % assume directory above data for this condition
+    if ischar(rois_or_roi_set_filename)
+        if regexp(rois_or_roi_set_filename,'pc')
+            % TEMPORARY FIX: include 'pc' in file name to indicate ROIs created on
+            % Windows ImageJ, require y axis to be inverted when
+            % importing to MATLAB
+            rois.invert_y(img.imsize); 
+        end
+    end
     % Recenter using peak after stim
-    rois.recenterROIsLoop(diff_img,0,1); % recenter to peak value repeatedly until no further shift occurs
+    if in.recenterROIs
+        rois.recenterROIsLoop(diff_img,0,1); % recenter to peak value repeatedly until no further shift occurs
+    end
     if any(in.show_diff_image)
         % Overlay on diff image and save        
         addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,img.img_name);
@@ -82,7 +99,6 @@ end
 %% Plot data
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                 exp_settings.sampling_rate,trace_axis);          
-trace_axis.YLim = in.y_lim;     
 if ~isempty(in.x_lim)
    trace_axis.XLim = in.x_lim;     
 end

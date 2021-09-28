@@ -6,7 +6,7 @@ function output = calcROIfuncs(img,rois,funcs,baseline_wind_inds,...
 %   ------ 
 %   img : Recording object with vals property (M x N x time points stack of
 %         images)
-%   rois : circROIs object (todo: make generic ROI class)
+%   rois : ROIs object (todo: make generic ROI class)
 %           specifies position and size of all ROIs
 %   funcs : string or cell array
 %           single function (string) or list of functions (cell array) to
@@ -15,7 +15,7 @@ function output = calcROIfuncs(img,rois,funcs,baseline_wind_inds,...
 %               Specify frames to take baseline over, either start and end
 %               or all frames as a vector
 %   roi_mode : string
-%          'combined' or 'separate', specify whether to apply function
+%          'combine' or 'separate', specify whether to apply function
 %          across pixels of all ROIs, or only within ROI. 'combined' outputs
 %          single vector per function, 'separate' outputs array of vectors for each ROI
 %   Optional Inputs 
@@ -40,20 +40,16 @@ end
 switch roi_func_mode    
     case 'combine'
         output = struct; 
-        mask = rois.getMask(1:rois.num_rois,img.imsize(1:2)); % single mask for all ROIs        
-        mask_inds = find(mask);
-        [mask_rows,mask_cols] = ind2sub(size(mask),mask_inds);        
+        mask = rois.getMask(img.imsize(1:2),1:rois.num_rois); % single mask for all ROIs                         
         for i = 1:length(funcs) % add function output to struct in corresponding field
-            output = apply_func(output,1,funcs{i},img.vals,mask_rows,mask_cols,baseline_wind_inds); 
+            output = apply_func(output,1,funcs{i},img.vals,mask,baseline_wind_inds); 
         end
     case 'separate' % separate mask for each roi
         output = struct;                         
         for j = 1:rois.num_rois
             for i = 1:length(funcs)      
-                maskj = rois.getMask(j,img.imsize(1:2));
-                mask_indsj = find(maskj);
-                [mask_rowsj,mask_colsj] = ind2sub(size(maskj),mask_indsj);
-                output = apply_func(output,j,funcs{i},img.vals,mask_rowsj,mask_colsj,baseline_wind_inds); 
+                maskj = rois.getMask(img.imsize(1:2),j);                
+                output = apply_func(output,j,funcs{i},img.vals,maskj,baseline_wind_inds); 
             end
         end
     otherwise 
@@ -64,24 +60,24 @@ output.rois = rois;
 output.roi_mode = roi_func_mode; 
 output.funcs = funcs; 
 output.baseline_wind_inds = baseline_wind_inds; 
-function output_new = apply_func(output,ind,func,img,mask_rows,mask_cols,bsline_wind)    
+function output_new = apply_func(output,ind,func,img,mask,bsline_wind)    
     output_new = output; 
-    if strcmp(func,'mean') % spatial mean across all rois
-        output_new.mean(:,ind) = squeeze(mean(img(mask_rows,mask_cols,:),[1 2]));
-    elseif strcmp(func,'std')% spatial std across all rois
-        output_new.std(:,ind) = squeeze(std(img(mask_rows,mask_cols,:),0,[1 2]));
-    elseif strcmp(func,'baseline')
-        output_new.baseline(:,ind) = squeeze(mean(img(mask_rows,mask_cols,bsline_wind(1):bsline_wind(end)),'all'));
-    elseif strcmp(func,'deltaF_F0')
+    if strcmp(func,'mean') % spatial mean across all rois                             
+        output_new.mean(:,ind) = squeeze(mean(img.*mask,[1 2],'omitnan'));         
+    elseif strcmp(func,'std')% spatial std across all rois        
+        output_new.std(:,ind) = squeeze(std(img.*mask,0,[1 2],'omitnan')); 
+    elseif strcmp(func,'baseline') % Baseline value within ROI pixels across baseline time window
+        output_new.baseline(:,ind) = mean(img(:,:,bsline_wind(1,:) ).*mask,'all','omitnan');        
+    elseif strcmp(func,'deltaF_F0') % DeltaF/F0 of ROI pixels (averaged)
         if isfield(output,'mean')
             output_mean = output.mean(:,ind);
         else
-            output_mean = squeeze(mean(img(mask_rows,mask_cols,:),[1 2]));
+            output_mean = squeeze(mean(img.*mask,[1 2],'omitnan'));  
         end
         if isfield(output,'baseline')
             baseline = output.baseline(:,ind);
         else
-            baseline = squeeze(mean(img(mask_rows,mask_cols,bsline_wind(1):bsline_wind(end)),'all'));
+            baseline = mean(img(:,:,bsline_wind(1,:)).*mask,'all','omitnan');        
         end
         output_new.deltaF_F0(:,ind) = (output_mean - baseline)./baseline;
     end
