@@ -1,4 +1,4 @@
-function [tAP, mean_APs_all, deltaF_F0_all, peak_frames_all] = extractAPsFromTrain(means,...
+function [tAP, mean_APs_all, deltaF_F0_all, peak_frames_all, means, t] = extractAPsFromTrain(means,...
                                                                   baselines,...
                                                                   exp_settings,...
                                                                   varargin)
@@ -22,18 +22,44 @@ in.min_interAP_interval = 0.95; % min time between APs defined as proportion of 
 in.min_AP_width = 0.3e-3; % min AP width (sec)
 in.plot_roi_ind = 1; % specify ROIs to plot in 2nd subplot (averaged waveforms overlaid)
 in.font_size = 16; 
+in.filt_order = 3; % 3 order of high-pass filter, set to 0 to turn off
+in.filt_cutoff = 1/2; % 1/3 cutoff frequency of high-pass filter (Hz)
+in.remove_initial_timepoints = 0.05; % 0.05 remove this duration from beginning of trace (sec)
 in.print_level = 1;
 in = sl.in.processVarargin(in,varargin); 
-% Get frames vector and stimulus vector (frames when stimuli occurred)
+%% Get frames vector and stimulus vector (frames when stimuli occurred)
 exp_settings.convert2Frames(); % make sure units are in frames
 stim_frames = exp_settings.stim_vals;
 frames = (1:length(means));
-% t = (0:(length(means)-1))/exp_settings.sampling_rate;
+t = (0:(length(means)-1))/exp_settings.sampling_rate;
+%% Cut out transients in early frames (generally get sharp transient in voltage recordings)
+if in.remove_initial_timepoints > 0
+    means = means(t > in.remove_initial_timepoints);
+    frames = frames(t > in.remove_initial_timepoints);
+    t = t(t > in.remove_initial_timepoints); 
+    if in.print_level > 0
+        fprintf('Removed first %g frames (%.1f ms)\n',sum(t <= in.remove_initial_timepoints),...
+                                                      in.remove_initial_timepoints*1e3); 
+    end    
+end
+%% Apply high pass filter to remove exponential decay from bleaching 
+if in.filt_order > 0 && in.filt_cutoff > 0
+    [b,a] = butter(in.filt_order,in.filt_cutoff/(exp_settings.sampling_rate/2),'high');
+    means = filtfilt(b,a,means); 
+    if in.print_level > 0
+        fprintf('Applied %g order butterworth filter with fc = %.2f Hz\n',...
+                  in.filt_order,in.filt_cutoff);
+    end
+end
 % Get frames and data post first stimulus
-frames_post_stim = frames(frames>stim_frames(1)); 
-means_post_stim = means(frames>stim_frames(1),:);
+frames_post_stim = frames(frames>stim_frames(1)*0.98); % NOTE: 0.98 factor 
+                                                       % included due to (temporary) 
+                                                       % misalignment of stimulation 
+                                                       % with imaging 
+means_post_stim = means(frames>stim_frames(1)*0.98,:);
 % stim_times = stim_frames/exp_settings.sampling_rate; % WARNING: MAY BE INACCURATE
 % stim_times = (stim_delay:(1/stim_freq):t_frames(end));
+
 % Get size of window around each AP to extract in frames
 if strcmp(in.AP_window_units,'sec') % convert to frames
     numAPframes = ceil(in.AP_window*exp_settings.sampling_rate);
@@ -96,7 +122,7 @@ for i = 1:num_rois
     ax1.FontSize = in.font_size;
 %     ax1.XLim = [frames(1),frames(end)];
 %     xlabel(ax1,'Frames'); 
-    ax1.XLim = [0.9*1e3*stim_frames(1)/exp_settings.sampling_rate t(end)]; 
+%     ax1.XLim = [0.9*1e3*stim_frames(1)/exp_settings.sampling_rate t(end)]; 
     ax2 = subplot(2,1,2);
     plot(ax2,tAP,deltaF_F0_all{in.plot_roi_ind},'Color',light_cols{in.plot_roi_ind},'LineWidth',0.5,'Marker','.'); hold on;
     plot(ax2,tAP,mean(deltaF_F0_all{in.plot_roi_ind},2,'omitnan'),cols{in.plot_roi_ind},'LineWidth',2,'Marker','.'); 

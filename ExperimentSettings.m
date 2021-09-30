@@ -2,7 +2,9 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                   % experiment
     properties
         stim_vals {mustBeNumeric} % vector of stimulus times
-        stim_wind {mustBeNumeric} % time window to extract stimulus statistics, e.g. peak
+        stim_wind {mustBeNumeric} % time window to extract stimulus statistics, e.g. peak,
+                                  %  either 1 window or N windows (for N
+                                  %  windows after each stimulus)
         baseline_wind {mustBeNumeric} % time window to extract baseline, either
                                       % 1 window or N windows (for N stimuli)
         units char {mustBeTextScalar} % string, units of input stim_vals, 
