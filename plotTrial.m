@@ -12,9 +12,10 @@ in.plot_func = 'deltaF_F0'; % function to plot in ROI (plotROIfunc)
 in.roi_func_mode = 'combine';
 in.save_processed_data = 1;
 in.load_processed_data = 0; 
-in.y_lim = [-0.2 1.2];
+in.y_lim = [];
 in.x_lim = []; 
 in.recenterROIs = 'diff'; 
+in.roiset_filedir = []; % default set below (one directory above img directory)
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
@@ -59,8 +60,11 @@ else
                                                         'filt_width',...
                                                         in.filt_width);                          
     %% Load saved ROIs
+    if isempty(in.roiset_filedir)
+       in.roiset_filedir = [img.filedir filesep '..']; % default location
+    end
     rois = ROIs(rois_or_roi_set_filename,'roi_set_filedir',...
-                [img.filedir filesep '..']); % assume directory above data for this condition
+                in.roiset_filedir); % assume directory above data for this condition
     if ischar(rois_or_roi_set_filename)
         if regexp(rois_or_roi_set_filename,'pc')
             % TEMPORARY FIX: include 'pc' in file name to indicate ROIs created on
