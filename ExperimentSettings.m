@@ -18,22 +18,28 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
     end
     methods
         function obj = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,...
-                                sampling_rate)
+                                sampling_rate,varargin)
+            in.print_level = 0;                 
+            in = sl.in.processVarargin(in,varargin); 
             if nargin > 0
                 obj.stim_vals = stim_vals;
                 obj.stim_wind = stim_wind;
                 obj.baseline_wind = baseline_wind;
                 obj.units = units;
                 obj.sampling_rate = sampling_rate;                        
-            end
-            convert2Frames(obj);                         
+            end            
+            convert2Frames(obj,in.print_level);                         
         end
-        function convert2Frames(obj)
+        function convert2Frames(obj,varargin)
+            print_level = varargin{1}; 
             if strcmp(obj.units,'sec')
                obj.stim_vals = ceil(obj.stim_vals*obj.sampling_rate); % round up to next frame
                obj.stim_wind = ceil(obj.stim_wind*obj.sampling_rate); 
                obj.baseline_wind = ceil(obj.baseline_wind*obj.sampling_rate);                
                obj.units = 'frames';
+               if print_level > 0
+                   fprintf('Converted ExperimentSettings to frames\n');
+               end
             end
             % add window indices
             if length(obj.stim_vals) > 1 
@@ -48,7 +54,7 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                 obj.stim_wind_inds = (obj.stim_vals + 1):(obj.stim_vals + obj.stim_wind + 1);  
                 obj.baseline_wind_inds = ...
                     (obj.stim_vals - obj.baseline_wind - 1):(obj.stim_vals - 1); 
-            end
+            end            
         end
         function varargout = convert2Time(obj,frames_val)
             % Converts contents of object to time units (sec) or converts 

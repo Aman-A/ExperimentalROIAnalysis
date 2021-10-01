@@ -55,7 +55,7 @@ classdef ROIs < handle % Set of circular ROIs
                     fprintf('Loaded %g ROIs from %s\n',obj.num_rois,obj.roi_set_filepath); 
                 end
                 % Process ROIs into easier to work with format
-                obj.processROIs(ROIarray);                     
+                obj.processROIs(ROIarray);    
             else
                 if iscell(file_or_roi_array) % cell array of ROIs defined with row vectors
                     % allows for ROI array with mixed shapes

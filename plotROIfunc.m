@@ -1,4 +1,5 @@
-function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,ax)
+function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
+                     varargin)
 %PLOTROIFUNC ... 
 %  
 %   Inputs 
@@ -12,10 +13,15 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,ax)
 % Todo: add optional plot styles for stim time points (point, vertical bar,
 % etc.)
 
-% AUTHOR    : Aman Aberra 
-if nargin < 5 % create new figure, otherwise add to existing
+% AUTHOR    : Aman Aberra
+in.ax = []; 
+in.show_legend = 1;
+in = sl.in.processVarargin(in,varargin); 
+if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
     ax = gca;
+else
+    ax = in.ax; 
 end
 if nargin < 4
     x = 1:size(func_output.(func_name),1); % frames    
@@ -71,4 +77,6 @@ end
 box(ax,'off'); 
 title(ax,title_str,'Interpreter','none'); 
 % legend(ax.Children(~ind_stim_times)); 
-legend(ax,'Interpreter','none','Box','off');
+if in.show_legend
+    legend(ax,'Interpreter','none','Box','off');
+end

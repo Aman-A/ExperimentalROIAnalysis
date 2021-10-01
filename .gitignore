@@ -1,3 +1,5 @@
 *.asv
 summary_data
 *.txt
+examples
+!examples/example_analysis_script_single_trial.m

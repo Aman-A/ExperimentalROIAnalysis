@@ -1,5 +1,5 @@
 function output = calcROIfuncs(img,rois,funcs,baseline_wind_inds,...
-                               roi_func_mode)
+                               roi_func_mode,varargin)
 %CALCROIFUNCS ... 
 %  
 %   Inputs 
@@ -28,6 +28,8 @@ function output = calcROIfuncs(img,rois,funcs,baseline_wind_inds,...
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
+in.print_level = 0;
+in = sl.in.processVarargin(in,varargin); 
 if nargin < 4
    baseline_wind_inds = 1:100; 
 end
@@ -37,6 +39,7 @@ end
 if ischar(funcs)
     funcs = {funcs};
 end
+tic; 
 switch roi_func_mode    
     case 'combine'
         output = struct; 
@@ -45,6 +48,8 @@ switch roi_func_mode
         for i = 1:length(funcs) % add function output to struct in corresponding field            
             output = apply_func(output,1,funcs{i},img.vals,mask,baseline_wind_inds); 
         end
+        print_str = ['Computed funcs: ', strjoin(funcs,', '), ' on ', ...
+                      num2str(rois.num_rois), ' ROIs combined in %.2f sec\n'];                            
     case 'separate' % separate mask for each roi
         output = struct;     
         num_masks = rois.num_rois;
@@ -54,6 +59,8 @@ switch roi_func_mode
                 output = apply_func(output,j,funcs{i},img.vals,maskj,baseline_wind_inds); 
             end
         end
+        print_str = ['Computed funcs: ', strjoin(funcs,', '), ' on ', ...
+                      num2str(rois.num_rois), ' ROIs separately in %.2f sec\n']; 
     otherwise 
         error('roi_mode %s does not exist, use ''combine'' or ''separate''\n',roi_func_mode); 
 end
@@ -62,6 +69,10 @@ output.rois = rois;
 output.roi_mode = roi_func_mode; 
 output.funcs = funcs; 
 output.baseline_wind_inds = baseline_wind_inds; 
+time_elapsed = toc; 
+if in.print_level > 0
+    fprintf(print_str,time_elapsed);
+end
 function output_new = apply_func(output,ind,func,img,mask,bsline_wind)    
     output_new = output; 
     if strcmp(func,'mean') % spatial mean across all rois     
@@ -76,7 +87,7 @@ function output_new = apply_func(output,ind,func,img,mask,bsline_wind)
         output_new.std(:,ind) = squeeze(std(img.*mask,0,[1 2],'omitnan')); 
     elseif strcmp(func,'baseline') % Baseline value within ROI pixels across baseline time window
         if ind == 1
-            output_new.baseline = zeros(size(bsline_wind,1),num_masks); % rows are for each stimulus, columns for rois        
+            output_new.baseline = nan(size(bsline_wind,1),num_masks); % rows are for each stimulus, columns for rois        
         end
         for k = 1:size(bsline_wind,1)
             output_new.baseline(k,ind) = mean(img(:,:,bsline_wind(k,:) ).*mask,'all','omitnan');        
@@ -87,7 +98,9 @@ function output_new = apply_func(output,ind,func,img,mask,bsline_wind)
         else
             output_mean = squeeze(mean(img.*mask,[1 2],'omitnan'));  
         end
-        if isfield(output,'baseline') % use baseline of first stim for global deltaF/F0 peak
+        % use baseline of first stim for global deltaF/F0 peak, check 
+        % if value was calculated for this index (ind)
+        if isfield(output,'baseline') && ~isnan(output.baseline(1,ind)) 
             baseline = output.baseline(1,ind);
         else
             baseline = mean(img(:,:,bsline_wind(1,:)).*mask,'all','omitnan');    

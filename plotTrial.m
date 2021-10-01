@@ -112,7 +112,7 @@ else
 end
 %% Plot data
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
-                exp_settings.sampling_rate,trace_axis);          
+                exp_settings.sampling_rate,'ax',trace_axis);          
 if ~isempty(in.x_lim)
    trace_axis.XLim = in.x_lim;     
 end
