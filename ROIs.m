@@ -1,4 +1,4 @@
-classdef ROIs < handle % Set of circular ROIs
+classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
     properties
         % circle ROI properties
          x0 % original center x's
@@ -12,9 +12,9 @@ classdef ROIs < handle % Set of circular ROIs
         names % names from ImageJ
         num_rois % number of rois
         types % Cell array of ROItypes, e.g. 'Oval'/'Circle' or 'Rectangle'
-        roi_set_filename char {mustBeTextScalar} % file name
-        roi_set_filedir char {mustBeTextScalar} % directory
-        roi_set_filepath char {mustBeTextScalar} % full path
+        roi_set_filename char {mustBeTextScalar} % file name and extension
+        roi_set_filedir char {mustBeTextScalar} % directory file is in
+        roi_set_filepath char {mustBeTextScalar} % full path to file
         loaded = false 
         y_inverted = false; 
     end
@@ -27,7 +27,9 @@ classdef ROIs < handle % Set of circular ROIs
             %                       ImageJ ROIs saved as zip file to be
             %                       loaded
             % Optional inputs:
-            in.roi_set_filedir = pwd; % directory from which to load ImageJ roi file
+            in.roi_set_filedir = pwd; % directory from which to load ImageJ 
+                                      % roi file, if not included in 
+                                      % file_or_roi_array arg
             in.print_status = 1; 
             in.names = {}; 
             in = sl.in.processVarargin(in,varargin);
@@ -37,16 +39,16 @@ classdef ROIs < handle % Set of circular ROIs
             else
                obj.roi_set_filename = 'none';
                load_roi = false;
-            end
-            obj.roi_set_filedir = in.roi_set_filedir;
+            end            
             
             if load_roi
-                split_roi_set_filename = strsplit(roi_set_filename,'.'); 
-                if length(split_roi_set_filename) == 1
-                    obj.roi_set_filename = [roi_set_filename '.zip']; % add file extension (assume zip) 
+                [path_to_roiset,roi_set_name,ext] = fileparts(roi_set_filename);
+                if isempty(path_to_roiset)
+                    obj.roi_set_filedir = in.roi_set_filedir;
                 else
-                    obj.roi_set_filename = roi_set_filename; 
-                end                
+                    obj.roi_set_filedir = path_to_roiset;
+                end
+                obj.roi_set_filename = [roi_set_name ext];            
                 obj.roi_set_filepath = fullfile(obj.roi_set_filedir,obj.roi_set_filename);
                 ROIarray = ReadImageJROI(obj.roi_set_filepath); % load .zip ROI set
                 obj.num_rois = length(ROIarray);         
@@ -285,5 +287,12 @@ classdef ROIs < handle % Set of circular ROIs
             fprintf('Flipping y coordinate of imported ROIs, check!!\n');
             obj.y_inverted = true;
         end
-    end
+        function shift(obj,shift_vec)
+        % shift_vec : [shift_x shift_y] (in pixels) applied to all ROIs
+        % if 1x2, applies same shift to all ROIs, if num_rois x 2, can apply
+        % different shift to all ROIs
+            obj.x = obj.x + shift_vec(1); 
+            obj.y = obj.y + shift_vec(2); 
+        end
+    end    
 end
