@@ -31,7 +31,11 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
             convert2Frames(obj,in.print_level);                         
         end
         function convert2Frames(obj,varargin)
-            print_level = varargin{1}; 
+            if length(varargin) == 1 
+                print_level = varargin{1}; 
+            else
+               print_level = 1; 
+            end
             if strcmp(obj.units,'sec')
                obj.stim_vals = ceil(obj.stim_vals*obj.sampling_rate); % round up to next frame
                obj.stim_wind = ceil(obj.stim_wind*obj.sampling_rate); 
