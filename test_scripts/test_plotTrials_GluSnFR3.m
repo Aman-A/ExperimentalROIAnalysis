@@ -17,10 +17,14 @@ exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
 roi_set_filename = 'RoiSet2_pos10.zip'; 
 % Optional settings
 plot_settings = struct();
-plot_settings.show_diff_image = []; % can include [1,2,3]
+plot_settings.show_diff_image = [1,2,3]; % can include [1,2,3]
 plot_settings.filt_width = 0;
 plot_settings.funcs = {'mean','std','baseline','deltaF_F0'};
 plot_settings.roi_func_mode = 'combine';
+plot_settings.recenterROIs = 'peak';
+plot_settings.roiset_filedir = []; % Location of ROIset file, if left empty,
+                                   % default is to look one directory above 
+                                   % img directory
 plot_settings.save_processed_data = 0;
 plot_settings.load_processed_data = 1;
 plot_settings.save_fig = 0;

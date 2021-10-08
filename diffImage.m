@@ -44,7 +44,7 @@ in.formats = {'png'};
 in.resolutions = {'-r300'};
 in.save_fig = 0;
 in.fig_dir = './figs'; % default to current directory
-in.fig_settings = {'Units','normalized','Position',[1 0.1667 0.75 0.744],...
+in.fig_settings = {'Units','normalized','Position',[0 0.1667 0.75 0.744],...
                     'Color','k'};
 in.cb_settings = {'Color','w','FontSize',14};
 in.title_settings = {'Interpreter','none','Color','w'}; 

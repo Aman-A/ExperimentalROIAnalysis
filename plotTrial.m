@@ -60,7 +60,7 @@ in.save_processed_data = 1;
 in.load_processed_data = 0; 
 in.y_lim = [];
 in.x_lim = []; 
-in.recenterROIs = 'diff'; 
+in.recenterROIs = 'peak'; 
 in.roiset_filedir = []; % default set below (one directory above img directory)
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
@@ -139,7 +139,7 @@ else
                 recenter_img = mean_bsline_img;
             end
         elseif in.recenterROIs == 1
-            recenter_img = diff_img; % recenter on peak_stim_img by default if no mode specified
+            recenter_img = peak_stim_img; % recenter on this by default if no mode specified
         end
         rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     end

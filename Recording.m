@@ -5,6 +5,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         reporter char {mustBeTextScalar} % reporter name
         dish char {mustBeTextScalar} % dish name 
         DIV uint16 {mustBeNumeric} % days in vitro (DIV)
+        microscope char {mustBeTextScalar} % name of microscope used (e.g. 'Thor', 'Loki', etc.)
         condition char {mustBeTextScalar}
         position char {mustBeTextScalar} % name of position (TODO: make class, load from micromanager)
         img_name char {mustBeTextScalar} % file name

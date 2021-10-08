@@ -28,7 +28,7 @@ function output = calcROIfuncs(img,rois,funcs,baseline_wind_inds,...
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-in.print_level = 0;
+in.print_level = 1;
 in = sl.in.processVarargin(in,varargin); 
 if nargin < 4
    baseline_wind_inds = 1:100; 
