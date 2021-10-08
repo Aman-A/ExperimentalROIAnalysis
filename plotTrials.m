@@ -16,6 +16,7 @@ in.load_processed_data = 0;
 in.y_lim = [-0.2 1.2];
 in.x_lim = []; 
 in.recenterROIs = 'diff'; 
+in.roiset_filedir = []; % default set below (one directory above img directory)
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
 in.save_fig = 0; 
@@ -42,10 +43,15 @@ func_outputs = cell(1,num_trials);
 deltaF_F0 = cell(1,num_trials); 
 trial_times = NaT(1,num_trials); 
 bslines = zeros(1,num_trials); 
+% Format roi_set_filename
+if ~iscell(roi_set_filename)
+    roi_set_filename = repmat(roi_set_filename,1,num_trials);
+    % roi_set_filename should be cell array of length num_trials
+end
 for i = 1:num_trials
     img_namei = img_names{i}; 
     datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
-                   img_namei,exp_settings,roi_set_filename,...
+                   img_namei,exp_settings,roi_set_filename{i},...
                    trace_axis,in);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
