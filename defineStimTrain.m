@@ -18,6 +18,6 @@ function stim_times = defineStimTrain(delay,freq,dur)
 
 % AUTHOR    : Aman Aberra 
 stim_times = delay:(1/freq):(delay+dur);
-% if stim_times(end) == delay+dur
-%    stim_times(end) = []; % remove last stimulus if falls on final time step 
-% end
+if stim_times(end) == delay+dur
+   stim_times(end) = []; % remove last stimulus if falls on final time step 
+end

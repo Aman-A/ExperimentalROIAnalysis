@@ -1,9 +1,10 @@
 classdef Recording < matlab.mixin.Copyable % Stack of images from recording 
     properties        
-        data_fold char {mustBeTextScalar}
+        data_fold char {mustBeTextScalar} % top level folder where data folder is stored
         exp_date char {mustBeTextScalar} % YYYYMMDD format 
-        reporter char {mustBeTextScalar}
-        dish char {mustBeTextScalar}
+        reporter char {mustBeTextScalar} % reporter name
+        dish char {mustBeTextScalar} % dish name 
+        DIV uint16 {mustBeNumeric} % days in vitro (DIV)
         condition char {mustBeTextScalar}
         position char {mustBeTextScalar} % name of position (TODO: make class, load from micromanager)
         img_name char {mustBeTextScalar} % file name

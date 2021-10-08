@@ -49,7 +49,7 @@ for i = 1:num_trials
                    trace_axis,in);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
-    trial_times(i) = datai.Recording.time_start; 
+    trial_times(i) = datai.recording.time_start; 
     bslines(i) = datai.func_output.baseline;
 end
 deltaF_F0 = cell2mat(deltaF_F0); 

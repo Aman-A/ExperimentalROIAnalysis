@@ -34,7 +34,7 @@ frames = (1:length(means));
 t = (0:(length(means)-1))/exp_settings.sampling_rate;
 %% Cut out transients in early frames (generally get sharp transient in voltage recordings)
 if in.remove_initial_timepoints > 0
-    means = means(t > in.remove_initial_timepoints);
+    means = means(t > in.remove_initial_timepoints,:);
     frames = frames(t > in.remove_initial_timepoints);
     t = t(t > in.remove_initial_timepoints); 
     if in.print_level > 0
@@ -117,6 +117,8 @@ for i = 1:num_rois
     ax1 = subplot(2,1,1);
     plot(ax1,t,means(:,i),'Color',coli); hold on;
     plot(ax1,1e3*peak_frames_all{i}/exp_settings.sampling_rate,peak_vals_all{i},'o','Color',light_coli);
+    title(sprintf('Mean F - %g order high pass filter with %.1f Hz cutoff\n',...
+                  in.filt_order,in.filt_cutoff)); 
     ylabel(ax1,'Mean F (a.u.)');     
     box(ax1,'off');
     ax1.FontSize = in.font_size;
