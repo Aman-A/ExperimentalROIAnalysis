@@ -42,13 +42,22 @@ if exist(save_data_filename,'file') && in.load_processed_data
     % Load processed data (skips showing diff image, even if set in
     % show_diff_image)
     output_data = load(save_data_filename); 
+    if isfield(output_data,'Recording') 
+    % Temporary fix to make code backwards compatible with old processed data
+       output_data.recording = output_data.Recording;
+       output_data.settings = output_data.Settings; 
+       output_data.rois = output_data.ROIs;
+       output_data = rmfield(output_data,{'Recording','Settings','ROIs'});
+       save(save_data_filename,'-STRUCT','output_data'); 
+       fprintf('Replaced old field names Recording/Settings/ROIs with recording/settings/rois and resaved\n');       
+    end
     func_output = output_data.func_output;
     fprintf('Loaded processed data from %s\n',save_data_filename); 
     % Plot baseline, peak, diff images
     fig_hands = plotDiffImage(output_data.mean_bsline_img,output_data.peak_stim_img,...
                   output_data.diff_img,img.img_name,exp_settings,...
                   'include_plots',in.show_diff_image,'filt_width',in.filt_width);               
-    addROIoverlayAndSave(fig_hands,output_data.ROIs,in.save_fig,fig_dir,img.img_name,...
+    addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,img.img_name,...
                          in.close_img_after_save);
 else
     img.load();  % Load image data
@@ -100,9 +109,9 @@ else
                                in.roi_func_mode);
     %% Generate output data structure
     output_data = struct();
-    output_data.Recording = img.unload(); % save with data unloaded, reduce HD usage
-    output_data.Settings = exp_settings;    
-    output_data.ROIs = rois; 
+    output_data.recording = img.unload(); % save with data unloaded, reduce HD usage
+    output_data.settings = exp_settings;    
+    output_data.rois = rois; 
     output_data.mean_bsline_img = mean_bsline_img;
     output_data.peak_stim_img = peak_stim_img;
     output_data.diff_img = diff_img; 
