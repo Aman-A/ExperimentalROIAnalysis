@@ -45,7 +45,7 @@ trial_times = NaT(1,num_trials);
 bslines = zeros(1,num_trials); 
 % Format roi_set_filename
 if ~iscell(roi_set_filename)
-    roi_set_filename = repmat(roi_set_filename,1,num_trials);
+    roi_set_filename = repmat({roi_set_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
 end
 for i = 1:num_trials
@@ -67,7 +67,7 @@ fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
 fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
         exp_settings.baseline_wind,mean(bslines),std(bslines,0));
 if in.save_fig   
-   [~,roi_set_filename_no_ext] = fileparts(roi_set_filename);    
+   [~,roi_set_filename_no_ext] = fileparts(roi_set_filename{1});    
    fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
                     ['figs_',roi_set_filename_no_ext]);       
    fig_name = sprintf('%s_%s_%gtrials',condition,in.plot_func,num_trials);

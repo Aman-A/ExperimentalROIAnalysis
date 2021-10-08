@@ -1,9 +1,55 @@
 function output_data = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
                                  img_name,exp_settings,rois_or_roi_set_filename,trace_axis,...
                                  varargin)
-% Plot single trial difference image and response over time in ROIs
+% PLOTTRIAL Plot image and response vs. time data from single trial
+%  
+% Default file organization expected by plotTrial:
+% <data_fold>/<exp_date>/<reporter>/<dish>/<condition>/<img_name>
+%   Inputs 
+%   ------ 
+%   data_fold : string
+%               Path to top-level data folder, used to construct path and 
+%               saved with Recording data
+%   exp_date : string
+%              Date of experiment (typically YYYYMMDD, but not required),
+%              e.g., '20210927', used to construct path and saved with
+%              Recording data
+%   reporter : string
+%              Name of reporter, e.g., 'GluSnFR3', used to construct path
+%              and saved with Recording data
+%   dish : string
+%          Name of dish, e.g., 'dish1', used to construct path and saved
+%          with Recording data
+%   condition : string
+%               Name of experimental condition, e.g. 'control', used to 
+%               construct path and saved with Recording data
+%   position : string
+%              Name of stage position, e.g. 'Pos0' (NOTE: currently not 
+%              used by any code in ExperimentalROIAnalysis, but saved with
+%              Recording data)
+%   img_name : string
+%              Image stack file name. If file extension is not included,
+%              assumes format is .fits. Allows for .fits or .tiff. 
+%   exp_settings: ExperimentalSettings object
+%                 instance of ExperimentalSettings object containing
+%                 parameters for experimental recording, stimulation times, 
+%                 and desired baseline window
+%   rois_or_roi_set_filename: string or ROIs objct
+%                             Either the filename of a ROI set saved from
+%                             ImageJ, or an already created ROIs object
+%                             containing a set of ROI positions/sizes
+%   trace_axis : axis handle
+%                Axis to plot trace of desired function to, e.g., deltaF_F0.
+%                Can be specified using optional argument 'plot_func' below
+%   Optional Inputs 
+%   --------------- 
+%   Outputs 
+%   ------- 
+%   Examples 
+%   --------------- 
 
-in.show_diff_image = []; 
+in.show_diff_image = []; % for diffImage, specify which plots to include, can include 1, 2, 3 in
+                         %  any order (1 - Baseline, 2 - Peak, 3 - Difference)
 in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
                % ROI positions
 
@@ -48,7 +94,7 @@ if exist(save_data_filename,'file') && in.load_processed_data
     fig_hands = plotDiffImage(output_data.mean_bsline_img,output_data.peak_stim_img,...
                   output_data.diff_img,img.img_name,exp_settings,...
                   'include_plots',in.show_diff_image,'filt_width',in.filt_width);               
-    addROIoverlayAndSave(fig_hands,output_data.ROIs,in.save_fig,fig_dir,img.img_name,...
+    addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,img.img_name,...
                          in.close_img_after_save);
 else
     img.load();  % Load image data
