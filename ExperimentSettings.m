@@ -15,6 +15,8 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                        % (1 stimulus) or N x stim_wind matrix (N stimuli)
         baseline_wind_inds = [];% baseline windows as either single row vector 
                            % (1 stimulus) or N x stim_wind matrix (N stimuli)
+        baseline_start_frame = 1; % start baseline from 1 frame before 
+                                  % stimulus frames
     end
     methods
         function obj = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,...
@@ -62,6 +64,12 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
             end
         end
         function getWindInds(obj)
+            if obj.baseline_wind + obj.baseline_start_frame >= obj.stim_vals(1)
+               fprintf(['Warning baseline_wind of %g exceeds pre-stimulus ',...
+                       'recording time, setting to max possible %g frames\n'],...
+                       obj.baseline_wind,obj.stim_vals(1) - obj.baseline_start_frame); 
+               obj.baseline_wind = obj.stim_vals(1) - obj.baseline_start_frame ;                
+            end
             % add window indices
             if length(obj.stim_vals) > 1
                 obj.stim_wind_inds = zeros(length(obj.stim_vals),obj.stim_wind+1);
@@ -69,12 +77,12 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                 for i = 1:length(obj.stim_vals)
                     obj.stim_wind_inds(i,:) = (obj.stim_vals(i)+1):(obj.stim_vals(i) + obj.stim_wind + 1);
                     obj.baseline_wind_inds(i,:) = ...
-                        (obj.stim_vals(i) - obj.baseline_wind - 1):(obj.stim_vals(i) - 1);
+                     (obj.stim_vals(i) - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals(i) - obj.baseline_start_frame);
                 end
             else
                 obj.stim_wind_inds = (obj.stim_vals + 1):(obj.stim_vals + obj.stim_wind + 1);
                 obj.baseline_wind_inds = ...
-                    (obj.stim_vals - obj.baseline_wind - 1):(obj.stim_vals - 1);
+                 (obj.stim_vals - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals - obj.baseline_start_frame);
             end
         end
     end

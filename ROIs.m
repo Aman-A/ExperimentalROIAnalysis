@@ -48,6 +48,9 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 else
                     obj.roi_set_filedir = path_to_roiset;
                 end
+                if isempty(ext)
+                   ext = '.zip'; % assume zip format 
+                end
                 obj.roi_set_filename = [roi_set_name ext];            
                 obj.roi_set_filepath = fullfile(obj.roi_set_filedir,obj.roi_set_filename);
                 ROIarray = ReadImageJROI(obj.roi_set_filepath); % load .zip ROI set
@@ -242,9 +245,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             [mask_rows,mask_cols] = ind2sub(size(mask),mask_inds);
         end
         
-        function plot(obj,col,ax,plot_current,num_pts) % plot current ROIs to axis ax 
-                                          % with num_pts points in each
-                                          % curve
+        function plot(obj,col,ax,plot_current,num_pts) 
+            % plot current ROIs to axis ax with num_pts points in each curve
             if nargin < 5
                 num_pts = 30;
             end
@@ -259,7 +261,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 col = 'y';
             end
             theta = linspace(0,2*pi,num_pts);
-            hold on; % add to ax
+            hold(ax,'on'); % add to ax
             for i = 1:obj.num_rois
                 if strcmp(obj.types{i},'Oval') || strcmp(obj.types{i},'Circle')
                     if plot_current
@@ -282,6 +284,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             end
         end
         function invert_y(obj,imsize)
+        % Invert y coordinate of ROIs based on size of source image
+        % imsize : vector containing [height, width, time_points]
             obj.y0 = imsize(1) - obj.y0;
             obj.y = imsize(1) - obj.y;
             fprintf('Flipping y coordinate of imported ROIs, check!!\n');
@@ -293,6 +297,14 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         % different shift to all ROIs
             obj.x = obj.x + shift_vec(1); 
             obj.y = obj.y + shift_vec(2); 
+        end
+        function affine2d(obj,T)
+        % Apply forward affine transformation using 3x3 matrix T, convention 
+        % given in affine2d.m documentation: [x y 1] = [u v 1] * T, with
+        % T given by [a b 0; c d 0; e f 1]; 
+        r_new = [obj.x, obj.y, ones(obj.num_rois,1)] * T;
+        obj.x = r_new(:,1); 
+        obj.y = r_new(:,2); 
         end
     end    
 end

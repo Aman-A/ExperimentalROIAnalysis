@@ -37,10 +37,17 @@ else
 end
 
 hold(ax,'on'); 
-if strcmp(func_output.roi_mode,'combine')    
-    display_names = {func_output.img_name};
-    title_str = sprintf('%s: Baseline = %.1f a.u.',...
-                         func_output.img_name,func_output.baseline(1));
+if strcmp(func_output.roi_func_mode,'combine')    
+    if length(func_output.roi_inds) < func_output.rois.num_rois
+        roi_str = sprintf('%g/%g ROIs',length(func_output.roi_inds),...
+                          func_output.rois.num_rois); 
+    else
+        roi_str = sprintf('all %g ROIs',func_output.rois.num_rois);
+    end
+    display_names = {strcat(func_output.img_name,': ',roi_str)};
+    title_str = sprintf('%s: Baseline = %.1f a.u. (%s combined)',...
+                         func_output.img_name,func_output.baseline(1),...
+                         roi_str);
 else
     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
                             func_output.rois.names,'UniformOutput',0);

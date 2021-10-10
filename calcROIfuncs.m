@@ -14,16 +14,22 @@ function output = calcROIfuncs(img,rois,funcs,baseline_wind_inds,...
 %   bsline_wind : 1 x 2 integer vector or indices
 %               Specify frames to take baseline over, either start and end
 %               or all frames as a vector
-%   roi_mode : string
-%          'combine' or 'separate', specify whether to apply function
-%          across pixels of all ROIs, or only within ROI. 'combined' outputs
-%          single vector per function, 'separate' outputs array of vectors for each ROI
+%   roi_func_mode : string or vector of integers
+%                   'combine' or 'separate', specify whether to apply 
+%                   function across pixels of all ROIs, or only within ROI. 
+%                   'combine' outputs single vector per function, 
+%                   'separate' outputs array of vectors for each ROI. 
+%                   Or if input is vector, treats as 'combine' mode but
+%                   across ROI indices specified in vector, e.g. [1:5]
 %   Optional Inputs 
 %   --------------- 
+%   print_level : integer
+%                 Set to 0 to suppress print statements, 1 to turn on
 %   Outputs 
 %   ------- 
 %   output : struct
-%            includes fields for each func input in funcs and img_name
+%            includes fields with data output for each function (func) in 
+%            funcs and the img_name, roi_func_mode, and roi_inds
 %   Examples 
 %   --------------- 
 
@@ -39,17 +45,27 @@ end
 if ischar(funcs)
     funcs = {funcs};
 end
+if ~ischar(roi_func_mode) && isvector(roi_func_mode)
+    roi_inds = roi_func_mode;
+    roi_func_mode = 'combine'; % treat as combine mode below
+elseif ischar(roi_func_mode)
+    roi_inds = 1:rois.num_rois; % Use all rois for default combine and separate modes
+else
+    error(['roi_func_mode should be either string (''combine'' or ''separate'')',...
+           ' or vector of indices to apply function to']);
+end
 tic; 
 switch roi_func_mode    
     case 'combine'
         output = struct; 
-        mask = rois.getMask(img.imsize(1:2),1:rois.num_rois); % single mask for all ROIs           
+        mask = rois.getMask(img.imsize(1:2),roi_inds); % single mask for all (or subset of) ROIs           
         num_masks = 1;
         for i = 1:length(funcs) % add function output to struct in corresponding field            
             output = apply_func(output,1,funcs{i},img.vals,mask,baseline_wind_inds); 
         end
         print_str = ['Computed funcs: ', strjoin(funcs,', '), ' on ', ...
-                      num2str(rois.num_rois), ' ROIs combined in %.2f sec\n'];                            
+                      num2str(length(roi_inds)), ' of ',num2str(rois.num_rois),...
+                      ' ROIs combined in %.2f sec\n'];                            
     case 'separate' % separate mask for each roi
         output = struct;     
         num_masks = rois.num_rois;
@@ -66,7 +82,8 @@ switch roi_func_mode
 end
 output.img_name = img.img_name;
 output.rois = rois; 
-output.roi_mode = roi_func_mode; 
+output.roi_func_mode = roi_func_mode; 
+output.roi_inds = roi_inds; 
 output.funcs = funcs; 
 output.baseline_wind_inds = baseline_wind_inds; 
 time_elapsed = toc; 

@@ -1,5 +1,5 @@
 function [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
-                                                                        settings,...
+                                                                        exp_settings,...
                                                                         varargin)
 %DIFFIMAGE Plots mean baseline, peak during stim window, and difference
 %images
@@ -8,7 +8,7 @@ function [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
 %   ------ 
 %   img : Recording object with 'vals' field (N x M x num_time_points
 %               z stack of image matrices)
-%   settings : object, instance of Settings class 
+%   exp_settings : object, instance of Settings class 
 %              Imaging and stimulus settings, with fields:
 %       stim_vals : vector of integers or doubles
 %                frame/timepoints when stimulus was applied
@@ -35,7 +35,7 @@ function [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
 
 % AUTHOR    : Aman Aberra 
 if nargin < 2
-    settings = Settings(300,100,100,'frames',100);    
+    exp_settings = ExperimentSettings(300,100,100,'frames',100);    
 end
 in.cmap = 'inferno';
 in.include_plots = [3];
@@ -50,16 +50,21 @@ in.cb_settings = {'Color','w','FontSize',14};
 in.title_settings = {'Interpreter','none','Color','w'}; 
 in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
+
 in = sl.in.processVarargin(in,varargin);
 
-mean_bsline_img = mean(img.vals(:,:,settings.baseline_wind_inds(1,:)),3); % use first stimulus if applied as train
-peak_stim_img = max(img.vals(:,:,settings.stim_wind_inds(1,:)),[],3);
+mean_bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),3); % use first stimulus if applied as train
+peak_stim_img = max(img.vals(:,:,exp_settings.stim_wind_inds(1,:)),[],3);
 if in.filt_width > 0
     mean_bsline_img = imgaussfilt(mean_bsline_img,in.filt_width); %,'FilterSize',filt_wind);
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 diff_img = peak_stim_img-mean_bsline_img;
-fig_hands = plotDiffImage(mean_bsline_img,peak_stim_img,diff_img,img.img_name,...
-               settings,in);
+if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
+    fig_hands = plotDiffImage(mean_bsline_img,peak_stim_img,diff_img,img.img_name,...
+                   exp_settings,in);
+else
+    fig_hands = {}; 
+end
 end
