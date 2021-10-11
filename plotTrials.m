@@ -44,7 +44,10 @@ deltaF_F0 = cell(1,num_trials);
 trial_times = NaT(1,num_trials); 
 bslines = zeros(1,num_trials); 
 % Format roi_set_filename
-if ~iscell(roi_set_filename)
+if iscell(roi_set_filename) && length(roi_set_filename) == 1
+    roi_set_filename = roi_set_filename{1};
+end
+if ischar(roi_set_filename) 
     roi_set_filename = repmat({roi_set_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
 end
