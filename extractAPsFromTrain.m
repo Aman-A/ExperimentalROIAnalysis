@@ -40,14 +40,14 @@ frames = (1:length(means));
 t = (0:(length(means)-1))/exp_settings.sampling_rate;
 num_rois = size(means,2);
 %% Cut out transients in early frames (generally get sharp transient in voltage recordings)
-if in.remove_initial_timepoints > 0
+if in.remove_initial_timepoints > 0    
+    if in.print_level > 0
+        fprintf('Removing first %g frames (%.1f ms)\n',sum(t <= in.remove_initial_timepoints),...
+                                                      in.remove_initial_timepoints*1e3); 
+    end    
     means = means(t > in.remove_initial_timepoints,:);
     frames = frames(t > in.remove_initial_timepoints);
     t = t(t > in.remove_initial_timepoints); 
-    if in.print_level > 0
-        fprintf('Removed first %g frames (%.1f ms)\n',sum(t <= in.remove_initial_timepoints),...
-                                                      in.remove_initial_timepoints*1e3); 
-    end    
 end
 %% Apply high pass filter to remove exponential decay from bleaching 
 if in.filt_order > 0
