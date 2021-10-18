@@ -51,7 +51,7 @@ if any(in.plot_inds == 3)
 end
 % Baselines            
 if any(in.plot_inds == 4)
-    figure('Units',fig_units,'Position',fig_pos.*[1 1 1 2]); 
+    figure('Units',fig_units,'Position',fig_pos.*[1 1 1 1.7]); 
     subplot(2,1,1)
     plotSummaryStats(baselines_all,[],conditions,...
                     'Baseline','a.u.','save_fig',0,... % skip save until 2nd subplot
