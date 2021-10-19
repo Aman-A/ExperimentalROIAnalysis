@@ -170,14 +170,14 @@ else
     end
 end
 %% Plot data
-plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
-                exp_settings.sampling_rate,'ax',trace_axis);          
 if ~isempty(in.x_lim)
    trace_axis.XLim = in.x_lim;     
 end
 if ~isempty(in.y_lim)            
     trace_axis.YLim = in.y_lim;         
 end
+plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
+                exp_settings.sampling_rate,'ax',trace_axis);          
 fig = trace_axis.Parent;
 fig.Units = in.roi_func_fig_units;
 fig.Position(3:4) = in.roi_func_fig_size;

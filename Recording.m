@@ -53,7 +53,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 if isempty(obj.data_fold) 
                     % No path in file name and no data_fold given, 
                     % assume file is in current directory
-                    obj.filedir = '.';
+                    obj.filedir = pwd;
                 else
                     % Build directory path using experiment properties, 
                     % e.g. data_fold/exp_date/reporter/dish/condition
