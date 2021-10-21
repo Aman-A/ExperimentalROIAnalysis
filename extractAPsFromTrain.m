@@ -32,6 +32,9 @@ in.filt_cutoff = 0; % cutoff frequencies of filters [low high] (Hz) Default: [0.
 in.remove_initial_timepoints = 0.05; % 0.05 remove this duration from beginning of trace (sec)
 in.print_level = 1;
 in.method = 1; % 1 - find APs based on stim frames, 2 - find APs based on peaks
+in.save_fig = 0;
+in.fig_dir = pwd;
+in.fig_basename = 'extractAPs';
 in = sl.in.processVarargin(in,varargin); 
 %% Get frames vector and stimulus vector (frames when stimuli occurred)
 exp_settings.convert2Frames(); % make sure units are in frames
@@ -152,18 +155,19 @@ t = 1e3*(frames - 1)/exp_settings.sampling_rate;
 % Plot
 cols = {'k','r'};
 light_cols = {0.4*ones(1,3),0.4*[1 0 0]};
-figure; 
 for i = 1:num_rois
-    coli = cols{i}; 
-    light_coli = light_cols{i};
+    fig = figure; 
+    coli = cols{1}; 
+    light_coli = light_cols{1};
     ax1 = subplot(2,1,1);
     plot(ax1,t,means(:,i),'Color',coli); hold on;
-    plot(ax1,1e3*peak_frames_all{i}/exp_settings.sampling_rate,peak_vals_all{i},'o','Color',light_coli);
+    plot(ax1,1e3*peak_frames_all{i}/exp_settings.sampling_rate,...
+        peak_vals_all{i},'o','Color',light_coli);
     if in.filt_order > 0
         title(sprintf('Mean F - %g order high pass filter with %.1f Hz cutoff\n',...
                   in.filt_order,in.filt_cutoff)); 
     else
-        title('Mean F');  
+        title(sprintf('ROI %g: Mean F',i));  
     end
     ylabel(ax1,'Mean F (a.u.)');     
     box(ax1,'off');
@@ -172,8 +176,8 @@ for i = 1:num_rois
 %     xlabel(ax1,'Frames'); 
 %     ax1.XLim = [0.9*1e3*stim_frames(1)/exp_settings.sampling_rate t(end)]; 
     ax2 = subplot(2,1,2);
-    plot(ax2,tAP,deltaF_F0_all{in.plot_roi_ind},'Color',light_cols{in.plot_roi_ind},'LineWidth',0.5,'Marker','.'); hold on;
-    plot(ax2,tAP,mean(deltaF_F0_all{in.plot_roi_ind},2,'omitnan'),cols{in.plot_roi_ind},'LineWidth',2,'Marker','.'); 
+    plot(ax2,tAP,deltaF_F0_all{i},'Color',light_coli,'LineWidth',0.5,'Marker','.'); hold on;
+    plot(ax2,tAP,mean(deltaF_F0_all{i},2,'omitnan'),coli,'LineWidth',2,'Marker','.'); 
     if in.filt_order > 0
         ylabel(ax2,'\DeltaF');
     else
@@ -183,6 +187,11 @@ for i = 1:num_rois
     ax2.FontSize = in.font_size;
     ax2.XLim = [tAP(1), tAP(end)]; 
     xlabel(ax2,'Time (ms)'); 
-end
-plot(ax1,1e3*stim_frames/exp_settings.sampling_rate,ax1.YLim(2)*0.99*ones(1,length(stim_frames)),...
-    'r.','MarkerSize',8,'DisplayName','Stim times'); 
+    plot(ax1,1e3*stim_frames/exp_settings.sampling_rate,ax1.YLim(2)*0.99*ones(1,length(stim_frames)),...
+    'r.','MarkerSize',8,'DisplayName','Stim times');
+    if in.save_fig
+        fig_name = sprintf('%s_roi%g',in.fig_basename,i);
+        printFig(fig,in.fig_dir,fig_name,...
+            'formats',{'fig','png'},'resolutions',{'','-r300'})
+    end
+end 
