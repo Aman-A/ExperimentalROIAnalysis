@@ -12,6 +12,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         filedir char {mustBeTextScalar} % full path to directory containing file
         filepath char {mustBeTextScalar} % full path to file
         format char {mustBeTextScalar}    % image file format
+        pixel_size = 0.4; % size of individual pixel in µm (for scale bar) 
+                          % default for Andor iXon Ultra 897 (Thor)
         time_start
         loaded = false 
         imsize % [rows x columns x time points]
@@ -79,7 +81,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 if isempty(ext)                   
                    obj.format = '.fits'; % assume .fits
                 else
-                    obj.format = ext;
+                    obj.format = ext;                    
                 end                
             else
                obj.format = in.format; 
@@ -104,14 +106,21 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 
 %                 end
-            elseif strcmp(obj.format,'.tiff')
-                obj.vals = imread(obj.filepath,obj.format); 
+            elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')
+                tiff_info = imfinfo(obj.filepath);
+                obj.vals = zeros(tiff_info(1).Height,tiff_info(1).Width,length(tiff_info));
+                for i = 1:size(obj.vals,3)
+                    obj.vals(:,:,i) = imread(obj.filepath,'tiff',i);
+                end
             else
                error('Other file formats not implemented yet');  
             end
             obj.loaded = true; 
-            obj.imsize = size(obj.vals);             
-            if print_status > 0
+            obj.imsize = size(obj.vals);            
+            if length(obj.imsize) == 2
+               obj.imsize = [obj.imsize 1];  
+            end
+            if print_status > 0                
                 fprintf('Loaded %g x %g x %g image stack from %s\n',...
                          obj.imsize,obj.filepath); 
             end
