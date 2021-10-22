@@ -98,7 +98,7 @@ if in.method == 1 % NOTE: Requires precise alignment of stimulus times to image 
         for j = 1:length(stim_frames)
             post_stim_frame_ij = find(frames_post_stim==AP_start_frames_all{i}(j));
             post_stim_frames_ij = post_stim_frame_ij:(post_stim_frame_ij+AP_window(2));
-            [peak_ij,ind_ij] =  max(means_post_stim(post_stim_frames_ij));
+            [peak_ij,ind_ij] =  max(means_post_stim(post_stim_frames_ij,i));
             peak_vals_all{i}(j) = peak_ij;
             peak_frames_all{i}(j) = frames_post_stim(post_stim_frames_ij(ind_ij)); 
         end
