@@ -45,18 +45,25 @@ if strcmp(func_output.roi_func_mode,'combine')
         roi_str = sprintf('all %g ROIs',func_output.rois.num_rois);
     end
     display_names = {strcat(func_output.img_name,': ',roi_str)};
-    title_str = sprintf('%s: Baseline = %.1f a.u. (%s combined)',...
-                         func_output.img_name,func_output.baseline(1),...
-                         roi_str);
+    title_str = func_output.img_name;
+    if isfield(func_output,'baseline')
+       title_str = [title_str sprintf(': Baseline = %.1f a.u.',...
+                                        func_output.baseline(1))];
+    end
+    title_str = [title_str sprintf(' (%s combined)',roi_str)];
 else
     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
                             func_output.rois.names,'UniformOutput',0);
     if isrow(display_names)
        display_names = display_names'; % make column vector for setting DisplayName below
     end
-    title_str = sprintf('%s: Baseline = %.1f ± %.1f a.u.',...
-                        func_output.img_name,mean(func_output.baseline(1,:)),...
-                        std(func_output.baseline(1,:),0));
+    title_str = func_output.img_name; 
+    if isfield(func_output,'baseline')
+        title_str = [title_str sprintf(': Baseline = %.1f ± %.1f a.u.',...
+                                        mean(func_output.baseline(1,:)),...
+                                        std(func_output.baseline(1,:),0))];
+    end
+    title_str = [title_str sprintf(' %g ROIs',func_output.rois.num_rois)];     
 end
 lns = plot(ax,x,func_output.(func_name)); % plot trace/s
 set(lns,{'DisplayName'},display_names); % set legend names

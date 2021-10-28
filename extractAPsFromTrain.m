@@ -35,6 +35,7 @@ in.method = 1; % 1 - find APs based on stim frames, 2 - find APs based on peaks
 in.save_fig = 0;
 in.fig_dir = pwd;
 in.fig_basename = 'extractAPs';
+in.y_lim2 = []; 
 in = sl.in.processVarargin(in,varargin); 
 %% Get frames vector and stimulus vector (frames when stimuli occurred)
 exp_settings.convert2Frames(); % make sure units are in frames
@@ -193,5 +194,8 @@ for i = 1:num_rois
         fig_name = sprintf('%s_roi%g',in.fig_basename,i);
         printFig(fig,in.fig_dir,fig_name,...
             'formats',{'fig','png'},'resolutions',{'','-r300'})
+    end
+    if ~isempty(in.y_lim2)
+       ax2.YLim = in.y_lim2;  
     end
 end 

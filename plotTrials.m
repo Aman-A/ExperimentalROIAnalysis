@@ -47,10 +47,11 @@ bslines = zeros(1,num_trials);
 if iscell(roi_set_filename) && length(roi_set_filename) == 1
     roi_set_filename = roi_set_filename{1};
 end
-if ischar(roi_set_filename) 
+if ischar(roi_set_filename) || ~iscell(roi_set_filename)
     roi_set_filename = repmat({roi_set_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
 end
+
 for i = 1:num_trials
     img_namei = img_names{i}; 
     datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
