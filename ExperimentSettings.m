@@ -73,7 +73,7 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
             % add window indices
             if length(obj.stim_vals) > 1
                 obj.stim_wind_inds = zeros(length(obj.stim_vals),obj.stim_wind);
-                obj.baseline_wind_inds = zeros(length(obj.baseline_wind_inds),obj.baseline_wind);
+                obj.baseline_wind_inds = zeros(length(obj.stim_vals),obj.baseline_wind);
                 for i = 1:length(obj.stim_vals)
                     obj.stim_wind_inds(i,:) = (obj.stim_vals(i)+1):(obj.stim_vals(i) + obj.stim_wind);
                     obj.baseline_wind_inds(i,:) = ...

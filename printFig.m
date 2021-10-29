@@ -47,7 +47,7 @@ for i = 1:num_files
         end
     end
 end
-print_str = [sprintf('Saved %s to %s in formats: ',file_name,file_dir),...
+print_str = [sprintf('Saved %s to %s in formats: ',file_name,strrep(file_dir,'\','/')),...
               sprintf('%s ',in.formats{:}),'\n'];
 if in.print_level > 0
     fprintf(print_str)

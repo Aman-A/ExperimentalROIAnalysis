@@ -45,7 +45,7 @@ std_vals = cellfun(@std,data_array,'UniformOutput',1);
 %     lme5 = fitlme(data_table,'response ~ 1 + condition + (condition | trial)');
 %     
 % end
-data_mat = nan(length(data_array),max(cellfun(@length,data_array,'UniformOutput',1))); 
+data_mat = nan(max(cellfun(@length,data_array,'UniformOutput',1)),length(data_array)); 
 for i = 1:length(data_array)
    data_mat(1:length(data_array{i}),i) = data_array{i}; 
 end

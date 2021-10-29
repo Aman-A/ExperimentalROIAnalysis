@@ -90,7 +90,7 @@ time_elapsed = toc;
 if in.print_level > 0
     fprintf(print_str,time_elapsed);
 end
-function output_new = apply_func(output,ind,func,img,mask,bsline_wind)    
+function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)    
     output_new = output; 
     if strcmp(func,'mean') % spatial mean across all rois     
         if ind == 1
@@ -104,10 +104,10 @@ function output_new = apply_func(output,ind,func,img,mask,bsline_wind)
         output_new.std(:,ind) = squeeze(std(img.*mask,0,[1 2],'omitnan')); 
     elseif strcmp(func,'baseline') % Baseline value within ROI pixels across baseline time window
         if ind == 1
-            output_new.baseline = nan(size(bsline_wind,1),num_masks); % rows are for each stimulus, columns for rois        
+            output_new.baseline = nan(size(baseline_wind_inds,1),num_masks); % rows are for each stimulus, columns for rois        
         end
-        for k = 1:size(bsline_wind,1)
-            output_new.baseline(k,ind) = mean(img(:,:,bsline_wind(k,:) ).*mask,'all','omitnan');        
+        for k = 1:size(baseline_wind_inds,1)
+            output_new.baseline(k,ind) = mean(img(:,:,baseline_wind_inds(k,:) ).*mask,'all','omitnan');        
         end
     elseif strcmp(func,'deltaF_F0') % DeltaF/F0 of ROI pixels (averaged)
         if isfield(output,'mean')
@@ -120,7 +120,7 @@ function output_new = apply_func(output,ind,func,img,mask,bsline_wind)
         if isfield(output,'baseline') && ~isnan(output.baseline(1,ind)) 
             baseline = output.baseline(1,ind);
         else
-            baseline = mean(img(:,:,bsline_wind(1,:)).*mask,'all','omitnan');    
+            baseline = mean(img(:,:,baseline_wind_inds(1,:)).*mask,'all','omitnan');    
         end
         if ind == 1
             output_new.deltaF_F0 = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
