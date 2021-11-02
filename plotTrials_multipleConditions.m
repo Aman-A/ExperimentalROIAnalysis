@@ -51,8 +51,14 @@ end
 % overall
 output.rel_times_cond_starts = cellfun(@(x) minutes(x(1)-output.trial_times_all{1}(1)),output.trial_times_all,'UniformOutput',0);
 if in.save_summary_data
-    summary_data_file = sprintf('%s_%s_%s_%s.mat',exp_date,reporter,dish,...
-                                                  roi_set_filenames{1});
+    if strcmp(plot_settings.transform_type,'displace')
+        [~,reg_rec_name,~] = fileparts(plot_settings.registration_rec); 
+        summary_data_file = sprintf('%s_%s_%s_%s_%s_displace.mat',exp_date,...
+                                    reporter,dish,roi_set_filenames{1},reg_rec_name);
+    else
+        summary_data_file = sprintf('%s_%s_%s_%s.mat',exp_date,reporter,dish,...
+                                                      roi_set_filenames{1});
+    end
     summary_data_filepath = fullfile(data_fold,exp_date,reporter,dish,summary_data_file);
     save(summary_data_filepath,'output','exp_date','reporter','dish','conditions',...
                            'positions','img_names','exp_settings',...

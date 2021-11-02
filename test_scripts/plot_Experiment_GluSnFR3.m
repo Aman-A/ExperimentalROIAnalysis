@@ -25,6 +25,8 @@ plot_settings.save_processed_data = 1;
 plot_settings.load_processed_data = 0;
 plot_settings.save_fig = 0;
 plot_settings.y_lim = [-0.2 1.4];
+plot_settings.x_lim = [-0.2 1.5]; 
+plot_settings.recenterROIs = 0;
 plot_settings.plot_func = 'deltaF_F0'; % 'deltaF_F0'
 %%
 trace_fig = figure; 
@@ -44,6 +46,9 @@ conditions = {'control','1nM_DTX'};
 positions = repmat({position},1,length(conditions));
 img_names = cell(1,length(conditions)); % use all images in condition folder
 roi_set_filenames = [repmat({roi_set_filename},1,length(conditions))];
+plot_settings.transform_type = 'displace'; % coregister and get displacement field 
+plot_settings.registration_rec = fullfile(data_fold,exp_date,reporter,dish,'control',...
+                               'control.fits'); 
 out = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish,...
                                conditions,positions,img_names,exp_settings,...
                                roi_set_filenames,...

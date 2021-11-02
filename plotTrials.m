@@ -19,22 +19,15 @@ in.recenterROIs = 'diff';
 in.roiset_filedir = []; % default set below (one directory above img directory)
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
+in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
+in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; 
 in.close_img_after_save = 0; 
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
 filedir = fullfile(data_fold,exp_date,reporter,dish,condition);            
 if isempty(img_names) % assume all .fits files are relevant trial data
-    d = dir(filedir); 
-    file_names = {d.name};
-    creation_time = [d.datenum];
-    [~,inds] = sort(creation_time,'ascend');
-    file_names = file_names(inds);
-    [~,~,file_exts] = cellfun(@(x) fileparts(x),file_names,'UniformOutput',0);
-    is_fits = cellfun(@(x) strcmp(x,'.fits'),file_exts,'UniformOutput',1);
-    is_not_hidden = cellfun(@(x) ~strcmp(x(1),'.'),file_names,'UniformOutput',1);
-    img_names = file_names(is_fits & is_not_hidden);
-    % returns names sorted by time of creation
+    img_names = getImagesWithinDir(filedir); 
 end
 num_trials = length(img_names); 
 trace_fig = figure; 
@@ -51,7 +44,13 @@ if ischar(roi_set_filename) || ~iscell(roi_set_filename)
     roi_set_filename = repmat({roi_set_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
 end
-
+if ~isempty(in.registration_rec) && ischar(in.registration_rec)
+    if exist(in.registration_rec,'file')
+        in.registration_rec = Recording(in.registration_rec);  % pre-load once
+    else
+        error('''%s'' input for registration_rec does not exist',in.registration_rec);  
+    end
+end
 for i = 1:num_trials
     img_namei = img_names{i}; 
     datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
@@ -70,11 +69,14 @@ fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
          condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
 fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
         exp_settings.baseline_wind,mean(bslines),std(bslines,0));
-if in.save_fig   
-   [~,roi_set_filename_no_ext] = fileparts(roi_set_filename{1});    
-   fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
-                    ['figs_',roi_set_filename_no_ext]);       
-   fig_name = sprintf('%s_%s_%gtrials',condition,in.plot_func,num_trials);
-   printFig(trace_fig,fig_dir,fig_name); 
+if in.save_fig
+    if isfield(datai,'fig_dir')
+        fig_dir = datai.fig_dir;
+    else
+        fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
+            ['figs_',roi_set_filename_no_ext]);
+    end
+    fig_name = sprintf('%s_%s_%gtrials',condition,in.plot_func,num_trials);
+    printFig(trace_fig,fig_dir,fig_name);
 end
 end

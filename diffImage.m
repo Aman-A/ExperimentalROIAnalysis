@@ -52,7 +52,9 @@ in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
 in.pixel_size = img.pixel_size;
 in = sl.in.processVarargin(in,varargin);
-
+if isa(img,'Recording') && img.loaded == 0
+    img.load(); 
+end
 mean_bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),3); % use first stimulus if applied as train
 peak_stim_img = max(img.vals(:,:,exp_settings.stim_wind_inds(1,:)),[],3);
 if in.filt_width > 0

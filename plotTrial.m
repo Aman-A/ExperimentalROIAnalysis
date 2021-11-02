@@ -64,8 +64,10 @@ in.recenterROIs = 'peak';
 in.roiset_filedir = []; % default set below (one directory above img directory)
 in.roi_func_fig_size = [19.8 9.1];
 in.roi_func_fig_units = 'centimeters';
+in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
+in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
-in.close_img_after_save = 0; 
+in.close_img_after_save = 1; 
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
@@ -75,7 +77,17 @@ img = Recording(img_name,'position',position,'condition',condition,'dish',dish,.
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
 if ischar(rois_or_roi_set_filename)
-    [~,roi_set_filename_no_ext] = fileparts(rois_or_roi_set_filename);    
+    [~,roi_set_filename_no_ext] = fileparts(rois_or_roi_set_filename);     
+    if ~strcmp(in.transform_type,'none') &&  ~isempty(in.transform_type)
+        if ischar(in.registration_rec)
+            [~,fixed_img_name,~] = fileparts(in.registration_rec); 
+        elseif isa(in.registration_rec,'Recording')
+            fixed_img_name = in.registration_rec.img_name; 
+        end
+        roi_set_filename_no_ext = sprintf('%s_%s_%s',roi_set_filename_no_ext,...
+                                                     fixed_img_name,...
+                                                     in.transform_type); 
+    end
 else
     roi_set_filename_no_ext = 'custom';
 end
@@ -129,7 +141,21 @@ else
             rois.invert_y(img.imsize); 
         end
     end
-    % Recenter using peak after stim
+    % Coregister Images and shift ROIs
+    if ~strcmp(in.transform_type,'none') &&  ~isempty(in.transform_type)
+        if ischar(in.registration_rec)
+            fixed_rec = Recording(in.registration_rec); 
+        elseif isa(in.registration_rec,'Recording')
+            fixed_rec = in.registration_rec; 
+        end
+        if ~strcmp(fixed_rec.filepath,img.filepath)
+            [~,~,rois] = coregisterImagesAndROIs(fixed_rec,img,rois,exp_settings,...
+                                                'plot_result',0); 
+        else
+            fprintf('Registering to same recording, skipping...\n'); 
+        end
+    end
+    % Recenter using peak, diff, or baseline image
     if in.recenterROIs ~= 0
         if ischar(in.recenterROIs) 
             if strcmp(in.recenterROIs,'diff')
@@ -143,7 +169,7 @@ else
             recenter_img = peak_stim_img; % recenter on this by default if no mode specified
         end
         rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
-    end
+    end    
     if any(in.show_diff_image)
         % Overlay on diff image and save        
         addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,img.img_name,...
@@ -163,7 +189,8 @@ else
     output_data.peak_stim_img = peak_stim_img;
     output_data.diff_img = diff_img; 
     output_data.funcs = in.funcs; 
-    output_data.func_output = func_output;            
+    output_data.func_output = func_output;     
+    output_data.fig_dir = fig_dir; 
     %% Save processed data    
     if in.save_processed_data                    
         save(save_data_filename,'-STRUCT','output_data'); 

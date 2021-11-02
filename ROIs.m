@@ -12,11 +12,14 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         names % names from ImageJ
         num_rois % number of rois
         types % Cell array of ROItypes, e.g. 'Oval'/'Circle' or 'Rectangle'
-        roi_set_filename char {mustBeTextScalar} % file name and extension
+        roi_set_filename char {mustBeTextScalar} % file name
+        format char {mustBeTextScalar} % file extension (default '.zip')
         roi_set_filedir char {mustBeTextScalar} % directory file is in
         roi_set_filepath char {mustBeTextScalar} % full path to file
         loaded = false 
         y_inverted = false; 
+        registration_rec char {mustBeTextScalar} % full path to recording for coregistration
+        transform_type = 'none'; 
     end
     methods
         function obj = ROIs(file_or_roi_array,varargin)            
@@ -34,7 +37,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             in.names = {}; 
             in = sl.in.processVarargin(in,varargin);
             if ischar(file_or_roi_array)
-               roi_set_filename = file_or_roi_array; 
+               roi_set_filename = file_or_roi_array;                
                load_roi = true;
             else
                obj.roi_set_filename = 'none';
@@ -48,11 +51,14 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 else
                     obj.roi_set_filedir = path_to_roiset;
                 end
+                obj.roi_set_filename = roi_set_name;            
                 if isempty(ext)
-                   ext = '.zip'; % assume zip format 
-                end
-                obj.roi_set_filename = [roi_set_name ext];            
-                obj.roi_set_filepath = fullfile(obj.roi_set_filedir,obj.roi_set_filename);
+                   obj.format= '.zip'; % assume zip format 
+                else
+                    obj.format = ext; 
+                end                                
+                obj.roi_set_filepath = fullfile(obj.roi_set_filedir,...
+                                                [obj.roi_set_filename obj.format]);
                 ROIarray = ReadImageJROI(obj.roi_set_filepath); % load .zip ROI set
                 obj.num_rois = length(ROIarray);         
                 obj.loaded = true;
@@ -295,8 +301,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         % shift_vec : [shift_x shift_y] (in pixels) applied to all ROIs
         % if 1x2, applies same shift to all ROIs, if num_rois x 2, can apply
         % different shift to all ROIs
-            obj.x = obj.x + shift_vec(1); 
-            obj.y = obj.y + shift_vec(2); 
+            obj.x = obj.x + shift_vec(:,1); 
+            obj.y = obj.y + shift_vec(:,2); 
         end
         function affine2d(obj,T)
         % Apply forward affine transformation using 3x3 matrix T, convention 
