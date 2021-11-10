@@ -16,6 +16,9 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
 % AUTHOR    : Aman Aberra
 in.ax = []; 
 in.show_legend = 1;
+in.offset_factor = 1.5; % 1 - offset lines by offset_factor*max(func_output) 
+                      % >1 - offset based on y axis limits - offset_factor
+in.sbar_len = 2; % for separate roi_func_mode plots
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
@@ -51,21 +54,38 @@ if strcmp(func_output.roi_func_mode,'combine')
                                         func_output.baseline(1))];
     end
     title_str = [title_str sprintf(' (%s combined)',roi_str)];
+    % Plot on single axis
+    lns = plot(ax,x,func_output.(func_name)); % plot trace/s
 else
     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
                             func_output.rois.names,'UniformOutput',0);
     if isrow(display_names)
        display_names = display_names'; % make column vector for setting DisplayName below
     end
-    title_str = func_output.img_name; 
+    title_str = [func_output.img_name ':']; 
     if isfield(func_output,'baseline')
-        title_str = [title_str sprintf(': Baseline = %.1f ± %.1f a.u.',...
+        title_str = {title_str, sprintf('B = %.1f ± %.1f a.u.',...
                                         mean(func_output.baseline(1,:)),...
-                                        std(func_output.baseline(1,:),0))];
+                                        std(func_output.baseline(1,:),0))};
     end
-    title_str = [title_str sprintf(' %g ROIs',func_output.rois.num_rois)];     
+%     title_str = [title_str sprintf(' %g ROIs',func_output.rois.num_rois)];     
+    if in.offset_factor > 0
+        if in.offset_factor < 1
+            offset = linspace(in.offset_factor*max(func_output.(func_name),[],'all')*size(func_output.(func_name),2),...
+                                0,size(func_output.(func_name),2));
+        else
+           offset = linspace(ax.YLim(2)-in.offset_factor,...
+                            0,size(func_output.(func_name),2));  
+        end
+        lns = plot(ax,x,func_output.(func_name)+offset); % plot trace/s
+        ax.YAxis.Visible = 'off';
+        sbar = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
+                    'k','LineWidth',2); 
+    else
+        lns = plot(ax,x,func_output.(func_name)); % plot trace/s
+    end
 end
-lns = plot(ax,x,func_output.(func_name)); % plot trace/s
+
 set(lns,{'DisplayName'},display_names); % set legend names
 % shadedErrorBar(x,mean(func_output.(func_name),2),std(func_output.(func_name),0,2),{'-k'}); hold on;
 names = {ax.Children.DisplayName}; 
@@ -89,8 +109,9 @@ else
    ylabel(ax,func_name);  
 end
 box(ax,'off'); 
-title(ax,title_str,'Interpreter','none'); 
+title(ax,title_str,'Interpreter','none','FontSize',8); 
 % legend(ax.Children(~ind_stim_times)); 
 if in.show_legend
     legend(ax,'Interpreter','none','Box','off');
+end
 end

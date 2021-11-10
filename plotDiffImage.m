@@ -110,5 +110,5 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
                 'VerticalAlignment',vert_align,'HorizontalAlignment','center',...
                 'Color','w','FontSize',16,'FontWeight','bold'); 
     end
-    ax.YDir = 'normal';
+%     ax.YDir = 'normal';
 end

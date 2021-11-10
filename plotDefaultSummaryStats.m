@@ -1,6 +1,6 @@
 function plotDefaultSummaryStats(peaks_deltaF_F0_all,poststim_ints_all,peak_times_all,...
                                  baselines_all,rel_times_cond_starts,...
-                                 conditions,exp_date,reporter,dish,roi_set_filename,...
+                                 conditions,exp_date,reporter,dish,...
                                  plot_settings,varargin)
 %PLOTDEFAULTSUMMARYSTATS Plots and saves default summary stats figures
 %  
@@ -15,6 +15,7 @@ function plotDefaultSummaryStats(peaks_deltaF_F0_all,poststim_ints_all,peak_time
 
 % AUTHOR    : Aman Aberra 
 in.plot_inds = [1,2,3,4];
+in.roi_set_filename = ''; 
 in.summary_fig_dir = ''; 
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.summary_fig_dir)
@@ -22,11 +23,11 @@ if isempty(in.summary_fig_dir)
     if isfield(plot_settings,'transform_type') && strcmp(plot_settings.transform_type,'displace')
         [~,reg_rec_name,~] = fileparts(plot_settings.registration_rec);
         summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
-            sprintf('figs_%s_%s_displace',roi_set_filename,...
+            sprintf('figs_%s_%s_displace',in.roi_set_filename,...
             reg_rec_name));
     else
         summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
-            ['figs_',roi_set_filename]);
+            ['figs_',in.roi_set_filename]);
     end
 else
     summary_fig_dir = in.summary_fig_dir;

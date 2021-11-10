@@ -1,6 +1,6 @@
 function varargout = coregisterImagesAndROIs(fixed_recording,moving_recording,...
                                              rois,exp_settings,varargin)
-%COREGISTERIMAGES ... 
+%COREGISTERIMAGESANDROIS Coregisters images and shifts ROIs accordingly (circular only)
 %  
 %   Inputs 
 %   ------ 
@@ -21,6 +21,7 @@ in.roi_disp_shift_mode = 'mean'; % For displacement mode, specify 'mean' or
                                  % 'center' (TBD) to shift based on mean of 
                                  % disp vector or disp vector at center of
                                  % each ROI
+in.dilation_factor = 4; % coregister using pixels within ROIs with radius dilated by this factor                                 
 in.plot_result = 0; 
 in.save_fig = 0; 
 in = sl.in.processVarargin(in,varargin); 
@@ -43,9 +44,18 @@ else
 end
 %% Run image registration
 if strcmp(in.transform_type,'displace')
-    t1 = tic; 
-    [D,moving_reg] = imregdemons(moving_img,fixed_img,in.max_iterations,...
+    % Coregister using images masked with dilated ROIs 
+    rois_reg = rois.copy(); 
+    rois_reg.radius = rois_reg.radius*in.dilation_factor; % dilate rois for image used for estimating displacement field
+    mask_reg = rois_reg.getMask(fixed_recording.imsize(1:2));
+    moving_img2 = moving_img.*mask_reg; moving_img2(isnan(moving_img2)) = 0; 
+    fixed_img2 = fixed_img.*mask_reg; fixed_img2(isnan(fixed_img2)) = 0; 
+    tic; 
+    [D,moving_reg] = imregdemons(moving_img2,fixed_img2,in.max_iterations,...
                                  'DisplayWaitbar',false);     
+    
+%     [D,moving_reg] = imregdemons(moving_img,fixed_img,in.max_iterations,...
+%                                  'DisplayWaitbar',false);     
     % Output new ROIs object with shifted rois
     rois2 = rois.copy(); 
     if strcmp(in.roi_disp_shift_mode,'mean')
@@ -68,12 +78,15 @@ if strcmp(in.transform_type,'displace')
     fprintf('Mean displacement (%.3f, %.3f) um\n',...
                  mean(dr(:,1))*fixed_recording.pixel_size,...
                  mean(dr(:,2))*fixed_recording.pixel_size); 
+    if max(vmag(dr))*fixed_recording.pixel_size > 5        
+       fprintf('WARNING: Displacement of >5 um on %g ROIs!!!\n', sum(sum(vmag(dr))>5));
+    end
     rois2.shift(dr); % shift each ROI by [x,y] vector (pixels)    
     varargout = {D,dr,rois2}; 
 else
     optimizer = imregconfig('monomodal'); % mean squares
-    optimizer.MaximumIterations = im.max_iterations; 
-    if strcmp(in.metric,'mean_squares')
+    optimizer.MaximumIterations = in.max_iterations; 
+    if strcmp(in.metric,'MeanSquares')
        metric = registration.metric.MeanSquares; 
     elseif strcmp(in.metric,'MattesMutualInformation')
         metric = registration.metric.MattesMutualInformation;
@@ -83,7 +96,7 @@ else
     varargout = {tform}; 
     % For some reason, output of imwarp with tform is different from output
     % of imregister, should be identical...
-%     moving_reg = imwarp(img2_zproj,tform,'OutputView',imref2d(size(img1_zproj)));               
+    moving_reg2 = imwarp(moving_img,tform,'OutputView',imref2d(size(fixed_img)));
 % [moving_reg2,R_reg] = imregister(img2_zproj,img1_zproj,transform_type,optimizer,metric,...
 %                                 'DisplayOptimization',true); 
 end
@@ -119,7 +132,7 @@ if in.plot_result
         fig_dir = fullfile(moving_recording.filedir,...
                             sprintf('figs_%s_%s_%s',roi_set_filename_no_ext,...
                             fixed_recording.img_name,in.transform_type));         
-        fig_name = sprintf('%s_disp_results.fig',moving_recording.img_name); 
+        fig_name = sprintf('%s_disp_results',moving_recording.img_name); 
         printFig(fig,fig_dir,fig_name);         
     end
 end

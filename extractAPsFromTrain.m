@@ -36,6 +36,9 @@ in.save_fig = 0;
 in.fig_dir = pwd;
 in.fig_basename = 'extractAPs';
 in.y_lim2 = []; 
+in.biphasic_mode = 0;
+in.inds1 = 1:2:length(exp_settings.stim_vals);
+in.inds2 = 2:2:length(exp_settings.stim_vals);
 in = sl.in.processVarargin(in,varargin); 
 %% Get frames vector and stimulus vector (frames when stimuli occurred)
 exp_settings.convert2Frames(); % make sure units are in frames
@@ -99,6 +102,7 @@ if in.method == 1 % NOTE: Requires precise alignment of stimulus times to image 
         for j = 1:length(stim_frames)
             post_stim_frame_ij = find(frames_post_stim==AP_start_frames_all{i}(j));
             post_stim_frames_ij = post_stim_frame_ij:(post_stim_frame_ij+AP_window(2));
+            post_stim_frames_ij(post_stim_frames_ij>length(means_post_stim)) = []; % remove points past recording
             [peak_ij,ind_ij] =  max(means_post_stim(post_stim_frames_ij,i));
             peak_vals_all{i}(j) = peak_ij;
             peak_frames_all{i}(j) = frames_post_stim(post_stim_frames_ij(ind_ij)); 
@@ -158,12 +162,10 @@ cols = {'k','r'};
 light_cols = {0.4*ones(1,3),0.4*[1 0 0]};
 for i = 1:num_rois
     fig = figure; 
-    coli = cols{1}; 
-    light_coli = light_cols{1};
     ax1 = subplot(2,1,1);
-    plot(ax1,t,means(:,i),'Color',coli); hold on;
+    plot(ax1,t,means(:,i),'Color',cols{1}); hold on;
     plot(ax1,1e3*(peak_frames_all{i}-1)/exp_settings.sampling_rate,...
-        peak_vals_all{i},'o','Color',light_coli);
+        peak_vals_all{i},'o','Color',light_cols{1});
     if in.filt_order > 0
         title(sprintf('Mean F - %g order high pass filter with %.1f Hz cutoff\n',...
                   in.filt_order,in.filt_cutoff)); 
@@ -177,8 +179,16 @@ for i = 1:num_rois
 %     xlabel(ax1,'Frames'); 
 %     ax1.XLim = [0.9*1e3*stim_frames(1)/exp_settings.sampling_rate t(end)]; 
     ax2 = subplot(2,1,2);
-    plot(ax2,tAP,deltaF_F0_all{i},'Color',light_coli,'LineWidth',0.5,'Marker','.'); hold on;
-    plot(ax2,tAP,mean(deltaF_F0_all{i},2,'omitnan'),coli,'LineWidth',2,'Marker','.'); 
+    
+    if in.biphasic_mode
+        plot(ax2,tAP,deltaF_F0_all{i}(:,in.inds1),'Color',light_cols{1},'LineWidth',0.5,'Marker','.'); hold on;
+        plot(ax2,tAP,mean(deltaF_F0_all{i}(:,in.inds1),2,'omitnan'),cols{1},'LineWidth',2); 
+        plot(ax2,tAP,deltaF_F0_all{i}(:,in.inds2),'Color',light_cols{2},'LineWidth',0.5,'Marker','.'); 
+        plot(ax2,tAP,mean(deltaF_F0_all{i}(:,in.inds2),2,'omitnan'),cols{2},'LineWidth',2); 
+    else
+        plot(ax2,tAP,deltaF_F0_all{i},'Color',light_cols{1},'LineWidth',0.5,'Marker','.'); hold on;
+        plot(ax2,tAP,mean(deltaF_F0_all{i},2,'omitnan'),cols{1},'LineWidth',2); 
+    end
     if in.filt_order > 0
         ylabel(ax2,'\DeltaF');
     else
@@ -190,12 +200,12 @@ for i = 1:num_rois
     xlabel(ax2,'Time (ms)'); 
     plot(ax1,1e3*stim_frames/exp_settings.sampling_rate,ax1.YLim(2)*0.99*ones(1,length(stim_frames)),...
     'r.','MarkerSize',8,'DisplayName','Stim times');
+    if ~isempty(in.y_lim2)
+       ax2.YLim = in.y_lim2;  
+    end
     if in.save_fig
         fig_name = sprintf('%s_roi%g',in.fig_basename,i);
         printFig(fig,in.fig_dir,fig_name,...
             'formats',{'fig','png'},'resolutions',{'','-r300'})
-    end
-    if ~isempty(in.y_lim2)
-       ax2.YLim = in.y_lim2;  
-    end
+    end    
 end 

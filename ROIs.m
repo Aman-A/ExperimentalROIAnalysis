@@ -251,10 +251,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             [mask_rows,mask_cols] = ind2sub(size(mask),mask_inds);
         end
         
-        function plot(obj,col,ax,plot_current,num_pts) 
+        function plot(obj,col,ax,plot_current,show_labels,num_pts) 
             % plot current ROIs to axis ax with num_pts points in each curve
-            if nargin < 5
+            if nargin < 6
                 num_pts = 30;
+            end
+            if nargin < 5
+               show_labels = 0;  
             end
             if nargin < 4
                plot_current = 1; % 1 for current, 0 for starting ROI positions
@@ -286,7 +289,15 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
                     y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
                 end
-                plot(ax,x_ptsi,y_ptsi,'-','Color',col)
+                plot(ax,x_ptsi,y_ptsi,'-','Color',col);
+                if show_labels
+                    namei = obj.names{i}; 
+                    if strncmp(namei,'ROI',3)
+                       namei = namei(4:end); % remove 'ROI' to save space                     
+                    end
+                    text(xi,yi,namei,'FontName','Arial','FontSize',8,...
+                          'Color',col); 
+                end
             end
         end
         function invert_y(obj,imsize)

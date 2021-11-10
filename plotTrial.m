@@ -68,6 +68,7 @@ in.transform_type = 'none'; % 'displace','translation','rigid','similarity','aff
 in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
 in.close_img_after_save = 1; 
+in.show_roi_labels = 0;
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
@@ -117,7 +118,7 @@ if exist(save_data_filename,'file') && in.load_processed_data
                   'include_plots',in.show_diff_image,'filt_width',in.filt_width,...
                   'pixel_size',img.pixel_size);               
     addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,img.img_name,...
-                         in.close_img_after_save);
+                         in.close_img_after_save,in.show_roi_labels);
 else
     img.load();  % Load image data
     %% Output peak image
@@ -173,7 +174,7 @@ else
     if any(in.show_diff_image)
         % Overlay on diff image and save        
         addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,img.img_name,...
-                             in.close_img_after_save);
+                             in.close_img_after_save,in.show_roi_labels);
     else
         fprintf('Skipping diff image plot\n'); 
     end   
@@ -204,8 +205,14 @@ end
 if ~isempty(in.y_lim)            
     trace_axis.YLim = in.y_lim;         
 end
+if strcmp(in.roi_func_mode,'combine')
+   show_legend = 1; 
+else
+    show_legend = 0;
+end
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
-                exp_settings.sampling_rate,'ax',trace_axis);          
+                exp_settings.sampling_rate,'ax',trace_axis,...
+                'show_legend',show_legend);
 
 fig = trace_axis.Parent;
 fig.Units = in.roi_func_fig_units;
@@ -216,11 +223,12 @@ if in.save_fig > 1 % set to 2 to plot individual trials
    printFig(fig,fig_dir,fig_name); 
 end
 end
-function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name,close_after_save)
+function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name,...
+                               close_after_save,show_roi_labels)
 for i = 1:length(fig_hands)
     ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
-    rois.plot('g',ax,1); % plot current after shift
+    rois.plot('g',ax,1,show_roi_labels); % plot current after shift    
     if save_fig  % Save images with ROI overlays (if exist)
         printFig(fig_hands(i),fig_dir,[img_name,'_',fig_hands(i).Name],...
             'formats','png','resolutions','-r300')
