@@ -19,8 +19,8 @@ roi_set_filename = 'RoiSet_pc_posX.zip';
 plot_settings = struct();
 plot_settings.show_diff_image = [3]; % can include [1,2,3]
 plot_settings.filt_width = 0;
-plot_settings.funcs = {'baseline','deltaF_F0'};
-plot_settings.roi_func_mode = 'combine';
+plot_settings.funcs = {'mean','baseline','deltaF_F0'};
+plot_settings.roi_func_mode = 'combine'; % 'combine' or 'separate'
 plot_settings.save_processed_data = 1;
 plot_settings.load_processed_data = 0;
 plot_settings.save_fig = 0;
@@ -28,6 +28,11 @@ plot_settings.y_lim = [-0.2 1.4];
 plot_settings.x_lim = [-0.2 1.5]; 
 plot_settings.recenterROIs = 0;
 plot_settings.plot_func = 'deltaF_F0'; % 'deltaF_F0'
+plot_settings.transform_type = 'displace'; % 'none' or 'displace'
+plot_settings.registration_rec = fullfile(data_fold,exp_date,reporter,dish,'control',...
+                               'control.fits'); 
+plot_settings.show_roi_labels = 1;  
+plot_settings.close_img_after_save = 0;
 %%
 trace_fig = figure; 
 trace_axis = gca;
@@ -41,8 +46,8 @@ img_names = {}; % use all images in condition folder
         plotTrials(data_fold,exp_date,reporter,dish,condition,position,img_names,...
                 exp_settings,roi_set_filename,plot_settings);
 %% Plot multiple trials, multiple conditions       
-conditions = {'control','1nM_DTX'}; 
-% conditions = {'control','1nM_DTX','5nM_DTX','50nM_DTX','100nM_DTX','wash'}; % ,'wash'             
+conditions = {'control','10nM_DTX'}; 
+% conditions = {'control','10nM_DTX','50nM_DTX','100nM_DTX','wash'}; % ,'wash'             
 positions = repmat({position},1,length(conditions));
 img_names = cell(1,length(conditions)); % use all images in condition folder
 roi_set_filenames = [repmat({roi_set_filename},1,length(conditions))];
@@ -59,4 +64,5 @@ summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,['figs_',roi_set_fil
 plotDefaultSummaryStats(out.peaks_deltaF_F0_all,out.poststim_ints_all,out.peak_times_all,...
                          out.baselines_all,out.rel_times_cond_starts,...
                          conditions,exp_date,reporter,dish,plot_settings,...
-                         summary_fig_dir,'plot_inds',plot_inds)   
+                         summary_fig_dir,'plot_inds',plot_inds,...
+                         'roi_set_filename',roi_set_filenames{1})   
