@@ -78,8 +78,8 @@ if strcmp(in.transform_type,'displace')
     fprintf('Mean displacement (%.3f, %.3f) um\n',...
                  mean(dr(:,1))*fixed_recording.pixel_size,...
                  mean(dr(:,2))*fixed_recording.pixel_size); 
-    if max(vmag(dr))*fixed_recording.pixel_size > 5        
-       fprintf('WARNING: Displacement of >5 um on %g ROIs!!!\n', sum(sum(vmag(dr))>5));
+    if max(sqrt(dr(:,1).^2 + dr(:,2).^2))*fixed_recording.pixel_size > 5        
+       fprintf('WARNING: Displacement of >5 um on %g ROIs!!!\n', sum(sum(sqrt(dr(:,1).^2 + dr(:,2).^2))>5));
     end
     rois2.shift(dr); % shift each ROI by [x,y] vector (pixels)    
     varargout = {D,dr,rois2}; 
