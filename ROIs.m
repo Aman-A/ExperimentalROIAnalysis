@@ -120,11 +120,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         function processROIs(obj,ROIarray)
             % Process ImageJ ROI array output by ReadImageJROI.m function
             % to easier to work with format 
-            roi_types = cellfun(@(x) x.strType,ROIarray,'UniformOutput',0);         
-            obj.types = roi_types;
-            if all(strcmp(roi_types,roi_types{1})) % All ROIs have same shape
+            roi_names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';      
+            [obj.names,sorted_inds] = sort(roi_names); %#ok<TRSRT>
+            ROIarray = ROIarray(sorted_inds); 
+            obj.types = cellfun(@(x) x.strType,ROIarray,'UniformOutput',0);                     
+            if all(strcmp(obj.types,obj.types{1})) % All ROIs have same shape
                 % format of vnRectBounds ['nTop', 'nLeft', 'nBottom', 'nRight']                
-                if strcmp(roi_types{1},'Oval') % assume circle
+                if strcmp(obj.types{1},'Oval') % assume circle
                     obj.radius = cellfun(@(x) (x.vnRectBounds(4) - x.vnRectBounds(2))/2,...
                                         ROIarray,'UniformOutput',1)';
                     obj.x0 = cellfun(@(x,r) floor(x.vnRectBounds(2) + r + 1),...
@@ -132,9 +134,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     obj.y0 = cellfun(@(x,r) floor(x.vnRectBounds(3) - r + 1),...
                                         ROIarray,num2cell(obj.radius)','UniformOutput',1)'; % imagej is 0 indexed, add 1                                        
                     obj.x = obj.x0; % current is same as original initially
-                    obj.y = obj.y0; % current is same as original initially
-                    obj.names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';                    
-                elseif strcmp(roi_types{1},'Rectangle')
+                    obj.y = obj.y0; % current is same as original initially                    
+                elseif strcmp(obj.types{1},'Rectangle')
                     % TODO: finish
                 else
                     error('Other shapes not implemented');
@@ -289,13 +290,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
                     y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
                 end
-                plot(ax,x_ptsi,y_ptsi,'-','Color',col);
+                plot(ax,x_ptsi,y_ptsi,'-','Color',col); hold(ax,'on'); 
                 if show_labels
                     namei = obj.names{i}; 
                     if strncmp(namei,'ROI',3)
                        namei = namei(4:end); % remove 'ROI' to save space                     
                     end
-                    text(xi,yi,namei,'FontName','Arial','FontSize',8,...
+                    text(ax,xi,yi,namei,'FontName','Arial','FontSize',8,...
                           'Color',col); 
                 end
             end

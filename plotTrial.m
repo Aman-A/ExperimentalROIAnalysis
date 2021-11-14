@@ -205,6 +205,7 @@ end
 if ~isempty(in.y_lim)            
     trace_axis.YLim = in.y_lim;         
 end
+% show_legend = 1;
 if strcmp(in.roi_func_mode,'combine')
    show_legend = 1; 
 else
@@ -229,6 +230,7 @@ for i = 1:length(fig_hands)
     ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
     rois.plot('g',ax,1,show_roi_labels); % plot current after shift    
+    drawnow; 
     if save_fig  % Save images with ROI overlays (if exist)
         printFig(fig_hands(i),fig_dir,[img_name,'_',fig_hands(i).Name],...
             'formats','png','resolutions','-r300')

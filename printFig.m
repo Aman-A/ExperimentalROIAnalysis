@@ -41,9 +41,9 @@ for i = 1:num_files
         end
     elseif strcmp(formati,'eps')
         if exist('export_fig','file')
-            export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps',resi);
+            export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps');
         else
-            print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc',resi);
+            print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
         end
     end
 end

@@ -18,7 +18,7 @@ in.ax = [];
 in.show_legend = 1;
 in.offset_factor = 1.5; % 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
-in.sbar_len = 2; % for separate roi_func_mode plots
+in.sbar_len = 1; % for separate roi_func_mode plots
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
@@ -74,13 +74,20 @@ else
             offset = linspace(in.offset_factor*max(func_output.(func_name),[],'all')*size(func_output.(func_name),2),...
                                 0,size(func_output.(func_name),2));
         else
-           offset = linspace(ax.YLim(2)-in.offset_factor,...
-                            0,size(func_output.(func_name),2));  
+           if strcmp(ax.YLimMode,'auto') % YLim wasn't set, use num_rois to set it and offset               
+               offset = linspace(1.4*func_output.rois.num_rois-in.offset_factor,...
+                                0,size(func_output.(func_name),2));
+               ax.YLim = [-0.2 offset(1)*(func_output.rois.num_rois+1)/func_output.rois.num_rois];
+           else
+               offset = linspace(ax.YLim(2)-in.offset_factor,...
+                                0,size(func_output.(func_name),2));  
+           end
         end
         lns = plot(ax,x,func_output.(func_name)+offset); % plot trace/s
         ax.YAxis.Visible = 'off';
         sbar = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
-                    'k','LineWidth',2); 
+                    'k','LineWidth',2,'DisplayName',...
+                    sprintf('Scale bar = %g%%',100*in.sbar_len)); 
     else
         lns = plot(ax,x,func_output.(func_name)); % plot trace/s
     end
@@ -112,6 +119,10 @@ box(ax,'off');
 title(ax,title_str,'Interpreter','none','FontSize',8); 
 % legend(ax.Children(~ind_stim_times)); 
 if in.show_legend
-    legend(ax,'Interpreter','none','Box','off');
+    if strcmp(func_output.roi_func_mode,'combine')    
+        legend(ax,'Interpreter','none','Box','off');
+    else
+        legend(ax,'Interpreter','none','Box','off','Location','EastOutside');
+    end
 end
 end

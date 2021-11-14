@@ -68,7 +68,11 @@ if strcmp(in.transform_type,'displace')
             dr(i,2) = mean(Dy_i(:),'omitnan');
         end        
     elseif strcmp(in.roi_disp_shift_mode,'center')
-        error('''center'' roi_disp_shift_mode not implemented yet'); 
+        dr = zeros(rois.num_rois,2);        
+        for i = 1:rois.num_rois            
+            dr(i,1) = D(rois2.y0(i),rois2.x0(i),1);
+            dr(i,2) = D(rois2.y0(i),rois2.x0(i),2);
+        end   
     end
     time_elapsed = toc; 
     rois2.registration_rec = fixed_recording.filepath; 
@@ -103,17 +107,19 @@ end
 
 if in.plot_result
     vis_method = 'falsecolor'; % 'falsecolor','checkerboard','diff','montage'
-    scaling_method = 'independent'; % 'joint','independent', or 'none'
+    scaling_method = 'joint'; % 'joint','independent', or 'none'
     c_lims = quantile(fixed_img(:),[0.02 0.995]);
     fig = figure;
     ax = subplot_tight(3,1,1); % Before    
-    before_overlay = imfuse(fixed_img,moving_img,vis_method,'Scaling',scaling_method);
+    before_overlay = imfuse(log10(fixed_img),log10(moving_img),vis_method,...
+                            'Scaling',scaling_method);
     imagesc(before_overlay);
     hold(ax,'on'); axis(ax,'off','equal');     
-    rois2.plot('y',ax,0); 
+    rois2.plot('y',ax,0,1); 
     title('Before - Green:fixed/first, Purple:moving/second');
     ax2 = subplot_tight(3,1,2); % After    
-    after_overlay = imfuse(fixed_img,moving_reg,vis_method,'Scaling',scaling_method);
+    after_overlay = imfuse(fixed_img,moving_reg,vis_method,...
+                            'Scaling',scaling_method);
     imagesc(after_overlay);
     hold(ax2,'on'); axis(ax2,'off','equal');            
     title('After');

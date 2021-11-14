@@ -108,7 +108,7 @@ trials_data.std_peak_deltaF_F0 = std_peak_deltaF_F0;
 trials_data.trial_times = trial_times; 
 trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
-
+trials_data.img_names = img_names; 
 if in.save_fig
     if isfield(datai,'fig_dir')
         fig_dir = datai.fig_dir;
@@ -116,7 +116,7 @@ if in.save_fig
         fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
             ['figs_',roi_set_filename_no_ext]);
     end
-    fig_name = sprintf('%s_%s_%gtrials',condition,in.plot_func,num_trials);
+    fig_name = sprintf('%s_%s_%s_%gtrials',condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
     printFig(trace_fig,fig_dir,fig_name);
 end
 end

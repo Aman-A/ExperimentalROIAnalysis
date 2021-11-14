@@ -16,6 +16,7 @@ function output = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish
 in.save_summary_data = 1;
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(conditions);
+% Data compiled across trials and conditions in output struct
 output = struct();
 output.deltaF_F0_all = cell(1,num_conditions); 
 output.peaks_deltaF_F0_all = cell(1,num_conditions);
@@ -27,6 +28,8 @@ output.sem_peaks = cell(1,num_conditions);
 output.trial_times_all = cell(1,num_conditions);
 output.baselines_all = cell(1,num_conditions); 
 output.rois_all = cell(1,num_conditions); 
+% Update img_names with img_names loaded in plotTrials
+img_names_new = cell(size(img_names)); 
 for i = 1:num_conditions
     condition = conditions{i};
     roi_set_filename = roi_set_filenames{i};
@@ -57,6 +60,7 @@ for i = 1:num_conditions
     output.trial_times_all{i} = tdi.trial_times;
     output.baselines_all{i} = tdi.bslines;
     output.rois_all{i} = tdi.rois_all; 
+    img_names_new{i} = tdi.img_names; 
 end
 % peaks_deltaF_F0_all = cell2mat(peaks_deltaF_F0_all);
 % get start time of first trial within condition relative to first trial
@@ -74,9 +78,18 @@ if in.save_summary_data
                                                       roi_set_filenames{1});
     end
     summary_data_filepath = fullfile(data_fold,exp_date,reporter,dish,summary_data_file);
-    save(summary_data_filepath,'output','exp_date','reporter','dish','conditions',...
-                           'positions','img_names','exp_settings',...
-                           'roi_set_filenames','plot_settings');
+    summary_data = struct(); 
+    summary_data.output = output;
+    summary_data.exp_date = exp_date;
+    summary_data.reporter = reporter;
+    summary_data.dish = dish;
+    summary_data.conditions = conditions;
+    summary_data.positions = positions;
+    summary_data.img_names = img_names_new;
+    summary_data.exp_settings = exp_settings;
+    summary_data.roi_set_filenames = roi_set_filenames;
+    summary_data.plot_settings = plot_settings;
+    save(summary_data_filepath,'-STRUCT','summary_data');
     fprintf('Saved summary data to %s\n',summary_data_file);
 end
 end
