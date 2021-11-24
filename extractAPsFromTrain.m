@@ -43,6 +43,8 @@ in = sl.in.processVarargin(in,varargin);
 %% Get frames vector and stimulus vector (frames when stimuli occurred)
 exp_settings.convert2Frames(); % make sure units are in frames
 stim_frames = exp_settings.stim_vals;
+baseline_wind = exp_settings.baseline_wind;
+baseline_start_frame = exp_settings.baseline_start_frame;
 frames = (1:length(means));
 t = (0:(length(means)-1))/exp_settings.sampling_rate;
 num_rois = size(means,2);
@@ -70,11 +72,6 @@ if in.filt_order > 0
                   in.filt_order,in.filt_cutoff);
     end
 end
-%% Recalculate baselines from filtered data
-baselines = zeros(size(exp_settings.baseline_wind_inds,1),num_rois);
-for i = 1:size(exp_settings.baseline_wind_inds,1)
-    baselines(i,:) = abs(mean(means(exp_settings.baseline_wind_inds(i,:),:),1)); 
-end
 %% Get size of window around each AP to extract in frames
 % Convert AP_window to frames if necessary
 if strcmp(in.AP_window_units,'sec') 
@@ -85,6 +82,10 @@ if length(AP_window) == 1
    AP_window = ceil([AP_window/2 AP_window/2]); % round up if AP_window is odd    
 end
 numAPframes = sum(AP_window) + 1; % include stim/peak frame in count
+% Check that baseline window fits in AP window
+if baseline_wind > AP_window(1)
+   baseline_wind = AP_window(1) - baseline_start_frame - 1; 
+end
 % Get frames and data post first stimulus, including pre-stimulus frames
 % based on AP_window
 frames_post_stim = frames(frames>(stim_frames(1)-AP_window(1)));
@@ -103,8 +104,9 @@ if in.method == 1 % NOTE: Requires precise alignment of stimulus times to image 
             post_stim_frame_ij = find(frames_post_stim==AP_start_frames_all{i}(j));
             post_stim_frames_ij = post_stim_frame_ij:(post_stim_frame_ij+AP_window(2));
             post_stim_frames_ij(post_stim_frames_ij>length(means_post_stim)) = []; % remove points past recording
-            [peak_ij,ind_ij] =  max(means_post_stim(post_stim_frames_ij,i));
-            peak_vals_all{i}(j) = peak_ij;
+            means_post_stim_frames_ij = means_post_stim(post_stim_frames_ij,i);
+            [~,ind_ij] =  max(abs(means_post_stim_frames_ij)); % get pos or neg peak
+            peak_vals_all{i}(j) = means_post_stim_frames_ij(ind_ij);
             peak_frames_all{i}(j) = frames_post_stim(post_stim_frames_ij(ind_ij)); 
         end
     end
@@ -148,10 +150,11 @@ for j = 1:num_rois
         AP_framesj(include_inds,i) = means_post_stim(AP_framesi(include_inds),j);          
     end
     mean_APs_all{j} = AP_framesj; 
+    baselinesj = mean(AP_framesj(AP_window(1)-baseline_start_frame-baseline_wind:AP_window(1)-baseline_start_frame,:),1);
     if in.filt_order > 0 % baseline removed due to high pass filter, just get deltaF
-        deltaF_F0_all{j} = (AP_framesj - baselines(:,j)'); % get DF/F using AP-specific baseline (for jth roi)
+        deltaF_F0_all{j} = (AP_framesj - baselinesj); % get DF/F using AP-specific baseline (for jth roi)
     else
-        deltaF_F0_all{j} = (AP_framesj - baselines(:,j)')./baselines(:,j)'; % get DF/F using AP-specific baseline (for jth roi)
+        deltaF_F0_all{j} = (AP_framesj - baselinesj)./baselinesj; % get DF/F using AP-specific baseline (for jth roi)
     end
 end
 % AP_winds(:,end) = [];
