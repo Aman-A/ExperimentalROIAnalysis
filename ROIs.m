@@ -289,13 +289,15 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     end
                     x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
                     y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
+                    xi = mean(x_ptsi); yi = mean(y_ptsi); % for label below
                 end
                 plot(ax,x_ptsi,y_ptsi,'-','Color',col); hold(ax,'on'); 
                 if show_labels
-                    namei = obj.names{i}; 
-                    if strncmp(namei,'ROI',3)
-                       namei = namei(4:end); % remove 'ROI' to save space                     
-                    end
+%                     namei = obj.names{i}; 
+%                     if strncmp(namei,'ROI',3)
+%                        namei = namei(4:end); % remove 'ROI' to save space                     
+%                     end
+                    namei = num2str(i,'%g'); 
                     text(ax,xi,yi,namei,'FontName','Arial','FontSize',8,...
                           'Color',col); 
                 end
