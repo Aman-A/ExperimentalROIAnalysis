@@ -1,6 +1,6 @@
-function [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
-                                                                        exp_settings,...
-                                                                        varargin)
+function [bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
+                                                                   exp_settings,...
+                                                                   varargin)
 %DIFFIMAGE Plots mean baseline, peak during stim window, and difference
 %images
 %  
@@ -39,6 +39,8 @@ if nargin < 2
 end
 in.cmap = 'inferno';
 in.include_plots = [3];
+in.baseline_mode = 'mean'; % 'mean' or 'max' - metric to calculate on 
+                           % baseline frames for bsline_img
 in.filt_width = 0;
 in.formats = {'png'};
 in.resolutions = {'-r300'};
@@ -55,16 +57,20 @@ in = sl.in.processVarargin(in,varargin);
 if isa(img,'Recording') && img.loaded == 0
     img.load(); 
 end
-mean_bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),3); % use first stimulus if applied as train
+if strcmp(in.baseline_mode,'mean')
+    bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),3); % use first stimulus if applied as train
+elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
+    bsline_img = max(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),[],3); % use first stimulus if applied as train
+end
 peak_stim_img = max(img.vals(:,:,exp_settings.stim_wind_inds(1,:)),[],3);
 if in.filt_width > 0
-    mean_bsline_img = imgaussfilt(mean_bsline_img,in.filt_width); %,'FilterSize',filt_wind);
+    bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
-diff_img = peak_stim_img-mean_bsline_img;
+diff_img = peak_stim_img-bsline_img;
 if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
-    fig_hands = plotDiffImage(mean_bsline_img,peak_stim_img,diff_img,img.img_name,...
+    fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,img.img_name,...
                    exp_settings,in);
 else
     fig_hands = {}; 

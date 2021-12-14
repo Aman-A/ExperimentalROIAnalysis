@@ -1,8 +1,16 @@
-function trials_data = plotTrials(data_fold,exp_date,reporter,dish,condition,position,...
-                                  img_names,exp_settings,roi_set_filename,...
+function trials_data = plotTrials(img_names,exp_settings,roi_set_filename,...
                                   varargin)
 %PLOTTRIALS Plot set of trials on same axis  
 %TODO: make arrays compatible with roi_func_mode 'separate'
+in.data_fold = pwd;
+in.exp_date = ''; % use for default experiment file structure:
+                  % <data_fold>/<exp_date>/<reporter>/<dish>/<condition>
+in.reporter = '';
+in.dish = '';
+in.condition = '';
+in.position = '';
+in.filedir = ''; % if not empty, this folder is used instead of default 
+                 % structure above
 in.show_diff_image = []; 
 in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
                % ROI positions
@@ -25,9 +33,16 @@ in.close_img_after_save = 0;
 in.show_roi_labels = 0; 
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
-filedir = fullfile(data_fold,exp_date,reporter,dish,condition);            
 if isempty(img_names) % assume all .fits files are relevant trial data
-    img_names = getImagesWithinDir(filedir); 
+    if isempty(in.filedir) % construct default experiment file path to this condition
+        filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
+        img_names = getImagesWithinDir(filedir); 
+    else % use input path to find all trials for this condition
+        filedir = in.filedir; 
+        img_names = getImagesWithinDir(filedir); 
+        % append full path
+        img_names = fullfile(filedir,img_names); 
+    end    
 end
 if ischar(img_names)
    img_names = {img_names};  
@@ -71,8 +86,7 @@ for i = 1:num_trials
         trace_axis = traces_axes{i}; 
     end
     img_namei = img_names{i}; 
-    datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
-                   img_namei,exp_settings,roi_set_filename{i},...
+    datai = plotTrial(img_namei,exp_settings,roi_set_filename{i},...
                    trace_axis,in);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
@@ -87,7 +101,7 @@ if strcmp(in.roi_func_mode,'combine')
     mean_peak_deltaF_F0 = mean(peaks_deltaF_F0);
     std_peak_deltaF_F0 = std(peaks_deltaF_F0,0);
     fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
-             condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
+             in.condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
     fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
             exp_settings.baseline_wind,mean(bslines),std(bslines,0));
 elseif strcmp(in.roi_func_mode,'separate')
@@ -96,7 +110,7 @@ elseif strcmp(in.roi_func_mode,'separate')
     mean_peak_deltaF_F0 = mean(peaks_deltaF_F0,1); % mean across trials, within roi
     std_peak_deltaF_F0 = std(peaks_deltaF_F0,0,1); % mean across trials, within roi
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
-             condition, mean(mean_peak_deltaF_F0),mean(std_peak_deltaF_F0)); 
+             in.condition, mean(mean_peak_deltaF_F0),mean(std_peak_deltaF_F0)); 
     fprintf('  Mean baseline (%g frames) across trials and ROIs = %.3f +/- %.3f\n',...
             exp_settings.baseline_wind,mean(bslines,'all'),std(bslines,0,'all'));
 end

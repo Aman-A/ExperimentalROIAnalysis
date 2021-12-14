@@ -30,13 +30,12 @@ output.baselines_all = cell(1,num_conditions);
 output.rois_all = cell(1,num_conditions); 
 % Update img_names with img_names loaded in plotTrials
 img_names_new = cell(size(img_names)); 
-for i = 1:num_conditions
-    condition = conditions{i};
+for i = 1:num_conditions    
     roi_set_filename = roi_set_filenames{i};
-    position = positions{i};
+    plot_settings.condition = conditions{i};
+    plot_settings.position = positions{i};
     % trial data for ith condition
-    tdi = plotTrials(data_fold,exp_date,reporter,dish,condition,position,img_names{i},...
-                              exp_settings,roi_set_filename,plot_settings);    
+    tdi = plotTrials(img_names{i},exp_settings,roi_set_filename,plot_settings);    
     output.deltaF_F0_all{i} = tdi.deltaF_F0;    
     output.peaks_deltaF_F0_all{i} = tdi.peaks_deltaF_F0;
     if strcmp(plot_settings.roi_func_mode,'combine')        

@@ -36,9 +36,9 @@ if length(save_funcs) ~= length(avail_funcs_to_save)
                 strjoin(remain_unavail_funcs));
     end
 end
-if strcmp(func_output.roi_mode,'separate')
+if strcmp(func_output.roi_func_mode,'separate')
     header = func_output.rois.names;    
-elseif strcmp(func_output.roi_mode,'combine')
+elseif strcmp(func_output.roi_func_mode,'combine')
     header = {'AllROIs'};
 end
 if iscolumn(header)
@@ -48,7 +48,7 @@ for i = 1:length(avail_funcs_to_save)
     funci = avail_funcs_to_save{i};
     datai = func_output.(funci);
     filenamei = fullfile(output_folder,sprintf('%s_%s_%s.csv',...
-        func_output.img_name,funci,func_output.roi_mode));
+        func_output.img_name,funci,func_output.roi_func_mode));
     writecell(header,filenamei);
     writematrix(datai,filenamei,'WriteMode','append'); 
 end

@@ -70,4 +70,4 @@ end
 % Save image stack
 path_to_diff_img_stack = fullfile(exp_folder,[in.img_stack_name '.fits']);
 fitswrite(img_stack,path_to_diff_img_stack); 
-fprintf('Wrote diff image stack to %s\n',path_to_diff_img_stack); 
+fprintf('Wrote image stack to %s\n',path_to_diff_img_stack); 
