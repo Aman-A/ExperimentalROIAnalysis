@@ -92,25 +92,7 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
     end % if cax_mode 'auto', leave as is
     if ~isempty(pixel_size)
         % get integer length (µm) and convert back to pixels
-        imsize = size(vals);
-        if strcmp(ax.YDir,'normal')
-            y_factor = 0.9;
-            vert_align = 'bottom';
-            text_y_factor = 0.9;
-        else
-            y_factor = 0.1;
-            vert_align = 'top';
-            text_y_factor = 1.11;
-        end
-        sbar_len = 5*floor(0.15*size(vals,2)*pixel_size/5); % round to nearest multiple of 5 
-        sbar_pixel_len = sbar_len/pixel_size; 
-        plot(ax,[0.1*imsize(2),0.1*imsize(2) + sbar_pixel_len],...
-                y_factor*imsize(1)*[1 1],...
-                'Color','w','LineWidth',4); 
-        text(0.1*imsize(2) + sbar_pixel_len/2,...
-                text_y_factor*y_factor*imsize(1),sprintf('%g \\mu m',sbar_len),...
-                'VerticalAlignment',vert_align,'HorizontalAlignment','center',...
-                'Color','w','FontSize',16,'FontWeight','bold'); 
+        addScaleBar(pixel_size,size(vals),ax)
     end
 %     ax.YDir = 'normal';
 end
