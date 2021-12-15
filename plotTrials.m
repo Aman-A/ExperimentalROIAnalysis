@@ -59,11 +59,13 @@ if ischar(roi_set_filename) || ~iscell(roi_set_filename)
     roi_set_filename = repmat({roi_set_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
 end
-if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec) && ischar(in.registration_rec)
-    if exist(in.registration_rec,'file')
-        in.registration_rec = Recording(in.registration_rec);  % pre-load once
-    else
-        error('''%s'' input for registration_rec does not exist',in.registration_rec);  
+if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
+    if ischar(in.registration_rec)    
+        if exist(in.registration_rec,'file')
+            in.registration_rec = Recording(in.registration_rec);  % pre-load once
+        else
+            error('''%s'' input for registration_rec does not exist',in.registration_rec);  
+        end
     end
 end
 for i = 1:num_trials

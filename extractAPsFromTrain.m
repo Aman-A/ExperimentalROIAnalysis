@@ -83,7 +83,7 @@ if length(AP_window) == 1
 end
 numAPframes = sum(AP_window) + 1; % include stim/peak frame in count
 % Check that baseline window fits in AP window
-if baseline_wind > AP_window(1)
+if baseline_wind >= AP_window(1)
    baseline_wind = AP_window(1) - baseline_start_frame - 1; 
 end
 % Get frames and data post first stimulus, including pre-stimulus frames
