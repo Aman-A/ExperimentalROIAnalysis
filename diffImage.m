@@ -52,7 +52,7 @@ in.cb_settings = {'Color','w','FontSize',14};
 in.title_settings = {'Interpreter','none','Color','w'}; 
 in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
-in.pixel_size = img.pixel_size;
+in.pixel_size = img.pixel_size*img.bin_size;
 in = sl.in.processVarargin(in,varargin);
 if isa(img,'Recording') && img.loaded == 0
     img.load(); 

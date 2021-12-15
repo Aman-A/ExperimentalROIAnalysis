@@ -76,13 +76,16 @@ in.transform_type = 'none'; % 'displace','translation','rigid','similarity','aff
 in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
 in.close_img_after_save = 1; in.show_roi_labels = 0;
+in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
+in.bin_size = 1; % 1x1 binning
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
 % load_processed_data == 1
 img = Recording(img_name,'position',in.position,'condition',in.condition,...
                 'dish',in.dish,'reporter',in.reporter,'exp_date',in.exp_date,...
-                'data_fold',in.data_fold);             
+                'data_fold',in.data_fold,'pixel_size',in.pixel_size,...
+                'bin_size',in.bin_size);             
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
 if ischar(rois_or_roiset_filename)

@@ -15,22 +15,32 @@ in.include_plots = 0; % same format as diffImage, 1 - baseline, 2 - peak,
                       % 3 diff image, leave empty or set to 0 to skip 
                       % plotting
 in.img_stack_name = 'diffimage_stack';     
-in.img_mode = 'diff';
+in.img_mode = 'diff'; % 'diff','peak',or 'bsline'
+in.img_names_all = cell(size(trial_folders)); 
+in.save_sep_images = 0;
+in.sep_images_dir = 'stack';
 in = sl.in.processVarargin(in,varargin); 
 
-img_names_all = cell(size(trial_folders)); 
+img_names_all = in.img_names_all; 
 for i = 1:length(trial_folders)    
     trial_folders{i} = fullfile(exp_folder,trial_folders{i}); % make full path 
     if isempty(img_names_all{i}) % assume all .fits files are relevant trial data
         img_names_all{i} = getImagesWithinDir(trial_folders{i});
+    elseif ischar(img_names_all{i})
+        img_names_all{i} = img_names_all(i); 
     end
 end
 num_trials = sum(cellfun(@length,img_names_all));
 % Load first image to get dimensions
-full_path_to_img1 = fullfile(trial_folders{1},img_names_all{1}{1}); 
+if ischar(img_names_all{1})
+   img_name1 = img_names_all{1};
+else
+   img_name1 = img_names_all{1}{1}; 
+end
+full_path_to_img1 = fullfile(trial_folders{1},img_name1); 
 rec1 = Recording(full_path_to_img1); rec1.load();
 [bsline_img1,pk_img1,diff_img1,~] = diffImage(rec1,exp_settings,'include_plots',...
-                            in.include_plots);                         
+                                              in.include_plots);                         
 img_stack = zeros(size(diff_img1,1),size(diff_img1,2),num_trials);
 if strcmp(in.img_mode,'diff')
     img_stack(:,:,1) = diff_img1; 
@@ -43,6 +53,15 @@ end
 trial_ind = 2;
 % Load images and compute difference, specified by parameters in
 % exp_settings
+if in.save_sep_images
+    sep_images_dir = fullfile(exp_folder,in.sep_images_dir); 
+    if ~exist(sep_images_dir,'dir')
+       mkdir(sep_images_dir); 
+       fprintf('Made %s to save stack as separate image fils\n',sep_images_dir); 
+    end
+    fitswrite(img_stack(:,:,1),fullfile(sep_images_dir,[img_name1 '.fits']))
+end
+
 for i = 1:length(trial_folders)    
     img_namesi = img_names_all{i};
     trial_folderi = trial_folders{i}; 
@@ -63,6 +82,10 @@ for i = 1:length(trial_folders)
             img_stack(:,:,trial_ind) = pk_img;
         elseif strcmp(in.img_mode,'bsline')
             img_stack(:,:,trial_ind) = bsline_img;
+        end
+        if in.save_sep_images
+            path_to_img = fullfile(sep_images_dir,[img_namesi{j} '.fits']); 
+            fitswrite(img_stack(:,:,trial_ind),path_to_img)
         end
         trial_ind = trial_ind + 1; 
     end
