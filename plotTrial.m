@@ -1,12 +1,30 @@
-function output_data = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
-                                 img_name,exp_settings,rois_or_roi_set_filename,trace_axis,...
-                                 varargin)
+function output_data = plotTrial(img_name,exp_settings,rois_or_roiset_filename,...
+                                trace_axis,varargin)
 % PLOTTRIAL Plot image and response vs. time data from single trial
 %  
 % Default file organization expected by plotTrial:
 % <data_fold>/<exp_date>/<reporter>/<dish>/<condition>/<img_name>
 %   Inputs 
 %   ------ 
+%   img_name : string
+%              Image stack file name. If file extension is not included,
+%              assumes format is .fits. Allows for .fits or .tiff. If
+%              data_fold, exp_date, reporter, dish, and condition not
+%              input, assumes in current working directory, otherwise 
+%              should include full path to file
+%   exp_settings: ExperimentalSettings object
+%                 instance of ExperimentalSettings object containing
+%                 parameters for experimental recording, stimulation times, 
+%                 and desired baseline window
+%   rois_or_roiset_filename: string or ROIs objct
+%                             Either the filename of a ROI set saved from
+%                             ImageJ, or an already created ROIs object
+%                             containing a set of ROI positions/sizes
+%   trace_axis : axis handle
+%                Axis to plot trace of desired function to, e.g., deltaF_F0.
+%                Can be specified using optional argument 'plot_func' below
+%   Optional Inputs 
+%   --------------- 
 %   data_fold : string
 %               Path to top-level data folder, used to construct path and 
 %               saved with Recording data
@@ -27,27 +45,17 @@ function output_data = plotTrial(data_fold,exp_date,reporter,dish,condition,posi
 %              Name of stage position, e.g. 'Pos0' (NOTE: currently not 
 %              used by any code in ExperimentalROIAnalysis, but saved with
 %              Recording data)
-%   img_name : string
-%              Image stack file name. If file extension is not included,
-%              assumes format is .fits. Allows for .fits or .tiff. 
-%   exp_settings: ExperimentalSettings object
-%                 instance of ExperimentalSettings object containing
-%                 parameters for experimental recording, stimulation times, 
-%                 and desired baseline window
-%   rois_or_roi_set_filename: string or ROIs objct
-%                             Either the filename of a ROI set saved from
-%                             ImageJ, or an already created ROIs object
-%                             containing a set of ROI positions/sizes
-%   trace_axis : axis handle
-%                Axis to plot trace of desired function to, e.g., deltaF_F0.
-%                Can be specified using optional argument 'plot_func' below
-%   Optional Inputs 
-%   --------------- 
 %   Outputs 
 %   ------- 
 %   Examples 
 %   --------------- 
-
+in.data_fold = pwd;
+in.exp_date = '';
+in.reporter = '';
+in.dish = '';
+in.condition = '';
+in.position = '';
+in.filedir = ''; % placeholder for inputs from plotTrials
 in.show_diff_image = []; % for diffImage, specify which plots to include, can include 1, 2, 3 in
                          %  any order (1 - Baseline, 2 - Peak, 3 - Difference)
 in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
@@ -67,36 +75,38 @@ in.roi_func_fig_units = 'centimeters';
 in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
 in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
-in.close_img_after_save = 1; 
-in.show_roi_labels = 0;
+in.close_img_after_save = 1; in.show_roi_labels = 0;
+in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
+in.bin_size = 1; % 1x1 binning
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
 % load_processed_data == 1
-img = Recording(img_name,'position',position,'condition',condition,'dish',dish,...
-                'reporter',reporter,'exp_date',exp_date,'data_fold',data_fold); 
+img = Recording(img_name,'position',in.position,'condition',in.condition,...
+                'dish',in.dish,'reporter',in.reporter,'exp_date',in.exp_date,...
+                'data_fold',in.data_fold,'pixel_size',in.pixel_size,...
+                'bin_size',in.bin_size);             
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
-if ischar(rois_or_roi_set_filename)
-    [~,roi_set_filename_no_ext] = fileparts(rois_or_roi_set_filename);     
+if ischar(rois_or_roiset_filename)
+    [~,roiset_filename_no_ext] = fileparts(rois_or_roiset_filename);     
     if ~strcmp(in.transform_type,'none') &&  ~isempty(in.transform_type)
         if ischar(in.registration_rec)
             [~,fixed_img_name,~] = fileparts(in.registration_rec); 
         elseif isa(in.registration_rec,'Recording')
             fixed_img_name = in.registration_rec.img_name; 
         end
-        roi_set_filename_no_ext = sprintf('%s_%s_%s',roi_set_filename_no_ext,...
+        roiset_filename_no_ext = sprintf('%s_%s_%s',roiset_filename_no_ext,...
                                                      fixed_img_name,...
                                                      in.transform_type); 
     end
 else
-    roi_set_filename_no_ext = 'custom';
+    roiset_filename_no_ext = 'custom';
 end
+fig_dir = fullfile(img.filedir,['figs_',roiset_filename_no_ext]);
 save_data_filename = fullfile(img.filedir,sprintf('%s-%s-%s-data.mat',...
                                                   img_name_no_ext,in.roi_func_mode,...
-                                                  roi_set_filename_no_ext));
-fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
-                    ['figs_',roi_set_filename_no_ext]);                                               
+                                                  roiset_filename_no_ext));
 if exist(save_data_filename,'file') && in.load_processed_data
     % Load processed data (skips showing diff image, even if set in
     % show_diff_image)
@@ -132,10 +142,10 @@ else
     if isempty(in.roiset_filedir)
        in.roiset_filedir = [img.filedir filesep '..']; % default location
     end
-    rois = ROIs(rois_or_roi_set_filename,'roi_set_filedir',...
+    rois = ROIs(rois_or_roiset_filename,'roi_set_filedir',...
                 in.roiset_filedir); % assume directory above data for this condition
-    if ischar(rois_or_roi_set_filename)
-        if regexp(rois_or_roi_set_filename,'pc')
+    if ischar(rois_or_roiset_filename)
+        if regexp(rois_or_roiset_filename,'pc')
             % TEMPORARY FIX: include 'pc' in file name to indicate ROIs created on
             % Windows ImageJ, require y axis to be inverted when
             % importing to MATLAB
@@ -151,7 +161,8 @@ else
         end
         if ~strcmp(fixed_rec.filepath,img.filepath)
             [~,~,rois] = coregisterImagesAndROIs(fixed_rec,img,rois,exp_settings,...
-                                                'plot_result',0); 
+                                                'plot_result',1,...
+                                                'transform_type',in.transform_type); 
         else
             fprintf('Registering to same recording, skipping...\n'); 
         end

@@ -137,6 +137,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     obj.y = obj.y0; % current is same as original initially                    
                 elseif strcmp(obj.types{1},'Rectangle')
                     % TODO: finish
+                elseif strcmp(obj.types{1},'Polygon')
+                    obj.x0 = cellfun(@(x) [x.mnCoordinates(:,1);x.mnCoordinates(1,1)],... % add first point to end
+                                     ROIarray,'UniformOutput',0); % x coords
+                    obj.y0 = cellfun(@(x) [x.mnCoordinates(:,2);x.mnCoordinates(1,2)],...
+                                     ROIarray,'UniformOutput',0); % y coords
+                    obj.x = obj.x0; % current is same as original initially
+                    obj.y = obj.y0; % current is same as original initially           
                 else
                     error('Other shapes not implemented');
                 end
@@ -197,6 +204,9 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             %
             %   Inputs
             %   ------
+            %   imsize : [rows columns]
+            %            Image dimensions, should be 2D (first 2 dimensions
+            %            for 3D image stack/movie)
             %   Optional Inputs
             %   ---------------
             %   Outputs
@@ -244,7 +254,16 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                     mask = any(X >= ri(1,3,:) & X <= ri(1,4,:) & ...
 %                                Y >= ri(1,1,:) & Y <= ri(1,2,:), 3);                
 %                                       
-                end                    
+                end  
+            elseif all(strcmp(obj.types,'Polygon'))
+                mask = nan(imsize);
+               [xgrid, ygrid] = meshgrid(1:imsize(2), 1:imsize(1));
+                for i = 1:length(roi_inds)
+                   xvi = obj.x{roi_inds(i)};
+                   yvi = obj.y{roi_inds(i)}; 
+                   maski = inpolygon(xgrid,ygrid,xvi,yvi); 
+                   mask(maski) = 1; 
+                end
             else
                 error('getMask not implemented yet for non-uniform ROI arrays'); 
             end            
@@ -289,6 +308,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     end
                     x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
                     y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
+                    xi = mean(x_ptsi); yi = mean(y_ptsi); % for label below
+                elseif strcmp(obj.types{i},'Polygon')
+                    if plot_current
+                       x_ptsi = obj.x{i}; y_ptsi = obj.y{i}; 
+                    else
+                       x_ptsi = obj.x0{i}; y_ptsi = obj.y0{i}; 
+                    end
                     xi = mean(x_ptsi); yi = mean(y_ptsi); % for label below
                 end
                 plot(ax,x_ptsi,y_ptsi,'-','Color',col); hold(ax,'on'); 

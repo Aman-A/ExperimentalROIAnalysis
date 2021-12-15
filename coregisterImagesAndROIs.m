@@ -16,6 +16,7 @@ function varargout = coregisterImagesAndROIs(fixed_recording,moving_recording,..
 in.transform_type = 'displace'; % 'translation','rigid','similarity','affine','displace
 in.max_iterations = 300; % Max iterations for registration optimizer
 in.z_proj = 'baseline'; % image to use for registration - 'baseline','peak','diff' (peak - baseline)
+in.baseline_mode = 'mean'; % 'mean' or 'max' - metric to calculate on baseline frames
 in.metric = 'MeanSquares'; 
 in.roi_disp_shift_mode = 'mean'; % For displacement mode, specify 'mean' or 
                                  % 'center' (TBD) to shift based on mean of 
@@ -26,10 +27,12 @@ in.plot_result = 0;
 in.save_fig = 0; 
 in = sl.in.processVarargin(in,varargin); 
 %% Get z-projection of each image to use for registration
-[fixed_bsline,fixed_peak, fixed_diff] = diffImage(fixed_recording,exp_settings,...
-                                                  'include_plots',[]);
-[moving_bsline,moving_peak, moving_diff] = diffImage(moving_recording,exp_settings,...
-                                                  'include_plots',[]);
+[fixed_bsline, fixed_peak, fixed_diff] = diffImage(fixed_recording,exp_settings,...
+                                                  'include_plots',[],...
+                                                  'baseline_mode',in.baseline_mode);
+[moving_bsline, moving_peak, moving_diff] = diffImage(moving_recording,exp_settings,...
+                                                  'include_plots',[],...
+                                                  'baseline_mode',in.baseline_mode);
 if strcmp(in.z_proj,'baseline')       
     fixed_img = fixed_bsline;
     moving_img = moving_bsline;
@@ -88,19 +91,36 @@ if strcmp(in.transform_type,'displace')
     rois2.shift(dr); % shift each ROI by [x,y] vector (pixels)    
     varargout = {D,dr,rois2}; 
 else
+    % mask images with dilated ROIs for registration
+    rois_reg = rois.copy(); 
+    rois_reg.radius = rois_reg.radius*in.dilation_factor; % dilate rois for image used for estimating displacement field
+    mask_reg = rois_reg.getMask(fixed_recording.imsize(1:2));
+    moving_img2 = moving_img.*mask_reg; moving_img2(isnan(moving_img2)) = 0; 
+    fixed_img2 = fixed_img.*mask_reg; fixed_img2(isnan(fixed_img2)) = 0; 
+    % setup registration
     optimizer = imregconfig('monomodal'); % mean squares
     optimizer.MaximumIterations = in.max_iterations; 
     if strcmp(in.metric,'MeanSquares')
        metric = registration.metric.MeanSquares; 
     elseif strcmp(in.metric,'MattesMutualInformation')
         metric = registration.metric.MattesMutualInformation;
-    end
-    tform = imregtform(moving_img,fixed_img,in.transform_type,optimizer,metric,...
+    end    
+    tic
+    tform = imregtform(moving_img2,fixed_img2,in.transform_type,optimizer,metric,...
                        'DisplayOptimization',false);    
-    varargout = {tform}; 
+    rois2 = rois.copy(); 
+    T = tform.invert.T; % use inverse of registration transformation to shift ROIs
+    rois2.affine2d(T); % apply affine transformation matrix
+    time_elapsed = toc; 
+    rois2.registration_rec = fixed_recording.filepath; 
+    rois2.transform_type = in.transform_type; 
+    fprintf('Coregistered %s to %s using %s transformation in %.3f sec \n',...
+            moving_recording.img_name,fixed_recording.img_name,...
+            in.transform_type,time_elapsed); 
+    varargout = {T,[],rois2}; 
     % For some reason, output of imwarp with tform is different from output
     % of imregister, should be identical...
-    moving_reg2 = imwarp(moving_img,tform,'OutputView',imref2d(size(fixed_img)));
+    moving_reg = imwarp(moving_img,tform,'OutputView',imref2d(size(fixed_img)));
 % [moving_reg2,R_reg] = imregister(img2_zproj,img1_zproj,transform_type,optimizer,metric,...
 %                                 'DisplayOptimization',true); 
 end
@@ -141,4 +161,5 @@ if in.plot_result
         fig_name = sprintf('%s_disp_results',moving_recording.img_name); 
         printFig(fig,fig_dir,fig_name);         
     end
+end
 end

@@ -14,6 +14,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         format char {mustBeTextScalar}    % image file format
         pixel_size = 0.4; % size of individual pixel in µm (for scale bar) 
                           % default for Andor iXon Ultra 897 (Thor)
+        bin_size = 1; % pixel binning (must be symmetric, i.e. 1x1, 2x2, etc.)
         time_start
         loaded = false 
         imsize % [rows x columns x time points]
@@ -41,6 +42,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             in.format = '';
             in.file_structure = 'default'; % <exp_date>/<reporter>/<dish>/<condition>
                                            % other structures not implemented
+            in.pixel_size = obj.pixel_size;
+            in.bin_size = obj.bin_size; 
             in = sl.in.processVarargin(in,varargin);       
             % Get object properties
             obj.exp_date = in.exp_date;
@@ -49,6 +52,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             obj.condition = in.condition;            
             obj.data_fold = in.data_fold;
             obj.position = in.position; % (not used currently)
+            obj.pixel_size = in.pixel_size; 
+            obj.bin_size = in.bin_size; 
             % Check if file path is in img name
             [path_to_img,name,ext] = fileparts(img_name); 
             if isempty(path_to_img)

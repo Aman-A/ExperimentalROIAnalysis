@@ -122,8 +122,8 @@ elseif in.method == 2
                                       'NPeaks',length(stim_frames),...
                                       'MinPeakDistance',in.min_interAP_interval*ISI,...
                                       'MinPeakWidth',in.min_AP_width*exp_settings.sampling_rate);
-        peak_vals_all{i} = peak_vals;
-        peak_frames_all{i} = peak_frames;
+        peak_vals_all{i} = peak_vals';
+        peak_frames_all{i} = peak_frames';
         if in.print_level > 0
             fprintf('ROI %g: %g peaks found for %g stimuli\n',i,length(peak_vals),...
                                                                 length(stim_frames)); 

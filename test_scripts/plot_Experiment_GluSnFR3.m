@@ -17,6 +17,12 @@ exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
 roi_set_filename = 'RoiSet_pc_posX.zip'; 
 % Optional settings
 plot_settings = struct();
+plot_settings.data_fold = data_fold;
+plot_settings.exp_date = exp_date;
+plot_settings.reporter = reporter;
+plot_settings.dish = dish;
+plot_settings.condition = condition;
+plot_settings.position = position;
 plot_settings.show_diff_image = [3]; % can include [1,2,3]
 plot_settings.filt_width = 0;
 plot_settings.funcs = {'mean','baseline','deltaF_F0'};
@@ -36,14 +42,12 @@ plot_settings.close_img_after_save = 0;
 %%
 trace_fig = figure; 
 trace_axis = gca;
-datai = plotTrial(data_fold,exp_date,reporter,dish,condition,position,...
-                   img_name,exp_settings,roi_set_filename,...
+datai = plotTrial(img_name,exp_settings,roi_set_filename,...
                    trace_axis,plot_settings);
 %% Plot multiple trials, same condition
 condition = 'control'; % 'control', '5nM_DTX', '50nM_DTX'
 img_names = {}; % use all images in condition folder
-trials_data = plotTrials(data_fold,exp_date,reporter,dish,condition,position,img_names,...
-                exp_settings,roi_set_filename,plot_settings);
+trials_data = plotTrials(img_names,exp_settings,roi_set_filename,plot_settings);
 %% Plot multiple trials, multiple conditions       
 conditions = {'control','10nM_DTX'}; 
 % conditions = {'control','10nM_DTX','50nM_DTX','100nM_DTX','wash'}; % ,'wash'             

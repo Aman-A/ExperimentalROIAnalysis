@@ -16,7 +16,7 @@ plot_settings.funcs = {'baseline','deltaF_F0'}; % options: 'mean','std','baselin
 plot_settings.roi_func_mode = 'separate'; % options: 'combine' or 'separate'
 plot_settings.recenterROIs = 0; % set to 0 for off, or set to 'diff', 'peak', or 'baseline' to use those images for recentering ROIs
 plot_settings.save_processed_data = 1;
-plot_settings.load_processed_data = 1;
+plot_settings.load_processed_data = 0;
 plot_settings.save_fig = 0;    
 plot_settings.roiset_filedir = img_folder; % file directory where roisets are saved, currently same as image files
 %% Specify your experimental parameters
@@ -44,12 +44,11 @@ for i = 1:num_trials
     axi = gca;
     img_namei = img_names{i}; 
     roi_set_filenamei = roiset_names{i};
-    datai = plotTrial([],[],[],[],[],[],...
-                   fullfile(img_folder,img_namei),exp_settings,roi_set_filenamei,...
+    datai = plotTrial(fullfile(img_folder,img_namei),exp_settings,roi_set_filenamei,...
                    axi,plot_settings);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
-    trial_times(i) = datai.Recording.time_start; 
+    trial_times(i) = datai.recording.time_start; 
     bslines{i} = datai.func_output.baseline;
     saveROIfuncOutput(datai.func_output);
 end
