@@ -178,7 +178,7 @@ else
                 recenter_img = mean_bsline_img;
             end
         elseif in.recenterROIs == 1
-            recenter_img = peak_stim_img; % recenter on this by default if no mode specified
+            recenter_img = diff_img; % recenter on this by default if no mode specified
         end
         rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     end    
