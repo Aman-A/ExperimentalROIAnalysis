@@ -4,7 +4,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         exp_date char {mustBeTextScalar} % YYYYMMDD format 
         reporter char {mustBeTextScalar} % reporter name
         dish char {mustBeTextScalar} % dish name 
-        DIV uint16 {mustBeNumeric} % days in vitro (DIV)
+        div uint16 {mustBeNumeric} % days in vitro (DIV)
         microscope char {mustBeTextScalar} % name of microscope used (e.g. 'Thor', 'Loki', etc.)
         condition char {mustBeTextScalar}
         position char {mustBeTextScalar} % name of position (TODO: make class, load from micromanager)
@@ -32,6 +32,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             in.dish = '';
             in.reporter = '';
             in.exp_date = '';
+            in.div = '';
             in.data_fold = ''; % top level folder for experiment data, should follow
                                % a defined file_structure. 'default' is
                                % only one implemented currently. Leave
@@ -49,6 +50,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             obj.exp_date = in.exp_date;
             obj.reporter = in.reporter;
             obj.dish = in.dish;
+            obj.div = in.div;
             obj.condition = in.condition;            
             obj.data_fold = in.data_fold;
             obj.position = in.position; % (not used currently)

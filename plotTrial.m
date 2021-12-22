@@ -53,6 +53,7 @@ in.data_fold = pwd;
 in.exp_date = '';
 in.reporter = '';
 in.dish = '';
+in.div = [];
 in.condition = '';
 in.position = '';
 in.filedir = ''; % placeholder for inputs from plotTrials
@@ -85,7 +86,7 @@ in = sl.in.processVarargin(in,varargin);
 img = Recording(img_name,'position',in.position,'condition',in.condition,...
                 'dish',in.dish,'reporter',in.reporter,'exp_date',in.exp_date,...
                 'data_fold',in.data_fold,'pixel_size',in.pixel_size,...
-                'bin_size',in.bin_size);             
+                'div',in.div,'bin_size',in.bin_size);             
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
 if ischar(rois_or_roiset_filename)
