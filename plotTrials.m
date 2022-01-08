@@ -7,6 +7,7 @@ in.exp_date = ''; % use for default experiment file structure:
                   % <data_fold>/<exp_date>/<reporter>/<dish>/<condition>
 in.reporter = '';
 in.dish = '';
+in.div = [];
 in.condition = '';
 in.position = '';
 in.filedir = ''; % if not empty, this folder is used instead of default 
