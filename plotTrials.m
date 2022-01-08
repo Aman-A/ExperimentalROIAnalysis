@@ -138,11 +138,14 @@ trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
 trials_data.img_names = img_names; 
 if in.save_fig
-    if isfield(datai,'fig_dir')
+    if isfield(datai,'fig_dir') && isempty(in.data_fold)
         fig_dir = datai.fig_dir;
     else
+        roiset_filename_no_ext = getROIset_name(roi_set_filename{1},...
+                                            in.transform_type,...
+                                            in.registration_rec);  
         fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,...
-                            in.condition,['figs_',roi_set_filename_no_ext]);
+                            in.condition,['figs_',roiset_filename_no_ext]);
     end
     fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
     printFig(trace_fig,fig_dir,fig_name);

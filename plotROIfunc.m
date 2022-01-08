@@ -16,6 +16,7 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
 % AUTHOR    : Aman Aberra
 in.ax = []; 
 in.show_legend = 1;
+in.title_on = 0;
 in.offset_factor = 1.5; % 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
@@ -29,7 +30,7 @@ end
 if nargin < 4
     x = 1:size(func_output.(func_name),1); % frames    
     unit_str = 'frames';
-else
+else    
     x = (1:size(func_output.(func_name),1))/sampling_rate; % convert frames to time in sec
     stim_frames = stim_frames/sampling_rate; 
     if length(stim_frames) == 1 % set t = 0 to single stimulus time
@@ -116,7 +117,9 @@ else
    ylabel(ax,func_name);  
 end
 box(ax,'off'); 
-title(ax,title_str,'Interpreter','none','FontSize',8); 
+if in.title_on
+    title(ax,title_str,'Interpreter','none','FontSize',8); 
+end
 % legend(ax.Children(~ind_stim_times)); 
 if in.show_legend
     if strcmp(func_output.roi_func_mode,'combine')    

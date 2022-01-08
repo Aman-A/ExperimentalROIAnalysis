@@ -21,7 +21,8 @@ in.dish = '';
 in.save_fig = 1; 
 in.formats = {'fig','png'}; 
 in.resolutions = {[],'-r300'};
-in.fig_dir = fullfile(getDataFold(),'figs');   
+in.fig_dir = fullfile(getDataFold(),'figs');
+in.title_on = 1;
 % in.rm_anova = 0;
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(data_array);
@@ -60,7 +61,8 @@ scatter((1:num_conditions).*ones(size(data_mat)),data_mat,'ko','MarkerFaceColor'
 ax = gca;
 ax.FontSize = 16;
 ax.XTick = 1:num_conditions;
-ax.XTickLabel = conditions;
+% ax.XTickLabel = conditions;
+ax.XTickLabel = strrep(conditions,'_',' ');
 ax.TickLabelInterpreter = 'none';
 if isempty(units)
      ylabel(sprintf('%s',name));
@@ -79,17 +81,19 @@ if ~isempty(time_starts)
          'FontSize',14);
 end
 % Add title 
-title_str = '';
-if ~isempty(in.exp_date)
-   title_str = [title_str 'Date: ' in.exp_date];     
+if in.title_on
+    title_str = '';
+    if ~isempty(in.exp_date)
+       title_str = [title_str 'Date: ' in.exp_date];     
+    end
+    if ~isempty(in.reporter)
+       title_str = [title_str ', ' in.reporter];    
+    end
+    if ~isempty(in.dish)
+       title_str = [title_str ', ' in.dish];    
+    end
+    title(title_str,'Interpreter','none'); 
 end
-if ~isempty(in.reporter)
-   title_str = [title_str ', ' in.reporter];    
-end
-if ~isempty(in.dish)
-   title_str = [title_str ', ' in.dish];    
-end
-title(title_str,'Interpreter','none'); 
 if in.save_fig
     rep_chars = {' ','{','}','\','/'}; % replace in quantity name for file saving
     empty_chars = repmat({''},1,length(rep_chars));

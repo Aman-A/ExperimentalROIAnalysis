@@ -3,7 +3,7 @@
 method = 1; % mini finding method
 threshold = 3.5; % x std (noise level)
 min_mini_width = 20e-3; % sec - min FWHM of minis
-apply_high_pass_filt = 1;    
+apply_high_pass_filt = 0;    
 fc = 1/3; % Hz - filter cutoff
 nframes_back = 10;  % number of frames behind each mini to extend window
 nframes_forward = 10; 
@@ -25,6 +25,7 @@ img_name = img_names{3};
 rec = Recording(fullfile(img_folder,img_name));  
 rec.load(); 
 rois = ROIs(fullfile(exp_folder,roi_set_name)); 
+rois.invert_y(rec.imsize); 
 %% Extract traces in ROIs
 func_output = calcROIfuncs(rec,rois,{'mean','deltaF_F0'},exp_settings.baseline_wind_inds,...
                             'separate');
