@@ -17,9 +17,10 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
 in.ax = []; 
 in.show_legend = 1;
 in.title_on = 0;
-in.offset_factor = 1.5; % 1 - offset lines by offset_factor*max(func_output) 
+in.offset_factor = 1.01; % 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
+in.sort_traces = 0; % 1 for ascending, 2 for descending
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
@@ -58,8 +59,10 @@ if strcmp(func_output.roi_func_mode,'combine')
     % Plot on single axis
     lns = plot(ax,x,func_output.(func_name)); % plot trace/s
 else
-    display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
+    display_names = cellfun(@(x) sprintf('%s',x),...
                             func_output.rois.names,'UniformOutput',0);
+%     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
+%                             func_output.rois.names,'UniformOutput',0);
     if isrow(display_names)
        display_names = display_names'; % make column vector for setting DisplayName below
     end
@@ -84,7 +87,22 @@ else
                                 0,size(func_output.(func_name),2));  
            end
         end
-        lns = plot(ax,x,func_output.(func_name)+offset); % plot trace/s
+        y = func_output.(func_name);
+        if length(in.sort_traces) == 1
+            peaks = max(y,[],1);
+            if in.sort_traces == 1                
+                [~,sort_inds] = sort(peaks,2,'ascend');
+            else 
+                [~,sort_inds] = sort(peaks,2,'descend');
+            end
+            y = y(:,sort_inds);
+            display_names = display_names(sort_inds);
+        elseif length(in.sort_traces) == size(y,2) % input indices 
+            sort_inds = in.sort_traces; 
+            y = y(:,sort_inds);
+            display_names = display_names(sort_inds);
+        end
+        lns = plot(ax,x,y+offset); % plot trace/s
         ax.YAxis.Visible = 'off';
         sbar = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
                     'k','LineWidth',2,'DisplayName',...

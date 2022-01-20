@@ -25,6 +25,8 @@ output.poststim_ints_all = cell(1,num_conditions); % integrals in post-stim wind
 output.mean_peaks = cell(1,num_conditions);
 output.std_peaks = cell(1,num_conditions);
 output.sem_peaks = cell(1,num_conditions);
+output.decay_fits = cell(1,num_conditions);
+output.successful_spikes = cell(1,num_conditions);
 output.trial_times_all = cell(1,num_conditions);
 output.baselines_all = cell(1,num_conditions); 
 output.rois_all = cell(1,num_conditions); 
@@ -37,25 +39,28 @@ for i = 1:num_conditions
     % trial data for ith condition
     tdi = plotTrials(img_names{i},exp_settings,roi_set_filename,plot_settings);    
     output.deltaF_F0_all{i} = tdi.deltaF_F0;    
-    output.peaks_deltaF_F0_all{i} = tdi.peaks_deltaF_F0;
-    if strcmp(plot_settings.roi_func_mode,'combine')        
-        [~,pk_inds] = max(tdi.deltaF_F0(exp_settings.stim_wind_inds,:),[],1);
+    %     peaks_deltaF_F0 = vertcat(analysis.peaks);   % peak within each roi    
+    if strcmp(plot_settings.roi_func_mode,'combine')                  
+        output.peaks_deltaF_F0_all{i} = tdi.analysis.peaks;
         % Time of peak in sec relative to first stimulus
-        output.peak_times_all{i} = exp_settings.convert2Time(exp_settings.stim_wind_inds(pk_inds) - exp_settings.stim_vals(1));
-        output.poststim_ints_all{i} = (1/exp_settings.sampling_rate)*...
-                                      trapz(tdi.deltaF_F0(exp_settings.stim_wind_inds,:));        
+        output.peak_times_all{i} = tdi.analysis.peak_times;        
+        output.poststim_ints_all{i} = tdi.analysis.poststim_ints;            
     else
-        [~,pk_inds] = cellfun(@(x) max(x(exp_settings.stim_wind_inds,:),[],1),...
-                              tdi.deltaF_F0,'UniformOutput',0);
-        pk_inds = cell2mat(pk_inds'); % [ num_trials x num_rois]
-        output.peak_times_all{i} = exp_settings.convert2Time(exp_settings.stim_wind_inds(pk_inds)-exp_settings.stim_vals(1));
-        output.poststim_ints_all{i} = cell2mat(cellfun(@(x) (1/exp_settings.sampling_rate)*...
-                                        trapz(x(exp_settings.stim_wind_inds,:)),...
-                                        tdi.deltaF_F0,'UniformOutput',0)');        
+        output.peaks_deltaF_F0_all{i} = vertcat(tdi.analysis.peaks);
+        output.peak_times_all{i} = vertcat(tdi.analysis.peak_times);       
+        output.poststim_ints_all{i} = vertcat(tdi.analysis.poststim_ints);                
     end
-    output.mean_peaks{i} = tdi.mean_peak_deltaF_F0;
-    output.std_peaks{i} = tdi.std_peak_deltaF_F0;
-    output.sem_peaks{i} = tdi.std_peak_deltaF_F0/sqrt(length(tdi.peaks_deltaF_F0));
+    if isfield(tdi.analysis,'decay_fit')
+        output.decay_fits{i} = [tdi.analysis.decay_fit];  
+        output.successful_spikes{i} = vertcat(tdi.analysis.successful_spikes);
+        if i == num_conditions
+            output.spike_thresh = tdi.analysis.spike_thresh;
+        end
+    end
+    
+    output.mean_peaks{i} = [tdi.analysis.mean_peak];
+    output.std_peaks{i} = [tdi.analysis.std_peak];
+    output.sem_peaks{i} = [tdi.analysis.sem_peak];
     output.trial_times_all{i} = tdi.trial_times;
     output.baselines_all{i} = tdi.bslines;
     output.rois_all{i} = tdi.rois_all; 
