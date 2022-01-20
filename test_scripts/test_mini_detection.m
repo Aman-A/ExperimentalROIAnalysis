@@ -1,7 +1,7 @@
 %% Mini detection 
 % Analysis settings
 method = 1; % mini finding method
-threshold = 3.5; % x std (noise level)
+threshold = 4; % x std (noise level)
 min_mini_width = 20e-3; % sec - min FWHM of minis
 apply_high_pass_filt = 1;    
 fc = 1/3; % Hz - filter cutoff
@@ -25,6 +25,7 @@ img_name = img_names{3};
 rec = Recording(fullfile(img_folder,img_name));  
 rec.load(); 
 rois = ROIs(fullfile(exp_folder,roi_set_name)); 
+rois.invert_y(rec.imsize); 
 %% Extract traces in ROIs
 func_output = calcROIfuncs(rec,rois,{'mean','deltaF_F0'},exp_settings.baseline_wind_inds,...
                             'separate');

@@ -76,6 +76,7 @@ in.roi_func_fig_units = 'centimeters';
 in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
 in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
+in.overlay_trials = 1; % relevant for plotTrials
 in.close_img_after_save = 1; in.show_roi_labels = 0;
 in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
 in.bin_size = 1; % 1x1 binning
@@ -211,6 +212,14 @@ else
     end
 end
 %% Plot data
+if isempty(trace_axis)
+    fig = figure; 
+    trace_axis = gca;
+else
+    fig = trace_axis.Parent;    
+end
+fig.Units = in.roi_func_fig_units;
+fig.Position(3:4) = in.roi_func_fig_size;
 if ~isempty(in.x_lim)
    trace_axis.XLim = in.x_lim;     
 end
@@ -226,10 +235,6 @@ end
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                 exp_settings.sampling_rate,'ax',trace_axis,...
                 'show_legend',show_legend);
-
-fig = trace_axis.Parent;
-fig.Units = in.roi_func_fig_units;
-fig.Position(3:4) = in.roi_func_fig_size;
 drawnow; 
 if in.save_fig > 1 % set to 2 to plot individual trials   
    fig_name = [img.img_name '_' in.plot_func]; 

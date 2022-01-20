@@ -30,6 +30,7 @@ in.roi_func_fig_units = 'centimeters';
 in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
 in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 in.save_fig = 0; 
+in.overlay_trials = 1;
 in.close_img_after_save = 0; 
 in.show_roi_labels = 0; 
 in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
@@ -51,18 +52,23 @@ if ischar(img_names)
    img_names = {img_names};  
 end
 num_trials = length(img_names); 
-trace_fig = figure; 
-if strcmp(in.roi_func_mode,'combine')
-    trace_axis = gca; 
-elseif strcmp(in.roi_func_mode,'separate') 
-    if num_trials > 1
-        traces_axes = cell(num_trials,1); 
-        for i = 1:num_trials
-            traces_axes{i} = subplot(1,num_trials,i);         
+if in.overlay_trials
+    trace_fig = figure; 
+    if strcmp(in.roi_func_mode,'combine')
+        trace_axis = gca; 
+    elseif strcmp(in.roi_func_mode,'separate') 
+        if num_trials > 1
+            traces_axes = cell(num_trials,1); 
+            for i = 1:num_trials
+                traces_axes{i} = subplot(1,num_trials,i);         
+            end
+        else
+            trace_axis = gca;
         end
-    else
-        trace_axis = gca;
     end
+else
+    trace_axes = cell(num_trials,1); % leave empty
+    trace_axis = [];
 end
 func_outputs = cell(1,num_trials); 
 deltaF_F0 = cell(1,num_trials); 
@@ -138,7 +144,7 @@ trials_data.trial_times = trial_times;
 trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
 trials_data.img_names = img_names; 
-if in.save_fig
+if in.save_fig && in.overlay_trials
     if isfield(datai,'fig_dir')
         fig_dir = datai.fig_dir;
     else
