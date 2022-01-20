@@ -85,6 +85,18 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                  (obj.stim_vals - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals - obj.baseline_start_frame);
             end
         end
+        function t = getTimeVector(obj,num_frames)
+            x = 1:num_frames;
+            t = convert2Time(obj,x);
+            if length(obj.stim_vals) == 1
+                if strcmp(obj.units,'frames')
+                    stim_time = convert2Time(obj,obj.stim_vals);
+                else
+                    stim_time = obj.stim_vals;  
+                end
+                t = t - stim_time;
+            end
+        end
     end
     
 end

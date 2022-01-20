@@ -16,7 +16,7 @@ exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                   units,sampling_rate); % automatically converts to frames
 roi_set_filename = 'RoiSet_pc_posX.zip'; 
 % Optional settings
-plot_settings = struct();
+plot_settings = plotTrialSettings;
 plot_settings.data_fold = data_fold;
 plot_settings.exp_date = exp_date;
 plot_settings.reporter = reporter;
@@ -50,17 +50,18 @@ img_names = {}; % use all images in condition folder
 trials_data = plotTrials(img_names,exp_settings,roi_set_filename,plot_settings);
 %% Plot multiple trials, multiple conditions       
 conditions = {'control','10nM_DTX'}; 
-% conditions = {'control','10nM_DTX','50nM_DTX','100nM_DTX','wash'}; % ,'wash'             
 positions = repmat({position},1,length(conditions));
 img_names = cell(1,length(conditions)); % use all images in condition folder
 roi_set_filenames = [repmat({roi_set_filename},1,length(conditions))];
 plot_settings.transform_type = 'displace'; % coregister and get displacement field 
 plot_settings.registration_rec = fullfile(data_fold,exp_date,reporter,dish,'control',...
                                'control.fits'); 
+% set(0,'DefaultFigureVisible','off') % to avoid window taking screen focus
 out = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish,...
                                conditions,positions,img_names,exp_settings,...
                                roi_set_filenames,...
                                plot_settings);
+% set(0,'DefaultFigureVisible','on')
 %% Plot summary data
 plot_inds = [1,2,3,4];
 summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,['figs_',roi_set_filenames{1}]);       
@@ -70,6 +71,26 @@ plotDefaultSummaryStats(out.peaks_deltaF_F0_all,out.poststim_ints_all,out.peak_t
                          'summary_fig_dir',summary_fig_dir,'plot_inds',plot_inds,...
                          'roi_set_filename',roi_set_filenames{1}) 
 %% Generate diff image stack
-img_stack_name = sprintf('%s_%s_%s_diffimage_stack',exp_date,reporter,dish); 
+stack_mode = 'diff'; % or 'bsline'
+img_stack_name = sprintf('%s_%s_%s_%s_image_stack',exp_date,reporter,dish,stack_mode); 
 makeExpDiffImageStack(fullfile(data_fold,exp_date,reporter,dish),...
-                      conditions,exp_settings,'img_stack_name',img_stack_name)                     
+                      conditions,exp_settings,'img_stack_name',img_stack_name,...
+                      'img_mode',stack_mode)  
+%% Glutamate normalization
+mean_wind = 100:200;
+plot_settings.roi_func_mode = 'separate';
+plot_settings.show_diff_image = [3]; % can include [1,2,3]
+plot_settings.x_lim = [-10 180]; 
+plot_settings.y_lim = [];
+
+plot_settings.condition = 'glut';
+plot_settings.transform_type = 'none'; % 'none' or 'displace'
+plot_settings.save_fig = 0;
+% glut_img_name = 'glut_5mM';   
+glut_img_name = 'glut_5mM_mot_correct.tif';   
+glut_exp_settings = ExperimentSettings(19,200,18,'frames',2);                        
+trace_fig = figure; 
+trace_axis = gca;
+datai = plotTrial(glut_img_name,glut_exp_settings,roi_set_filename,...
+                   trace_axis,plot_settings);
+ss_peaks = mean(datai.func_output.deltaF_F0(mean_wind,:),1);

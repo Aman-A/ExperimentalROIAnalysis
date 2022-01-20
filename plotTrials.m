@@ -35,6 +35,7 @@ in.close_img_after_save = 0;
 in.show_roi_labels = 0; 
 in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
 in.bin_size = 1; % 1x1 binning
+in.sort_traces = 0;
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
 if isempty(img_names) % assume all .fits files are relevant trial data
@@ -86,9 +87,8 @@ if ischar(roi_set_filename) || ~iscell(roi_set_filename)
 end
 if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
     if ischar(in.registration_rec)    
-        if exist(in.registration_rec,'file')
-            in.registration_rec = Recording(in.registration_rec);  % pre-load once
-        else
+        in.registration_rec = Recording(in.registration_rec);  % pre-load once
+        if ~exist(in.registration_rec.filepath,'file')                   
             error('''%s'' input for registration_rec does not exist',in.registration_rec);  
         end
     end
@@ -115,18 +115,17 @@ if strcmp(in.roi_func_mode,'combine')
     if any(strcmp('mean',in.funcs))
         means = cell2mat(means); 
     end
-    peaks_deltaF_F0 = max(deltaF_F0,[],1); % peaks within trial
-    mean_peak_deltaF_F0 = mean(peaks_deltaF_F0);
-    std_peak_deltaF_F0 = std(peaks_deltaF_F0,0);
+    analysis = analyzeTraces(deltaF_F0,exp_settings);     
     fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
-             in.condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
+             in.condition, analysis.mean_peak,analysis.std_peak); 
     fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
             exp_settings.baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
 elseif strcmp(in.roi_func_mode,'separate')
     bslines = cell2mat(bslines'); % [num_trials x num_rois] 
-    peaks_deltaF_F0 = cell2mat(cellfun(@(x) max(x,[],1),deltaF_F0,'UniformOutput',0)'); % [num_trials x num_rois]
-    mean_peak_deltaF_F0 = mean(peaks_deltaF_F0,1); % mean across trials, within roi
-    std_peak_deltaF_F0 = std(peaks_deltaF_F0,0,1); % mean across trials, within roi
+    analysis = cellfun(@(x) analyzeTraces(x,exp_settings),deltaF_F0,'UniformOutput',0);
+    analysis = [analysis{:}]; % convert to struct array
+    mean_peak_deltaF_F0 = [analysis.mean_peak]; % mean across trials, within roi
+    std_peak_deltaF_F0 = [analysis.std_peak]; % std across trials, within roi    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
              in.condition, mean(mean_peak_deltaF_F0),mean(std_peak_deltaF_F0)); 
     fprintf('  Mean baseline (%g frames) across trials and ROIs = %.3f +/- %.3f\n',...
@@ -137,9 +136,7 @@ trials_data.deltaF_F0 = deltaF_F0;
 if any(strcmp('mean',in.funcs))
     trials_data.means = means; 
 end
-trials_data.peaks_deltaF_F0 = peaks_deltaF_F0;
-trials_data.mean_peak_deltaF_F0 = mean_peak_deltaF_F0;
-trials_data.std_peak_deltaF_F0 = std_peak_deltaF_F0;
+trials_data.analysis = analysis;
 trials_data.trial_times = trial_times; 
 trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
@@ -148,8 +145,11 @@ if in.save_fig && in.overlay_trials
     if isfield(datai,'fig_dir')
         fig_dir = datai.fig_dir;
     else
+        roiset_filename_no_ext = getROIset_name(roi_set_filename{1},...
+                                            in.transform_type,...
+                                            in.registration_rec);  
         fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,...
-                            in.condition,['figs_',roi_set_filename_no_ext]);
+                            in.condition,['figs_',roiset_filename_no_ext]);
     end
     fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
     printFig(trace_fig,fig_dir,fig_name);

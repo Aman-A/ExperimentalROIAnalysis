@@ -35,7 +35,7 @@ for i = 1:num_files
         savefig(fig_handle,fullfile(file_dir,[file_name '.fig']));
     elseif strcmp(formati,'png')
         if exist('export_fig','file')
-            export_fig(fig_handle,fullfile(file_dir,[file_name '.png']),'-png',resi);
+            export_fig(fig_handle,fullfile(file_dir,[file_name '.png']),'-png',resi,'-cmyk');
         else
             print(fig_handle,fullfile(file_dir,[file_name '.png']),'-dpng',resi);
         end

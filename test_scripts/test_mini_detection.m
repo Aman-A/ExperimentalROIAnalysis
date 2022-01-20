@@ -3,7 +3,7 @@
 method = 1; % mini finding method
 threshold = 4; % x std (noise level)
 min_mini_width = 20e-3; % sec - min FWHM of minis
-apply_high_pass_filt = 1;    
+apply_high_pass_filt = 0;    
 fc = 1/3; % Hz - filter cutoff
 nframes_back = 10;  % number of frames behind each mini to extend window
 nframes_forward = 10; 

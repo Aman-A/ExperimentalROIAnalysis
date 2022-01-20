@@ -80,6 +80,7 @@ in.overlay_trials = 1; % relevant for plotTrials
 in.close_img_after_save = 1; in.show_roi_labels = 0;
 in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
 in.bin_size = 1; % 1x1 binning
+in.sort_traces = 0;
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
@@ -91,17 +92,9 @@ img = Recording(img_name,'position',in.position,'condition',in.condition,...
 % Prepare filename for saving data and check if it exists
 [~,img_name_no_ext] = fileparts(img_name); 
 if ischar(rois_or_roiset_filename)
-    [~,roiset_filename_no_ext] = fileparts(rois_or_roiset_filename);     
-    if ~strcmp(in.transform_type,'none') &&  ~isempty(in.transform_type)
-        if ischar(in.registration_rec)
-            [~,fixed_img_name,~] = fileparts(in.registration_rec); 
-        elseif isa(in.registration_rec,'Recording')
-            fixed_img_name = in.registration_rec.img_name; 
-        end
-        roiset_filename_no_ext = sprintf('%s_%s_%s',roiset_filename_no_ext,...
-                                                     fixed_img_name,...
-                                                     in.transform_type); 
-    end
+    roiset_filename_no_ext = getROIset_name(rois_or_roiset_filename,...
+                                            in.transform_type,...
+                                            in.registration_rec);    
 else
     roiset_filename_no_ext = 'custom';
 end
@@ -228,13 +221,13 @@ if ~isempty(in.y_lim)
 end
 % show_legend = 1;
 if strcmp(in.roi_func_mode,'combine')
-   show_legend = 1; 
+   show_legend = 0; 
 else
     show_legend = 0;
 end
 plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                 exp_settings.sampling_rate,'ax',trace_axis,...
-                'show_legend',show_legend);
+                'show_legend',show_legend,'sort_traces',in.sort_traces);
 drawnow; 
 if in.save_fig > 1 % set to 2 to plot individual trials   
    fig_name = [img.img_name '_' in.plot_func]; 

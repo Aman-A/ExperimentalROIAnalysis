@@ -17,6 +17,7 @@ function plotDefaultSummaryStats(peaks_deltaF_F0_all,poststim_ints_all,peak_time
 in.plot_inds = [1,2,3,4];
 in.roi_set_filename = ''; 
 in.summary_fig_dir = ''; 
+in.title_on = 1;
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.summary_fig_dir)
     data_fold = getDataFold(); 
@@ -40,7 +41,7 @@ if any(in.plot_inds == 1)
     plotSummaryStats(peaks_deltaF_F0_all,rel_times_cond_starts,conditions,...
                     'Peak \Delta F / F_{0}','','save_fig',plot_settings.save_fig,...
                     'exp_date',exp_date,'reporter',reporter,'dish',dish,...
-                    'fig_dir',summary_fig_dir);
+                    'fig_dir',summary_fig_dir,'title_on',in.title_on);
 end
 % Integrals
 if any(in.plot_inds == 2)
@@ -48,7 +49,7 @@ if any(in.plot_inds == 2)
     plotSummaryStats(poststim_ints_all,rel_times_cond_starts,conditions,...
                     'Post-stim integral','sec','save_fig',plot_settings.save_fig,...
                     'exp_date',exp_date,'reporter',reporter,'dish',dish,...
-                    'fig_dir',summary_fig_dir);
+                    'fig_dir',summary_fig_dir,'title_on',in.title_on);
 end            
 % Peak times
 if any(in.plot_inds == 3)
@@ -72,12 +73,12 @@ if any(in.plot_inds == 4)
     plotSummaryStats(baselines_all,[],conditions,...
                     'Baseline','a.u.','save_fig',0,... % skip save until 2nd subplot
                     'exp_date',exp_date,'reporter',reporter,'dish',dish,...
-                    'fig_dir',summary_fig_dir);            
+                    'fig_dir',summary_fig_dir,'title_on',in.title_on);            
     subplot(2,1,2)
     baselines_all_rel = cellfun(@(x) 100*(x-mean(baselines_all{1}))./mean(baselines_all{1}),...
                                 baselines_all,'UniformOutput',0);
     plotSummaryStats(baselines_all_rel,rel_times_cond_starts,conditions,...
                     'Baseline','% change','save_fig',plot_settings.save_fig,...
                     'exp_date',exp_date,'reporter',reporter,'dish',dish,... 
-                    'fig_dir',summary_fig_dir); 
+                    'fig_dir',summary_fig_dir,'title_on',in.title_on); 
 end
