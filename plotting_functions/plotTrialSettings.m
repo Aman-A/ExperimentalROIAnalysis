@@ -37,6 +37,7 @@ settings.roi_func_fig_units = 'centimeters';
 settings.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
 settings.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
 settings.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
+settings.overlay_trials = 1;
 settings.close_img_after_save = 1; 
 settings.show_roi_labels = 0;
 settings.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)

@@ -60,7 +60,7 @@ aligned_minis = cell2mat(mini_traces(~cellfun(@isempty,mini_traces)));
 mini_frames_lin = cell2mat(mini_frames); % convert to vector
 % Convert to deltaF/F0
 baselines = mean(aligned_minis(1:nframes_back,:),1);
-mini_deltaF_F_traces = aligned_minis./abs(baselines); % divide each column by corresponding baseline
+mini_deltaF_F_traces = (aligned_minis-abs(baselines))./abs(baselines); % subtract/divide each column by corresponding baseline
 if in.plot_figs
    t = 0:(1/sampling_rate):(size(mini_deltaF_F_traces,1)-1)/sampling_rate;
    figure; 
