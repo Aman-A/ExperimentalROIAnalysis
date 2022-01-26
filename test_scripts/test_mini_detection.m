@@ -1,7 +1,7 @@
 %% Mini detection 
 % Analysis settings
 method = 1; % mini finding method
-threshold = 4; % x std (noise level)
+threshold = 3; % x std (noise level)
 min_mini_width = 20e-3; % sec - min FWHM of minis
 apply_high_pass_filt = 0;    
 fc = 1/3; % Hz - filter cutoff
@@ -21,7 +21,7 @@ units = 'frames';
 exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,sampling_rate); 
 %% Load recording
 img_names = getImagesWithinDir(img_folder); 
-img_name = img_names{3}; 
+img_name = img_names{1}; 
 rec = Recording(fullfile(img_folder,img_name));  
 rec.load(); 
 rois = ROIs(fullfile(exp_folder,roi_set_name)); 
@@ -31,12 +31,16 @@ func_output = calcROIfuncs(rec,rois,{'mean','deltaF_F0'},exp_settings.baseline_w
                             'separate');
 deltaF_F0 = func_output.deltaF_F0;    
 means = func_output.mean;
+t = exp_settings.getTimeVector(size(deltaF_F0,1));
+funcs = {'peaks','peak_times'};
+peaks_struct = analyzeTraces(func_output.deltaF_F0,exp_settings,'funcs',funcs);
+evoked_peaks = peaks_struct.peaks;
 %% High pass filter to remove photobleaching transient
 if apply_high_pass_filt
-    filt_order = 3; 
+    filt_order = 1; 
     [b,a] = butter(filt_order,fc/(exp_settings.sampling_rate/2),'high');
-    deltaF_F0 = filtfilt(b,a,deltaF_F0); 
-    means = filtfilt(b,a,means); 
+    deltaF_F0_filt = filtfilt(b,a,deltaF_F0); 
+    means_filt = filtfilt(b,a,means); 
     fprintf('Applied %g order high pass filter with %g Hz cutoff\n',filt_order,fc); 
 else
     fprintf('Skipped filtering step\n'); 
@@ -53,8 +57,24 @@ settings.nframes_back = nframes_back;
 settings.nframes_forward = nframes_forward; 
 settings.stim_frame = exp_settings.stim_vals;
 settings.blank_around_stim = exp_settings.stim_wind; 
-settings.threshold = threshold;
+% settings.threshold = threshold;
+settings.threshold = 3;
 settings.roi_with_mini_index = roi_with_mini_index; 
 settings.min_mini_width = min_mini_width;
-mini_times = detect_minis(means,settings,method); 
-
+% To do: Add width criteria based on upstroke/downstroke of mini (FWHM?)
+mini_output = detect_minis(means,settings,method,'apply_filter',0,'plot_figs',1); 
+%% Example analyis
+num_minis_per_roi = cellfun(@length,mini_output.mini_frames,'UniformOutput',1);
+% rois_w_minis = num_minis_per_roi > 0; 
+% peaks_evoked_rois_w_minis = evoked_peaks(rois_w_minis);
+mean_peaks_minis = cellfun(@mean,mini_output.mini_peaks_deltaF_F,'UniformOutput',1)';
+evoked_rel_minis = evoked_peaks./mean_peaks_minis;
+fig = figure('Units','normalized'); 
+fig.Position(3:4) = [0.412 0.323];
+histogram(evoked_rel_minis,'BinWidth',0.25,'Normalization','probability',...
+                  'EdgeColor','none'); box off; hold on;
+xlabel('Peak evoked/mean peak mini'); ylabel('Proportion')
+title(sprintf('Mean mini = %.2f, mean evoked = %.3f. Threshold = %.1f x std',...
+       mean(mean_peaks_minis,'omitnan'),mean(evoked_rel_minis,'omitnan'),settings.threshold))
+ax = gca; ax.FontSize = 16; 
+plot([1:3;1:3],ax.YLim','--k'); % lines at 1, 2, 3
