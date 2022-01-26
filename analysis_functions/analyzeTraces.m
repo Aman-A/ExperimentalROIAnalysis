@@ -73,7 +73,7 @@ if any(strcmp(in.funcs,'decay_fit'))
             [fitobj,gof,~] = fit(t_fit,tracei_fit,f);
             decay_fit.fitobjs{i} = fitobj;
             if gof.rsquare < 0.5
-                fprintf('Warning: R^2 of decay fit = %.3f\n',gof.rsquare);
+                fprintf('Warning: R^2 of decay fit = %.3f, trial %g\n',gof.rsquare,i);
             end
             decay_fit.gofs{i} = gof; 
             decay_fit.rsquare(i) = gof.rsquare;

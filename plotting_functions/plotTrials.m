@@ -106,6 +106,7 @@ end
 if strcmp(in.roi_func_mode,'combine')
     deltaF_F0 = cell2mat(deltaF_F0); 
     bslines = cell2mat(bslines); 
+    mean_deltaF_F0 = mean(deltaF_F0,2); % average across trials
     if any(strcmp('mean',in.funcs))
         means = cell2mat(means); 
     end
@@ -117,7 +118,8 @@ if strcmp(in.roi_func_mode,'combine')
 elseif strcmp(in.roi_func_mode,'separate')
     bslines = cell2mat(bslines'); % [num_trials x num_rois] 
     analysis = cellfun(@(x) analyzeTraces(x,exp_settings),deltaF_F0,'UniformOutput',0);
-    analysis = [analysis{:}]; % convert to struct array
+    analysis = [analysis{:}]; % convert to struct array    
+    mean_deltaF_F0 = mean(cell2mat(reshape(deltaF_F0,1,1,num_trials)),3); % average traces across trials
     mean_peak_deltaF_F0 = [analysis.mean_peak]; % mean across trials, within roi
     std_peak_deltaF_F0 = [analysis.std_peak]; % std across trials, within roi    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
@@ -127,6 +129,7 @@ elseif strcmp(in.roi_func_mode,'separate')
 end
 trials_data = struct(); 
 trials_data.deltaF_F0 = deltaF_F0;
+trials_data.mean_deltaF_F0 = mean_deltaF_F0;
 if any(strcmp('mean',in.funcs))
     trials_data.means = means; 
 end

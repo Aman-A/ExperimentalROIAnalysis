@@ -139,6 +139,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             if nargout == 1 % output instance without data values
                 obj_unloaded = copy(obj);
                 obj_unloaded.vals = []; 
+                obj_unloaded.loaded = 0; 
             else % operate on current instance
                 obj.vals = []; 
             end

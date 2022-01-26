@@ -19,6 +19,7 @@ num_conditions = length(conditions);
 % Data compiled across trials and conditions in output struct
 output = struct();
 output.deltaF_F0_all = cell(1,num_conditions); 
+output.mean_deltaF_F0_all = cell(1,num_conditions); 
 output.peaks_deltaF_F0_all = cell(1,num_conditions);
 output.peak_times_all = cell(1,num_conditions); % time of peak relative to stimulus (sec)
 output.poststim_ints_all = cell(1,num_conditions); % integrals in post-stim window (a.u. * sec)
@@ -39,6 +40,7 @@ for i = 1:num_conditions
     % trial data for ith condition
     tdi = plotTrials(img_names{i},exp_settings,roi_set_filename,plot_settings);    
     output.deltaF_F0_all{i} = tdi.deltaF_F0;    
+    output.mean_deltaF_F0_all{i} = tdi.mean_deltaF_F0;    
     %     peaks_deltaF_F0 = vertcat(analysis.peaks);   % peak within each roi    
     if strcmp(plot_settings.roi_func_mode,'combine')                  
         output.peaks_deltaF_F0_all{i} = tdi.analysis.peaks;

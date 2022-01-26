@@ -24,7 +24,11 @@ in.y_sbar_len2 = 0.2;
 in.units = 'sec';
 in.plot_peak_times = 0;
 in = sl.in.processVarargin(in,varargin);
-cols = mat2cell(in.cols,ones(1,size(traces,2)),3);
+if ~iscell(in.cols)
+    cols = mat2cell(in.cols,ones(1,size(traces,2)),3);
+else
+    cols = in.cols;
+end
 lhands = plot(t,traces); 
 ax = gca;
 hold(ax,'on'); 

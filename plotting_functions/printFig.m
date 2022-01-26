@@ -40,10 +40,11 @@ for i = 1:num_files
             print(fig_handle,fullfile(file_dir,[file_name '.png']),'-dpng',resi);
         end
     elseif strcmp(formati,'eps')
-        if exist('export_fig','file')
+        if exist('export_fig','file')        
             export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps');
         else
-            print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
+%             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
+            exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']),'-cmyk');
         end
     end
 end
