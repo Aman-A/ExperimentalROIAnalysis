@@ -117,19 +117,22 @@ if strcmp(in.roi_func_mode,'combine')
         means = cell2mat(means); 
     end
     analysis = analyzeTraces(deltaF_F0,exp_settings);     
-    fprintf('%s: Peak deltaF_F0 across trials (mean +/- std) = %.3f +/- %.3f\n',...
-             in.condition, analysis.mean_peak,analysis.std_peak); 
+    fprintf('%s: Peak deltaF_F0 (1st stim) across trials (mean +/- std) = %.3f +/- %.3f\n',...
+             in.condition, analysis.mean_peak(1),analysis.std_peak(1)); 
     fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
             exp_settings.baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
 elseif strcmp(in.roi_func_mode,'separate')
-    bslines = cell2mat(bslines'); % [num_trials x num_rois] 
+    num_stim = length(exp_settings.stim_vals); 
+    bslines = reshape(cell2mat(bslines),num_stim,datai.rois.num_rois,num_trials); % [num_stim x num_rois x num_trials] 
     analysis = cellfun(@(x) analyzeTraces(x,exp_settings),deltaF_F0,'UniformOutput',0);
     analysis = [analysis{:}]; % convert to struct array    
-    mean_deltaF_F0 = mean(cell2mat(reshape(deltaF_F0,1,1,num_trials)),3); % average traces across trials
-    mean_peak_deltaF_F0 = [analysis.mean_peak]; % mean across trials, within roi
-    std_peak_deltaF_F0 = [analysis.std_peak]; % std across trials, within roi    
+    deltaF_F0 = cell2mat(reshape(deltaF_F0,1,1,num_trials)); % [num_frames x num_rois x num_trials]
+    mean_deltaF_F0 = mean(deltaF_F0,3); % average traces across trials
+    mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
+    std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
-             in.condition, mean(mean_peak_deltaF_F0),mean(std_peak_deltaF_F0)); 
+             in.condition, mean(mean_peak_deltaF_F0(1,:,:),[2,3]),...
+             mean(std_peak_deltaF_F0(1,:,:),[2,3])); 
     fprintf('  Mean baseline (%g frames) across trials and ROIs = %.3f +/- %.3f\n',...
             exp_settings.baseline_wind,mean(bslines,'all'),std(bslines,0,'all'));
 end
