@@ -26,8 +26,8 @@ in.title_on = 1;
 % in.rm_anova = 0;
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(data_array);
-mean_vals = cellfun(@mean,data_array,'UniformOutput',1);
-std_vals = cellfun(@std,data_array,'UniformOutput',1);
+mean_vals = cellfun(@(x) mean(x,'all'),data_array,'UniformOutput',1); % average across all stimuli and trials
+std_vals = cellfun(@(x) std(x,0,'all'),data_array,'UniformOutput',1);
 % if in.rm_anova 
 %     % Run Repeated Measures ANOVA
 % %     data_table = cell2table(data_array);
@@ -46,9 +46,9 @@ std_vals = cellfun(@std,data_array,'UniformOutput',1);
 %     lme5 = fitlme(data_table,'response ~ 1 + condition + (condition | trial)');
 %     
 % end
-data_mat = nan(max(cellfun(@length,data_array,'UniformOutput',1)),length(data_array)); 
+data_mat = nan(max(cellfun(@numel,data_array,'UniformOutput',1)),length(data_array)); 
 for i = 1:length(data_array)
-   data_mat(1:length(data_array{i}),i) = data_array{i}; 
+   data_mat(:,i) = data_array{i}(:); 
 end
 %% Plot to current figure
 rng(1); % ensure consistent jitter for identical data
