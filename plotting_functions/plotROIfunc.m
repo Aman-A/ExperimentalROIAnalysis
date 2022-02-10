@@ -95,19 +95,21 @@ else
            end
         end
         y = func_output.(func_name);
-        if length(in.sort_traces) == 1
-            peaks = max(y,[],1);
-            if in.sort_traces == 1                
-                [~,sort_inds] = sort(peaks,2,'ascend');
-            else 
-                [~,sort_inds] = sort(peaks,2,'descend');
+        if ~all(in.sort_traces==0)
+            if length(in.sort_traces) == 1
+                peaks = max(y,[],1);
+                if in.sort_traces == 1                
+                    [~,sort_inds] = sort(peaks,2,'ascend');
+                else 
+                    [~,sort_inds] = sort(peaks,2,'descend');
+                end
+                y = y(:,sort_inds);
+                display_names = display_names(sort_inds);
+            elseif length(in.sort_traces) == size(y,2) % input indices 
+                sort_inds = in.sort_traces; 
+                y = y(:,sort_inds);
+                display_names = display_names(sort_inds);
             end
-            y = y(:,sort_inds);
-            display_names = display_names(sort_inds);
-        elseif length(in.sort_traces) == size(y,2) % input indices 
-            sort_inds = in.sort_traces; 
-            y = y(:,sort_inds);
-            display_names = display_names(sort_inds);
         end
         lns = plot(ax,x,y+offset); % plot trace/s
         ax.YAxis.Visible = 'off';

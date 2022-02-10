@@ -48,7 +48,7 @@ std_vals = cellfun(@(x) std(x,0,'all'),data_array,'UniformOutput',1);
 % end
 data_mat = nan(max(cellfun(@numel,data_array,'UniformOutput',1)),length(data_array)); 
 for i = 1:length(data_array)
-   data_mat(:,i) = data_array{i}(:); 
+   data_mat(1:length(data_array{i}(:)),i) = data_array{i}(:); 
 end
 %% Plot to current figure
 rng(1); % ensure consistent jitter for identical data
