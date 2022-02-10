@@ -27,7 +27,7 @@ rec.load();
 rois = ROIs(fullfile(exp_folder,roi_set_name)); 
 rois.invert_y(rec.imsize); 
 %% Extract traces in ROIs
-func_output = calcROIfuncs(rec,rois,{'mean','deltaF_F0'},exp_settings.baseline_wind_inds,...
+func_output = calcROIfuncs(rec,rois,{'mean','deltaF_F0'},exp_settings,...
                             'separate');
 deltaF_F0 = func_output.deltaF_F0;    
 means = func_output.mean;
@@ -50,7 +50,7 @@ fig = figure('Units','inches','Position',[0.4479    1.3021   19.0625    8.9583])
 ax = gca;
 plotROIfunc(func_output,'deltaF_F0',exp_settings.stim_vals,...
             exp_settings.sampling_rate,'ax',ax,...
-            'show_legend',0);
+            'show_legend',0,'rois',rois);
 %% 
 settings.sampling_rate = exp_settings.sampling_rate;
 settings.nframes_back = nframes_back;

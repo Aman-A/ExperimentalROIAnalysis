@@ -15,6 +15,7 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
 
 % AUTHOR    : Aman Aberra
 in.ax = []; 
+in.rois = []; % use for labeling
 in.show_legend = 1;
 in.title_on = 0;
 in.offset_factor = 1.01; % 1 - offset lines by offset_factor*max(func_output) 
@@ -22,6 +23,7 @@ in.offset_factor = 1.01; % 1 - offset lines by offset_factor*max(func_output)
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
 in = sl.in.processVarargin(in,varargin); 
+
 if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
     ax = gca;
@@ -40,14 +42,20 @@ else
     end
     unit_str = 'sec'; 
 end
-
+if isempty(in.rois)
+    num_rois = length(func_output.roi_inds);
+    roi_names = arrayfun(@(x) sprintf('ROI%g',x),func_output.roi_inds,'UniformOutput',0);
+else
+    num_rois = in.rois.num_rois; 
+    roi_names = in.rois.names; 
+end
 hold(ax,'on'); 
 if strcmp(func_output.roi_func_mode,'combine')    
-    if length(func_output.roi_inds) < func_output.rois.num_rois
+    if length(func_output.roi_inds) < num_rois
         roi_str = sprintf('%g/%g ROIs',length(func_output.roi_inds),...
-                          func_output.rois.num_rois); 
+                          num_rois); 
     else
-        roi_str = sprintf('all %g ROIs',func_output.rois.num_rois);
+        roi_str = sprintf('all %g ROIs',num_rois);
     end
     display_names = {strcat(func_output.img_name,': ',roi_str)};
     title_str = func_output.img_name;
@@ -59,8 +67,7 @@ if strcmp(func_output.roi_func_mode,'combine')
     % Plot on single axis
     lns = plot(ax,x,func_output.(func_name)); % plot trace/s
 else
-    display_names = cellfun(@(x) sprintf('%s',x),...
-                            func_output.rois.names,'UniformOutput',0);
+    display_names = roi_names;
 %     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
 %                             func_output.rois.names,'UniformOutput',0);
     if isrow(display_names)
@@ -72,16 +79,16 @@ else
                                         mean(func_output.baseline(1,:)),...
                                         std(func_output.baseline(1,:),0))};
     end
-%     title_str = [title_str sprintf(' %g ROIs',func_output.rois.num_rois)];     
+%     title_str = [title_str sprintf(' %g ROIs',num_rois)];     
     if in.offset_factor > 0
         if in.offset_factor < 1
             offset = linspace(in.offset_factor*max(func_output.(func_name),[],'all')*size(func_output.(func_name),2),...
                                 0,size(func_output.(func_name),2));
         else
            if strcmp(ax.YLimMode,'auto') % YLim wasn't set, use num_rois to set it and offset               
-               offset = linspace(1.4*func_output.rois.num_rois-in.offset_factor,...
+               offset = linspace(1.4*num_rois-in.offset_factor,...
                                 0,size(func_output.(func_name),2));
-               ax.YLim = [-0.2 offset(1)*(func_output.rois.num_rois+1)/func_output.rois.num_rois];
+               ax.YLim = [-0.2 offset(1)*(num_rois+1)/num_rois];
            else
                offset = linspace(ax.YLim(2)-in.offset_factor,...
                                 0,size(func_output.(func_name),2));  
@@ -114,13 +121,13 @@ end
 
 set(lns,{'DisplayName'},display_names); % set legend names
 % shadedErrorBar(x,mean(func_output.(func_name),2),std(func_output.(func_name),0,2),{'-k'}); hold on;
-names = {ax.Children.DisplayName}; 
-ind_stim_times = strcmp(names,'Stim times');
+roi_leg_names = {ax.Children.DisplayName}; 
+ind_stim_times = strcmp(roi_leg_names,'Stim times');
 if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
     plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
         'r.','MarkerSize',8,'DisplayName','Stim times'); 
-    names = {ax.Children.DisplayName};
-    ind_stim_times = strcmp(names,'Stim times');
+    roi_leg_names = {ax.Children.DisplayName};
+    ind_stim_times = strcmp(roi_leg_names,'Stim times');
     all_inds = 1:length(ax.Children); 
     ax.Children = ax.Children([all_inds(~ind_stim_times),find(ind_stim_times)]); 
 else    

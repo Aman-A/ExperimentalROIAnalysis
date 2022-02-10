@@ -15,6 +15,7 @@ settings.data_fold = pwd;
 settings.exp_date = '';
 settings.reporter = '';
 settings.dish = '';
+settings.div = [];
 settings.condition = '';
 settings.position = '';
 settings.filedir = ''; % placeholder for inputs from plotTrials

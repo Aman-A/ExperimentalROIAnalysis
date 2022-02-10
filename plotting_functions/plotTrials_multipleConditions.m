@@ -21,6 +21,8 @@ output = struct();
 output.deltaF_F0_all = cell(1,num_conditions); 
 output.mean_deltaF_F0_all = cell(1,num_conditions); 
 output.peaks_deltaF_F0_all = cell(1,num_conditions);
+output.deltaF_F0_aligned_all = cell(1,num_conditions); 
+output.mean_deltaF_F0_aligned_all= cell(1,num_conditions);
 output.peak_times_all = cell(1,num_conditions); % time of peak relative to stimulus (sec)
 output.poststim_ints_all = cell(1,num_conditions); % integrals in post-stim window (a.u. * sec)
 output.mean_peaks = cell(1,num_conditions);
@@ -41,28 +43,24 @@ for i = 1:num_conditions
     tdi = plotTrials(img_names{i},exp_settings,roi_set_filename,plot_settings);    
     output.deltaF_F0_all{i} = tdi.deltaF_F0;    
     output.mean_deltaF_F0_all{i} = tdi.mean_deltaF_F0;    
-    %     peaks_deltaF_F0 = vertcat(analysis.peaks);   % peak within each roi    
-    if strcmp(plot_settings.roi_func_mode,'combine')                  
-        output.peaks_deltaF_F0_all{i} = tdi.analysis.peaks;
-        % Time of peak in sec relative to first stimulus
-        output.peak_times_all{i} = tdi.analysis.peak_times;        
-        output.poststim_ints_all{i} = tdi.analysis.poststim_ints;            
-    else
-        output.peaks_deltaF_F0_all{i} = vertcat(tdi.analysis.peaks);
-        output.peak_times_all{i} = vertcat(tdi.analysis.peak_times);       
-        output.poststim_ints_all{i} = vertcat(tdi.analysis.poststim_ints);                
+    if isfield(tdi,'deltaF_F0_aligned')
+        output.deltaF_F0_aligned_all{i} = tdi.deltaF_F0_aligned;
+        output.mean_deltaF_F0_aligned_all{i} = tdi.mean_deltaF_F0_aligned;
     end
-    if isfield(tdi.analysis,'decay_fit')
-        output.decay_fits{i} = [tdi.analysis.decay_fit];  
-        output.successful_spikes{i} = vertcat(tdi.analysis.successful_spikes);
+    output.peaks_deltaF_F0_all{i} = tdi.analysis.peaks;
+    % Time of peak in sec relative to first stimulus
+    output.peak_times_all{i} = tdi.analysis.peak_times;        
+    output.poststim_ints_all{i} = tdi.analysis.poststim_ints;   
+    output.decay_fits{i} = tdi.analysis.decay_fit;  
+    if isfield(tdi.analysis,'decay_fit')        
+        output.successful_spikes{i} = tdi.analysis.successful_spikes;
         if i == num_conditions
             output.spike_thresh = tdi.analysis.spike_thresh;
         end
-    end
-    
-    output.mean_peaks{i} = [tdi.analysis.mean_peak];
-    output.std_peaks{i} = [tdi.analysis.std_peak];
-    output.sem_peaks{i} = [tdi.analysis.sem_peak];
+    end    
+    output.mean_peaks{i} = tdi.analysis.mean_peak;
+    output.std_peaks{i} = tdi.analysis.std_peak;
+    output.sem_peaks{i} = tdi.analysis.sem_peak;
     output.trial_times_all{i} = tdi.trial_times;
     output.baselines_all{i} = tdi.bslines;
     output.rois_all{i} = tdi.rois_all; 

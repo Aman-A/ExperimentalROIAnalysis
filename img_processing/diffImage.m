@@ -58,11 +58,11 @@ if isa(img,'Recording') && img.loaded == 0
     img.load(); 
 end
 if strcmp(in.baseline_mode,'mean')
-    bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),3); % use first stimulus if applied as train
+    bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(:,1)),3); % use first stimulus if applied as train
 elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
-    bsline_img = max(img.vals(:,:,exp_settings.baseline_wind_inds(1,:)),[],3); % use first stimulus if applied as train
+    bsline_img = max(img.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
 end
-peak_stim_img = max(img.vals(:,:,exp_settings.stim_wind_inds(1,:)),[],3);
+peak_stim_img = max(img.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
 if in.filt_width > 0
     bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    

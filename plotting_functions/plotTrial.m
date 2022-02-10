@@ -58,12 +58,12 @@ in.condition = '';
 in.position = '';
 in.filedir = ''; % placeholder for inputs from plotTrials
 in.show_diff_image = []; % for diffImage, specify which plots to include, can include 1, 2, 3 in
-                         %  any order (1 - Baseline, 2 - Peak, 3 - Difference)
+                         %  any order (1 - Baseline, 2 - Peak, 3 - Difference)                         
 in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
                % ROI positions
 
 in.funcs = {'baseline','deltaF_F0'}; % functions to compute
-in.plot_func = 'deltaF_F0'; % function to plot in ROI (plotROIfunc)
+in.plot_func = 'deltaF_F0'; % function to plot in ROI (plotROIfunc), otherwise 'none' or 0 for no plot
 in.roi_func_mode = 'combine';
 in.save_processed_data = 1;
 in.load_processed_data = 0; 
@@ -185,8 +185,7 @@ else
         fprintf('Skipping diff image plot\n'); 
     end   
     %% Calculate deltaF/F0 
-    func_output = calcROIfuncs(img,rois,in.funcs,exp_settings.baseline_wind_inds,...
-                               in.roi_func_mode);
+    func_output = calcROIfuncs(img,rois,in.funcs,exp_settings,in.roi_func_mode);
     %% Generate output data structure
     output_data = struct();
     output_data.recording = img.unload(); % save with data unloaded, reduce HD usage
@@ -205,33 +204,36 @@ else
     end
 end
 %% Plot data
-if isempty(trace_axis)
-    fig = figure; 
-    trace_axis = gca;
-else
-    fig = trace_axis.Parent;    
-end
-fig.Units = in.roi_func_fig_units;
-fig.Position(3:4) = in.roi_func_fig_size;
-if ~isempty(in.x_lim)
-   trace_axis.XLim = in.x_lim;     
-end
-if ~isempty(in.y_lim)            
-    trace_axis.YLim = in.y_lim;         
-end
-% show_legend = 1;
-if strcmp(in.roi_func_mode,'combine')
-   show_legend = 0; 
-else
+if ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) % only plot if plot_func
+    if isempty(trace_axis)                       % is not 0 or 'none'
+        fig = figure; 
+        trace_axis = gca;
+    else
+        fig = trace_axis.Parent;    
+    end
+    fig.Units = in.roi_func_fig_units;
+    fig.Position(3:4) = in.roi_func_fig_size;
+    if ~isempty(in.x_lim)
+       trace_axis.XLim = in.x_lim;     
+    end
+    if ~isempty(in.y_lim)            
+        trace_axis.YLim = in.y_lim;         
+    end
     show_legend = 0;
-end
-plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
-                exp_settings.sampling_rate,'ax',trace_axis,...
-                'show_legend',show_legend,'sort_traces',in.sort_traces);
-drawnow; 
-if in.save_fig > 1 % set to 2 to plot individual trials   
-   fig_name = [img.img_name '_' in.plot_func]; 
-   printFig(fig,fig_dir,fig_name); 
+%     if strcmp(in.roi_func_mode,'combine')
+%         show_legend = 0; 
+%     else
+%         show_legend = 0;
+%     end
+    plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
+                    exp_settings.sampling_rate,'rois',output_data.rois,...
+                    'ax',trace_axis,'show_legend',show_legend,...
+                    'sort_traces',in.sort_traces);
+    drawnow; 
+    if in.save_fig > 1 % set to 2 to plot individual trials   
+       fig_name = [img.img_name '_' in.plot_func]; 
+       printFig(fig,fig_dir,fig_name); 
+    end
 end
 end
 function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name,...

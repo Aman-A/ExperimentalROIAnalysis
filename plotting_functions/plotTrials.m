@@ -68,11 +68,11 @@ if in.overlay_trials
         end
     end
 else
-    trace_axes = cell(num_trials,1); % leave empty
     trace_axis = [];
 end
 func_outputs = cell(1,num_trials); 
 deltaF_F0 = cell(1,num_trials); 
+deltaF_F0_aligned = cell(1,num_trials); 
 trial_times = NaT(1,num_trials); 
 bslines = cell(1,num_trials); 
 means = cell(1,num_trials); 
@@ -99,9 +99,12 @@ for i = 1:num_trials
     end
     img_namei = img_names{i}; 
     datai = plotTrial(img_namei,exp_settings,roi_set_filename{i},...
-                   trace_axis,in);
+                       trace_axis,in);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
+    if isfield(datai.func_output,'deltaF_F0_aligned')
+        deltaF_F0_aligned{i} = datai.func_output.deltaF_F0_aligned; 
+    end
     trial_times(i) = datai.recording.time_start; 
     bslines{i} = datai.func_output.baseline;    
     rois_all{i} = datai.rois;
@@ -111,25 +114,44 @@ for i = 1:num_trials
 end
 if strcmp(in.roi_func_mode,'combine')
     deltaF_F0 = cell2mat(deltaF_F0); 
-    bslines = cell2mat(bslines); 
+    bslines = cell2mat(bslines')'; % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2); % average across trials
     if any(strcmp('mean',in.funcs))
         means = cell2mat(means); 
     end
-    analysis = analyzeTraces(deltaF_F0,exp_settings);     
-    fprintf('%s: Peak deltaF_F0 (1st stim) across trials (mean +/- std) = %.3f +/- %.3f\n',...
-             in.condition, analysis.mean_peak(1),analysis.std_peak(1)); 
-    fprintf('  Mean baseline (%g frames) across trials = %.3f +/- %.3f\n',...
+    if isfield(datai.func_output,'deltaF_F0_aligned')        
+        deltaF_F0_aligned = cell2mat(reshape(deltaF_F0_aligned,1,1,num_trials)); % [num_frames x num_stim x num_trials]
+        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings);  
+        mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3]); % average across stimuli and trials
+        mean_peak_deltaF_F0 = analysis.mean_peak;
+        std_peak_deltaF_F0 = analysis.std_peak; 
+    else
+        analysis = analyzeTraces(deltaF_F0,exp_settings);    
+        mean_peak_deltaF_F0 = mean(analysis.mean_peak); 
+        std_peak_deltaF_F0 = std(analysis.peaks,0);
+    end
+    fprintf('%s: Peak deltaF_F0 across stimuli and trials (mean +/- std) = %.3f +/- %.3f\n',...
+             in.condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
+    fprintf('  Mean baseline (%g frames, 1st stim) across trials = %.3f +/- %.3f\n',...
             exp_settings.baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
-elseif strcmp(in.roi_func_mode,'separate')
-    num_stim = length(exp_settings.stim_vals); 
-    bslines = reshape(cell2mat(bslines),num_stim,datai.rois.num_rois,num_trials); % [num_stim x num_rois x num_trials] 
-    analysis = cellfun(@(x) analyzeTraces(x,exp_settings),deltaF_F0,'UniformOutput',0);
-    analysis = [analysis{:}]; % convert to struct array    
+elseif strcmp(in.roi_func_mode,'separate') 
+    % [num_frames x num_rois x num_stim x num_trials]    
+    if isfield(datai.func_output,'deltaF_F0_aligned')
+        deltaF_F0_aligned = squeeze(cell2mat(reshape(deltaF_F0_aligned,1,1,1,num_trials)));
+        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings);                                   
+        mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[3 4]); % average across stimuli and trials
+        mean_peak_deltaF_F0 = analysis.mean_peak;
+        std_peak_deltaF_F0 = analysis.std_peak; 
+    else
+        analysis = cellfun(@(x) analyzeTraces(x,exp_settings),deltaF_F0,'UniformOutput',0);        
+        analysis = [analysis{:}]; % convert to struct array    
+        mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
+        std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
+    end
+    
+    bslines = cell2mat(reshape(bslines,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = cell2mat(reshape(deltaF_F0,1,1,num_trials)); % [num_frames x num_rois x num_trials]
-    mean_deltaF_F0 = mean(deltaF_F0,3); % average traces across trials
-    mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
-    std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
+    mean_deltaF_F0 = mean(deltaF_F0,3); % average traces across trials    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
              in.condition, mean(mean_peak_deltaF_F0(1,:,:),[2,3]),...
              mean(std_peak_deltaF_F0(1,:,:),[2,3])); 
@@ -139,6 +161,10 @@ end
 trials_data = struct(); 
 trials_data.deltaF_F0 = deltaF_F0;
 trials_data.mean_deltaF_F0 = mean_deltaF_F0;
+if isfield(datai.func_output,'deltaF_F0_aligned')
+    trials_data.deltaF_F0_aligned = deltaF_F0_aligned;
+    trials_data.mean_deltaF_F0_aligned = mean_deltaF_F0_aligned;
+end
 if any(strcmp('mean',in.funcs))
     trials_data.means = means; 
 end

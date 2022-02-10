@@ -11,10 +11,10 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                                       % stim_wind, and baseline_wind, 
                                       % either 'frames' or 'sec'
         sampling_rate {mustBeNumeric} % sampling rate in frames/sec
-        stim_wind_inds = []; % stimulus windows as either single row vector 
-                       % (1 stimulus) or N x stim_wind matrix (N stimuli)
-        baseline_wind_inds = [];% baseline windows as either single row vector 
-                           % (1 stimulus) or N x stim_wind matrix (N stimuli)
+        stim_wind_inds = []; % stimulus windows as either single column vector 
+                       % (1 stimulus) or stim_wind x N matrix (N stimuli)
+        baseline_wind_inds = [];% baseline windows as either single column vector 
+                           % (1 stimulus) or stim_wind x N matrix (N stimuli)
         baseline_start_frame = 1; % start baseline from 1 frame before 
                                   % stimulus frames
     end
@@ -63,26 +63,33 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                 varargout = {frames_val/obj.sampling_rate}; 
             end
         end
-        function getWindInds(obj)
-            if obj.baseline_wind + obj.baseline_start_frame >= obj.stim_vals(1)
-               fprintf(['Warning baseline_wind of %g exceeds pre-stimulus ',...
-                       'recording time, setting to max possible %g frames\n'],...
-                       obj.baseline_wind,obj.stim_vals(1) - obj.baseline_start_frame); 
-               obj.baseline_wind = obj.stim_vals(1) - obj.baseline_start_frame ;                
-            end
+        function getWindInds(obj)                        
             % add window indices
-            if length(obj.stim_vals) > 1
-                obj.stim_wind_inds = zeros(length(obj.stim_vals),obj.stim_wind);
-                obj.baseline_wind_inds = zeros(length(obj.stim_vals),obj.baseline_wind);
-                for i = 1:length(obj.stim_vals)
-                    obj.stim_wind_inds(i,:) = (obj.stim_vals(i)+1):(obj.stim_vals(i) + obj.stim_wind);
-                    obj.baseline_wind_inds(i,:) = ...
-                     (obj.stim_vals(i) - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals(i) - obj.baseline_start_frame);
-                end
+            if isempty(obj.stim_vals) % no stim, use initial frames as 
+                                      % default baseline otherwise, 
+                                      % calculate on per event basis 
+                                      % externally
+                obj.baseline_wind_inds = (1:obj.baseline_wind)'; 
             else
-                obj.stim_wind_inds = (obj.stim_vals + 1):(obj.stim_vals + obj.stim_wind + 1);
-                obj.baseline_wind_inds = ...
-                 (obj.stim_vals - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals - obj.baseline_start_frame);
+                if obj.baseline_wind + obj.baseline_start_frame >= obj.stim_vals(1)
+                    fprintf(['Warning baseline_wind of %g exceeds pre-stimulus ',...
+                        'recording time, setting to max possible %g frames\n'],...
+                        obj.baseline_wind,obj.stim_vals(1) - obj.baseline_start_frame);
+                    obj.baseline_wind = obj.stim_vals(1) - obj.baseline_start_frame ;
+                end
+                if length(obj.stim_vals) > 1                
+                    obj.stim_wind_inds = zeros(obj.stim_wind,length(obj.stim_vals));
+                    obj.baseline_wind_inds = zeros(obj.baseline_wind,length(obj.stim_vals));
+                    for i = 1:length(obj.stim_vals)
+                        obj.stim_wind_inds(:,i) = (obj.stim_vals(i)+1):(obj.stim_vals(i) + obj.stim_wind);
+                        obj.baseline_wind_inds(:,i) = ...
+                         (obj.stim_vals(i) - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals(i) - obj.baseline_start_frame);
+                    end
+                else
+                    obj.stim_wind_inds = ((obj.stim_vals + 1):(obj.stim_vals + obj.stim_wind + 1))';
+                    obj.baseline_wind_inds = ...
+                     ((obj.stim_vals - obj.baseline_wind - obj.baseline_start_frame + 1):(obj.stim_vals - obj.baseline_start_frame))';
+                end            
             end
         end
         function t = getTimeVector(obj,num_frames)

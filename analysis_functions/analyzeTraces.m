@@ -1,15 +1,16 @@
-function output = analyzeTraces(traces,settings,varargin)
+function output = analyzeTraces(traces,exp_settings,varargin)
 %ANALYZETRACES Analyze multiple trials of time-series data to extract peak,
 %  integral, and decay time constants 
-%  Note: Only analyzes response to first stimulus if more than one in each
-%  trace
+%  If contains multiple stimuli, generates matrix of aligned responses
+%  within trial and mean across stimuli
 
 %   Inputs 
 %   ------ 
 %   traces : N x num_traces array
 %            Columns are time series with N time points, e.g., from separate trials/ROIs
+%            or stim-aligned responses (see aligned below) with size N_wind x
+%            num_traces x num_stim or N_wind x num_stim for single ROI
 %   settings: ExperimentSettings object
-
 %   Optional Inputs 
 %   --------------- 
 %   Outputs 
@@ -23,21 +24,22 @@ function output = analyzeTraces(traces,settings,varargin)
 in.funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in = sl.in.processVarargin(in,varargin);
-settings.convert2Frames(); % convert from time to frames units if necessary
-sampling_rate = settings.sampling_rate; 
-stim_frames = settings.stim_vals; 
-stim_wind_inds = settings.stim_wind_inds; 
-baseline_wind_inds = settings.baseline_wind_inds;
+exp_settings.convert2Frames(); % convert from time to frames units if necessary
+sampling_rate = exp_settings.sampling_rate; 
+stim_frames = exp_settings.stim_vals; 
+stim_wind_inds = exp_settings.stim_wind_inds; 
+baseline_wind_inds = exp_settings.baseline_wind_inds;
 num_stim = length(stim_frames); 
 num_traces = size(traces,2); 
 output = struct();
+%% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
     peaks = zeros(num_stim,num_traces); % [num_stim x num_traces] peak amps 
     peak_times = zeros(num_stim,num_traces); % [num_stim x num_traces] peak times (relative to stimulus)
     pk_inds = zeros(num_stim,num_traces); 
     for i = 1:num_stim
         [peaks(i,:),pk_inds(i,:)] = max(traces(stim_wind_inds(i,:),:),[],1);
-        peak_times(i,:) = settings.convert2Time(stim_wind_inds(i,pk_inds(i,:)) - stim_frames(i));
+        peak_times(i,:) = exp_settings.convert2Time(stim_wind_inds(i,pk_inds(i,:)) - stim_frames(i));
     end
     output.peaks = peaks;
     output.mean_peak = mean(peaks,2); % mean across trials (not stimuli)
@@ -55,7 +57,7 @@ if any(strcmp(in.funcs,'poststim_ints'))
     output.poststim_ints = poststim_ints; 
 end
 if any(strcmp(in.funcs,'decay_fit'))
-    t = settings.getTimeVector(size(traces,1))';    
+    t = exp_settings.getTimeVector(size(traces,1))';    
     s = fitoptions('Method','NonlinearLeastSquares','Lower',[0,0,0,0],...
                    'Upper',[max(traces,[],'all'),1,t(end),t(end)],...
                    'Startpoint',[1,0.8,0.5,0.5]); % [amplitude, tau1 fraction, 
