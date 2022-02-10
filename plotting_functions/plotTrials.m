@@ -53,7 +53,7 @@ if ischar(img_names)
    img_names = {img_names};  
 end
 num_trials = length(img_names); 
-if in.overlay_trials
+if in.overlay_trials && ~strcmp(in.plot_func,'none') && all(in.plot_func~=0)
     trace_fig = figure; 
     if strcmp(in.roi_func_mode,'combine')
         trace_axis = gca; 
@@ -94,7 +94,7 @@ if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
     end
 end
 for i = 1:num_trials
-    if  strcmp(in.roi_func_mode,'separate') && num_trials > 1
+    if strcmp(in.roi_func_mode,'separate') && num_trials > 1 && ~strcmp(in.plot_func,'none') && all(in.plot_func~=0)
         trace_axis = traces_axes{i}; 
     end
     img_namei = img_names{i}; 
@@ -114,7 +114,7 @@ for i = 1:num_trials
 end
 if strcmp(in.roi_func_mode,'combine')
     deltaF_F0 = cell2mat(deltaF_F0); 
-    bslines = cell2mat(bslines')'; % num_stim x num_trials 
+    bslines = squeeze(cell2mat(bslines')'); % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2); % average across trials
     if any(strcmp('mean',in.funcs))
         means = cell2mat(means); 
@@ -149,7 +149,7 @@ elseif strcmp(in.roi_func_mode,'separate')
         std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
     end
     
-    bslines = cell2mat(reshape(bslines,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
+    bslines = squeeze(cell2mat(reshape(bslines,1,1,num_trials))); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = cell2mat(reshape(deltaF_F0,1,1,num_trials)); % [num_frames x num_rois x num_trials]
     mean_deltaF_F0 = mean(deltaF_F0,3); % average traces across trials    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...

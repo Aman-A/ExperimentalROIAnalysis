@@ -92,7 +92,7 @@ if in.print_level > 0
     fprintf(print_str,time_elapsed);
 end
 %% If contains more than one stimulus, generate stim-aligned traces using means
-if num_stim > 1 && any(strcmp(funcs,'mean'))
+if any(strcmp(funcs,'mean'))
     baseline_wind = exp_settings.baseline_wind;
     stim_wind = exp_settings.stim_wind;
     [deltaF_F0_aligned, mean_aligned] = calcStimAlignedResponses(output.mean,...
