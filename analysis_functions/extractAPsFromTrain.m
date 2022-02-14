@@ -206,6 +206,7 @@ for i = 1:num_rois
     if ~isempty(in.y_lim2)
        ax2.YLim = in.y_lim2;  
     end
+%     plot(ax2.XLim,[0 0],'--r')
     if in.save_fig
         fig_name = sprintf('%s_roi%g',in.fig_basename,i);
         printFig(fig,in.fig_dir,fig_name,...

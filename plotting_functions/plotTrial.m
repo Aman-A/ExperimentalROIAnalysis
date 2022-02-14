@@ -80,7 +80,8 @@ in.overlay_trials = 1; % relevant for plotTrials
 in.close_img_after_save = 1; in.show_roi_labels = 0;
 in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
 in.bin_size = 1; % 1x1 binning
-in.sort_traces = 0;
+in.sort_traces = 0; % 1 to sort traces by plotROIfunc 
+in.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIfunc 
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
@@ -204,8 +205,9 @@ else
     end
 end
 %% Plot data
-if ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) % only plot if plot_func
-    if isempty(trace_axis)                       % is not 0 or 'none'
+% only plot if plot_func is not 0, empty, or 'none'
+if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0) 
+    if isempty(trace_axis)                       
         fig = figure; 
         trace_axis = gca;
     else
@@ -228,7 +230,7 @@ if ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) % only plot if plot_func
     plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                     exp_settings.sampling_rate,'rois',output_data.rois,...
                     'ax',trace_axis,'show_legend',show_legend,...
-                    'sort_traces',in.sort_traces);
+                    'sort_traces',in.sort_traces,'offset_factor',in.offset_factor);
     drawnow; 
     if in.save_fig > 1 % set to 2 to plot individual trials   
        fig_name = [img.img_name '_' in.plot_func]; 
@@ -242,6 +244,7 @@ for i = 1:length(fig_hands)
     ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
     rois.plot('g',ax,1,show_roi_labels); % plot current after shift    
+%     rois.plot(jet(rois.num_rois),ax,1,show_roi_labels); % plot current after shift    
     drawnow; 
     if save_fig  % Save images with ROI overlays (if exist)
         printFig(fig_hands(i),fig_dir,[img_name,'_',fig_hands(i).Name],...

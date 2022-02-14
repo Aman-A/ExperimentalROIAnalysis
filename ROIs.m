@@ -290,7 +290,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 col = 'y';
             end
             theta = linspace(0,2*pi,num_pts);
-            hold(ax,'on'); % add to ax
+            hold(ax,'on'); % add to ax            
             for i = 1:obj.num_rois
                 if strcmp(obj.types{i},'Oval') || strcmp(obj.types{i},'Circle')
                     if plot_current
@@ -317,7 +317,12 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     end
                     xi = mean(x_ptsi); yi = mean(y_ptsi); % for label below
                 end
-                plot(ax,x_ptsi,y_ptsi,'-','Color',col); hold(ax,'on'); 
+                if isnumeric(col) && size(col,1) == obj.num_rois && size(col,2) == 3
+                    coli = col(i,:);
+                else
+                    coli = col; 
+                end
+                plot(ax,x_ptsi,y_ptsi,'-','Color',coli); hold(ax,'on'); 
                 if show_labels
 %                     namei = obj.names{i}; 
 %                     if strncmp(namei,'ROI',3)
@@ -325,7 +330,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                     end
                     namei = num2str(i,'%g'); 
                     text(ax,xi,yi,namei,'FontName','Arial','FontSize',8,...
-                          'Color',col); 
+                          'Color',coli); 
                 end
             end
         end

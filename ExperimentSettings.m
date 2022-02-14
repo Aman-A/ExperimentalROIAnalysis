@@ -93,7 +93,7 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
             end
         end
         function t = getTimeVector(obj,num_frames)
-            x = 1:num_frames;
+            x = (1:num_frames)';
             t = convert2Time(obj,x);
 %             if length(obj.stim_vals) == 1
 %                 if strcmp(obj.units,'frames')

@@ -18,27 +18,35 @@ in.ax = [];
 in.rois = []; % use for labeling
 in.show_legend = 1;
 in.title_on = 0;
-in.offset_factor = 1.01; % 1 - offset lines by offset_factor*max(func_output) 
+in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
 in = sl.in.processVarargin(in,varargin); 
-
 if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
     ax = gca;
 else
     ax = in.ax; 
 end
+y = func_output.(func_name);
+if regexp(func_name,'aligned','ONCE')
+    std_y = std(y,0,ndims(y));
+    y = mean(y,ndims(y)); % mean across 2nd dim for combined ROIs, 3rd dim 
+                           % for separate ROIs              
+end
 if nargin < 4
-    x = 1:size(func_output.(func_name),1); % frames    
+    x = 1:size(y,1); % frames    
     unit_str = 'frames';
 else    
-    x = (1:size(func_output.(func_name),1))/sampling_rate; % convert frames to time in sec
+    x = (1:size(y,1))/sampling_rate; % convert frames to time in sec
     stim_frames = stim_frames/sampling_rate; 
     if length(stim_frames) == 1 % set t = 0 to single stimulus time
         x = x - stim_frames; 
-        stim_frames = 0; 
+        stim_frames = 0;     
+    end
+    if regexp(func_name,'aligned','ONCE')
+        x = x - x(size(func_output.baseline_wind_inds,1)+1); 
     end
     unit_str = 'sec'; 
 end
@@ -65,7 +73,8 @@ if strcmp(func_output.roi_func_mode,'combine')
     end
     title_str = [title_str sprintf(' (%s combined)',roi_str)];
     % Plot on single axis
-    lns = plot(ax,x,func_output.(func_name)); % plot trace/s
+    lns = plot(ax,x,y); % plot trace/s
+%     lns = shadedErrorBar(x,y,std_y);
 else
     display_names = roi_names;
 %     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
@@ -81,20 +90,7 @@ else
     end
 %     title_str = [title_str sprintf(' %g ROIs',num_rois)];     
     if in.offset_factor > 0
-        if in.offset_factor < 1
-            offset = linspace(in.offset_factor*max(func_output.(func_name),[],'all')*size(func_output.(func_name),2),...
-                                0,size(func_output.(func_name),2));
-        else
-           if strcmp(ax.YLimMode,'auto') % YLim wasn't set, use num_rois to set it and offset               
-               offset = linspace(1.4*num_rois-in.offset_factor,...
-                                0,size(func_output.(func_name),2));
-               ax.YLim = [-0.2 offset(1)*(num_rois+1)/num_rois];
-           else
-               offset = linspace(ax.YLim(2)-in.offset_factor,...
-                                0,size(func_output.(func_name),2));  
-           end
-        end
-        y = func_output.(func_name);
+        % Sort traces
         if ~all(in.sort_traces==0)
             if length(in.sort_traces) == 1
                 peaks = max(y,[],1);
@@ -111,20 +107,40 @@ else
                 display_names = display_names(sort_inds);
             end
         end
+        % Set vertical offsets
+        if in.offset_factor < 1
+            offset = linspace(in.offset_factor*max(y,[],'all')*size(y,2),...
+                                0,size(y,2));
+        else
+           if strcmp(ax.YLimMode,'auto') % YLim wasn't set, use num_rois to set it and offset               
+%                offset = linspace(1.4*num_rois-in.offset_factor,...
+%                                 0,size(y,2));
+               offset = linspace(in.offset_factor*num_rois,0,size(y,2));
+               ax.YLim = [-0.2 offset(1)*(num_rois+1)/num_rois];
+%                 ax.YLim = [-0.2 1.05*(offset(1)+max(y(:,1)))];
+           else
+               offset = linspace(ax.YLim(2)-in.offset_factor,...
+                                0,size(y,2));  
+           end
+        end
+%         y = func_output.(func_name);
+        
         lns = plot(ax,x,y+offset); % plot trace/s
         ax.YAxis.Visible = 'off';
         sbar = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
                     'k','LineWidth',2,'DisplayName',...
                     sprintf('Scale bar = %g%%',100*in.sbar_len)); 
     else
-        lns = plot(ax,x,func_output.(func_name)); % plot trace/s
+        lns = plot(ax,x,y); % plot trace/s
     end
 end
 
 set(lns,{'DisplayName'},display_names); % set legend names
 % shadedErrorBar(x,mean(func_output.(func_name),2),std(func_output.(func_name),0,2),{'-k'}); hold on;
 roi_leg_names = {ax.Children.DisplayName};
-if isempty(regexp(func_name,'aligned','ONCE'))
+if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers 
+                                               % if plotting stim aligned 
+                                               % traces
     ind_stim_times = strcmp(roi_leg_names,'Stim times');
     if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
         plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
@@ -140,8 +156,10 @@ if isempty(regexp(func_name,'aligned','ONCE'))
     end
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
-if regexp(func_name,'deltaF_F0','ONCE')
+if strcmp(func_name,'deltaF_F0')
     ylabel(ax,'\Delta F/F_{0}')
+elseif strcmp(func_name,'deltaF_F0_aligned')
+    ylabel(ax,'Mean \Delta F/F_{0}')
 else
    ylabel(ax,func_name);  
 end

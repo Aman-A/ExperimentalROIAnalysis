@@ -57,7 +57,7 @@ if any(strcmp(in.funcs,'poststim_ints'))
     output.poststim_ints = squeeze(poststim_ints); 
 end
 if any(strcmp(in.funcs,'decay_fit'))
-    t = exp_settings.getTimeVector(size(traces,1))';           
+    t = exp_settings.getTimeVector(size(traces,1));           
     % Recover time constants from transient                  
     taud1 = zeros(trace_dims(2:end)); % sec - fast time constant
     taud2 = zeros(trace_dims(2:end)); % sec
@@ -70,7 +70,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     n_traces = prod(trace_dims(2:end));    
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
     spike_thresh = in.spike_thresh;         
-    parfor n = 1:n_traces        
+    for n = 1:n_traces        
 %         i = i_vec(n); j = j_vec(n); k = k_vec(n);        
         t_fit = t(pk_inds(n):end) - t(pk_inds(n)); % start at peak (t=0)
         trace_n = traces(:,n);
