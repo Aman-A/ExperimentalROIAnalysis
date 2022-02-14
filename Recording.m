@@ -15,6 +15,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         pixel_size = 0.4; % size of individual pixel in µm (for scale bar) 
                           % default for Andor iXon Ultra 897 (Thor)
         bin_size = 1; % pixel binning (must be symmetric, i.e. 1x1, 2x2, etc.)
+        exposure_time = []; % sec, extract from fits file metadata
+        em_gain = []; % for EMCCD camera, extract from fits file metadata
         time_start
         loaded = false 
         imsize % [rows x columns x time points]
@@ -113,6 +115,11 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 
 %                 end
+                info = fitsinfo(obj.filepath); 
+                obj.exposure_time = ...
+                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
+                obj.em_gain = ...
+                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'GAIN'),2};
             elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')
                 tiff_info = imfinfo(obj.filepath);
                 obj.vals = zeros(tiff_info(1).Height,tiff_info(1).Width,length(tiff_info));
