@@ -283,7 +283,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                plot_current = 1; % 1 for current, 0 for starting ROI positions
             end
             if nargin < 3                
-                figure;
+%                 figure;
                 ax = gca; % make new axis
             end
             if nargin < 2

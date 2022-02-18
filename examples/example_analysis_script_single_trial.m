@@ -54,15 +54,16 @@ img.load();
 %% Load the ROIset into an object called ROIs object
 rois = ROIs(roiset_file_name); 
 % This next part is a temporary fix for ROIs saved on windows ImageJ. For some
-% reason the y coordinate is inverted relative to the data files
-if ischar(roiset_file_name)
-    if regexp(roiset_file_name,'pc')
-        % TEMPORARY FIX: include 'pc' in file name to indicate ROIs created on
-        % Windows ImageJ, require y axis to be inverted when
-        % importing to MATLAB
-        rois.invert_y(img.imsize);
-    end
-end
+% (May not be necessary anymore)
+% % reason the y coordinate is inverted relative to the data files
+% if ischar(roiset_file_name)
+%     if regexp(roiset_file_name,'pc')
+%         % TEMPORARY FIX: include 'pc' in file name to indicate ROIs created on
+%         % Windows ImageJ, require y axis to be inverted when
+%         % importing to MATLAB
+%         rois.invert_y(img.imsize);
+%     end
+% end
 %% Plot the mean baseline, peak response, and peak - baseline images
 include_plots = [1 2 3]; % this specifies which plots to include: 
                          % 1 - mean baseline
@@ -84,7 +85,7 @@ for i = 1:length(fig_hands)
    rois.plot('y',ax,1); 
 end
 %% Finally, we can compute functions on the pixels within the ROIset
-funcs = {'mean','std','deltaF_F0','baseline'}; % List of functions you want
+funcs = {'mean','deltaF_F0','baseline'}; % List of functions you want
                                                % to apply. These are all
                                                % functions currently
                                                % implemented. You can
@@ -100,7 +101,7 @@ roi_func_mode = 'combine'; % can be 'separate' or 'combine'. 'separate'
                             % trace), but in 'separate' mode, it computes 
                             % the mean fluorescence within each ROI in each
                             % frame (for 21 ROIs in this example, 21 traces)
-func_output = calcROIfuncs(img,rois,funcs,exp_settings.baseline_wind_inds,...
+func_output = calcROIfuncs(img,rois,funcs,exp_settings,...
                            roi_func_mode,'print_level',1);
 % func_output is a structure with fields containing the output of each
 % function in 'funcs' as arrays, i.e., func_output.mean, func_output.std,
