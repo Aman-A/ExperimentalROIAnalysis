@@ -49,7 +49,7 @@ if isempty(img_names) % assume all .fits files are relevant trial data
         img_names = getImagesWithinDir(filedir); 
         % append full path
         img_names = fullfile(filedir,img_names); 
-    end    
+    end   
 end
 if ischar(img_names)
    img_names = {img_names};  
@@ -122,6 +122,9 @@ if strcmp(in.reporter,'GluSnFR3')
 else
     analysis_funcs = {'peaks','peak_times'};
 end
+if ~exist('filedir','var')
+    filedir = datai.recording.filedir;
+end
 if strcmp(in.roi_func_mode,'combine')
     deltaF_F0 = cell2mat(deltaF_F0); 
     bslines = squeeze(cell2mat(bslines')'); % num_stim x num_trials 
@@ -132,7 +135,9 @@ if strcmp(in.roi_func_mode,'combine')
     if isfield(datai.func_output,'deltaF_F0_aligned')        
         deltaF_F0_aligned = cell2mat(reshape(deltaF_F0_aligned,1,1,num_trials)); % [num_frames x num_stim x num_trials]
         analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings,...
-                                            'funcs',analysis_funcs);  
+                                            'funcs',analysis_funcs,...
+                                            'load',in.load_processed_data,...
+                                            'save_dir',filedir);  
         mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3]); % average across stimuli and trials
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
@@ -150,7 +155,9 @@ elseif strcmp(in.roi_func_mode,'separate')
     if isfield(datai.func_output,'deltaF_F0_aligned')
         deltaF_F0_aligned = squeeze(cell2mat(reshape(deltaF_F0_aligned,1,1,1,num_trials)));
         analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings,...
-                                            'funcs',analysis_funcs);                                   
+                                            'funcs',analysis_funcs,...
+                                            'load',in.load_processed_data,...
+                                            'save_dir',filedir);                                   
         mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[3 4]); % average across stimuli and trials
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 

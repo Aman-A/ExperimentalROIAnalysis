@@ -27,13 +27,28 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 % AUTHOR    : Aman Aberra 
 in.funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
+in.save_analysis = 1;
+in.save_dir = './'; % default save in current directory
+in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g.mat',size(traces));
+in.load = 1; 
 in = sl.in.processVarargin(in,varargin);
 exp_settings.convert2Frames(); % convert from time to frames units if necessary
 sampling_rate = exp_settings.sampling_rate; 
 baseline_wind = exp_settings.baseline_wind;
 stim_frame = baseline_wind + 1; 
 trace_dims = size(traces,1:4);
-num_dims = ndims(traces);
+
+analysis_file = fullfile(in.save_dir,in.save_filename);
+if in.load
+    % check if exists    
+    if exist(analysis_file,'file')
+        output = load(analysis_file);
+        fprintf('Loaded analysis data from %s\n',analysis_file);
+        return;     
+    else
+        fprintf('No analysis file to load, running analysis...\n')
+    end
+end
 output = struct();
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
@@ -133,6 +148,10 @@ if any(strcmp(in.funcs,'decay_fit'))
     output.decay_fit = decay_fit;
     output.successful_spikes = successful_spikes;
     output.spike_thresh = in.spike_thresh;  
+end
+if in.save_analysis
+    save(analysis_file,'-STRUCT','output')
+    fprintf('Saved analysis data to %s\n',analysis_file);
 end
 end
 function spike = spike_present(trace,baseline_wind,peak,thresh)
