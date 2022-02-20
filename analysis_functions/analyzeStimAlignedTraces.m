@@ -85,7 +85,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     n_traces = prod(trace_dims(2:end));    
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
     spike_thresh = in.spike_thresh;         
-    for n = 1:n_traces        
+    parfor n = 1:n_traces        
 %         i = i_vec(n); j = j_vec(n); k = k_vec(n);        
         t_fit = t(pk_inds(n):end) - t(pk_inds(n)); % start at peak (t=0)
         trace_n = traces(:,n);
