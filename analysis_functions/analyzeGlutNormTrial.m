@@ -1,21 +1,45 @@
-function [ss_dFF0,norm_output,exp_settings] = analyzeGlutNormTrial(img_name,exp_settings,roi_set_filename,...
-                                plot_settings,mean_wind,exp_output,...
-                                varargin)
+function [norm_output,ss_dFF0,exp_settings] = analyzeGlutNormTrial(img_name,...
+                                                exp_settings,roi_set_filename,...
+                                                plot_settings,mean_wind,exp_output,...
+                                                varargin)
 %ANALYZEGLUTNORM ... 
 %  
 %   Inputs 
 %   ------ 
 %   img_name : string
+%              Name of glutamate normalization recording trial
 %   exp_settings : ExperimentSettings object
+%                  Specify start time of glutamate response and baseline
+%                  window to use for deltaF/F calculation
 %   roi_set_filename : string
+%                      Name of RoiSet file 
 %   plotTrial_settings : struct
-%   mean_wind : vector
+%                        Struct matching output of plotTrialSettings
+%                        function, plotting options for plotTrials
+%   mean_wind : 1 x N vector
+%               indices within which to calculate mean glutamate response
 %   exp_output : struct
-
+%                data from full experiment, output by
+%                plotTrials_multipleConditions. Mean response to glutamate
+%                within ROIs are used to normalize experiment data
 %   Optional Inputs 
 %   --------------- 
+%   check_settings : 1 or 0
+%                   If set to 1, runs interactive step for selecting start,
+%                   baseline window, and end points for computing mean
+%                   glutamate response 
 %   Outputs 
 %   ------- 
+%   norm_output : struct
+%                 Experiment data (output by plotTrials_multipleConditions)
+%                 normalized using experimental responses normalized to
+%                 glutamate response (ss_dFF0)
+%   ss_dFF0 : 1 x num_rois vector
+%             Mean deltaF/F0 values within mean_wind frames of glutamate
+%             response within each ROI
+%   exp_settings : ExperimentSettings object
+%                  Updated ExperimentSettings, if modified (check_settings
+%                  = 1)
 %   Examples 
 %   --------------- 
 
@@ -77,6 +101,10 @@ while getting_traces
 end
 % get mean value during steady state phase of glutamate response
 deltaF_F0 = datai.func_output.deltaF_F0;
+if isempty(mean_wind)
+    mean_wind = exp_settings.stim_wind_inds(:,1);
+    fprintf('Using mean_wind from frame %g to %g\n',mean_wind(1),mean_wind(end));
+end
 ss_dFF0 = mean(deltaF_F0(mean_wind,:),1);
 % Normalize data from experiment in exp_output
 norm_output = exp_output;
