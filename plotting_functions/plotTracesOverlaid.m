@@ -47,8 +47,9 @@ if ~isempty(in.x_sbar_len1) && in.x_sbar_len1 > 0
     y1 = max(traces,[],'all')*1.05;
     y0 = y1 - in.y_sbar_len1;
     plot(ax,[x0 x0 x1],[y0 y1 y1],'-k','LineWidth',2); 
+    axis(ax,'off');
 end
-axis(ax,'off');
+
 if ~isempty(in.inset_pos)
     ax2 = axes('Position',in.inset_pos);    
     lhands = plot(ax2,t,traces); 

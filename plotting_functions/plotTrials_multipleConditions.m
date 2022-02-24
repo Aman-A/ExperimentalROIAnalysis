@@ -14,6 +14,8 @@ function output = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish
 
 % AUTHOR    : Aman Aberra 
 in.save_summary_data = 1;
+in.plot_overlaid = 1; 
+in.save_overlaid = 1;
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(conditions);
 % Data compiled across trials and conditions in output struct
@@ -56,6 +58,7 @@ for i = 1:num_conditions
         output.successful_spikes{i} = tdi.analysis.successful_spikes;
         if i == num_conditions
             output.spike_thresh = tdi.analysis.spike_thresh;
+            output.spike_window = tdi.analysis.spike_window; 
         end
     end    
     output.mean_peaks{i} = [tdi.analysis.mean_peak];
@@ -88,5 +91,18 @@ if in.save_summary_data
     summary_data_filepath = fullfile(data_fold,exp_date,reporter,dish,summary_datafile);       
     save(summary_data_filepath,'-STRUCT','output');
     fprintf('Saved summary data to %s\n',summary_datafile);
+end
+
+if in.plot_overlaid
+    if ~strcmp(plot_settings.plot_func,'none') && ~isempty(plot_settings.plot_func) ...
+            && all(plot_settings.plot_func~=0) 
+        summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
+                        ['figs_',roi_set_filenames{1} '_' plot_settings.roi_func_mode]);        
+        plotExperimentTracesOverlaidGrid(output,plot_settings.plot_func,...
+                                        'fig_dir',summary_fig_dir,...
+                                        'save_fig',in.save_overlaid,...
+                                        'y_lim',plot_settings.y_lim,...
+                                        'x_lim',plot_settings.x_lim);
+    end
 end
 end

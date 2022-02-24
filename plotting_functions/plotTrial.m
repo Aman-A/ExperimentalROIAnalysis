@@ -49,39 +49,7 @@ function output_data = plotTrial(img_name,exp_settings,rois_or_roiset_filename,.
 %   ------- 
 %   Examples 
 %   --------------- 
-in.data_fold = pwd;
-in.exp_date = '';
-in.reporter = '';
-in.dish = '';
-in.div = [];
-in.condition = '';
-in.position = '';
-in.filedir = ''; % placeholder for inputs from plotTrials
-in.show_diff_image = []; % for diffImage, specify which plots to include, can include 1, 2, 3 in
-                         %  any order (1 - Baseline, 2 - Peak, 3 - Difference)                         
-in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
-               % ROI positions
-
-in.funcs = {'baseline','deltaF_F0'}; % functions to compute
-in.plot_func = 'deltaF_F0'; % function to plot in ROI (plotROIfunc), otherwise 'none' or 0 for no plot
-in.roi_func_mode = 'combine';
-in.save_processed_data = 1;
-in.load_processed_data = 0; 
-in.y_lim = [];
-in.x_lim = []; 
-in.recenterROIs = 'peak'; 
-in.roiset_filedir = []; % default set below (one directory above img directory)
-in.roi_func_fig_size = [19.8 9.1];
-in.roi_func_fig_units = 'centimeters';
-in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
-in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
-in.save_fig = 0; % 1 just plots images for trial, 2 also plots funcs in ROI for trial
-in.overlay_trials = 1; % relevant for plotTrials
-in.close_img_after_save = 1; in.show_roi_labels = 0;
-in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
-in.bin_size = 1; % 1x1 binning
-in.sort_traces = 0; % 1 to sort traces by plotROIfunc 
-in.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIfunc 
+in = plotTrialSettings; % get defaults from plotTrialSettings
 in = sl.in.processVarargin(in,varargin); 
 %% Load trial data
 % Hold off on loading image in case processed data exists and
@@ -230,7 +198,8 @@ if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0
     plotROIfunc(func_output,in.plot_func,exp_settings.stim_vals,...
                     exp_settings.sampling_rate,'rois',output_data.rois,...
                     'ax',trace_axis,'show_legend',show_legend,...
-                    'sort_traces',in.sort_traces,'offset_factor',in.offset_factor);
+                    'sort_traces',in.sort_traces,'offset_factor',in.offset_factor,...
+                    'sbar_len',in.roi_func_sbar_len);
     drawnow; 
     if in.save_fig > 1 % set to 2 to plot individual trials   
        fig_name = [img.img_name '_' in.plot_func]; 

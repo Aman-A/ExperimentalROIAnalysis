@@ -1,43 +1,8 @@
 function trials_data = plotTrials(img_names,exp_settings,roi_set_filename,...
                                   varargin)
 %PLOTTRIALS Plot set of trials on same axis  
-%TODO: Save trial analysis data and load if already generated
 %   
-in.data_fold = pwd;
-in.exp_date = ''; % use for default experiment file structure:
-                  % <data_fold>/<exp_date>/<reporter>/<dish>/<condition>
-in.reporter = '';
-in.dish = '';
-in.div = [];
-in.condition = '';
-in.position = '';
-in.filedir = ''; % if not empty, this folder is used instead of default 
-                 % structure above
-in.show_diff_image = []; 
-in.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
-               % ROI positions
-
-in.funcs = {'mean','std','baseline','deltaF_F0'}; % functions to compute
-in.plot_func = 'deltaF_F0';
-in.roi_func_mode = 'combine';
-in.save_processed_data = 1;
-in.load_processed_data = 0; 
-in.y_lim = [-0.2 1.2];
-in.x_lim = []; 
-in.recenterROIs = 'diff'; 
-in.roiset_filedir = []; % default set below (one directory above img directory)
-in.roi_func_fig_size = [19.8 9.1];
-in.roi_func_fig_units = 'centimeters';
-in.transform_type = 'none'; % 'displace','translation','rigid','similarity','affine' - Image coregistration
-in.registration_rec = ''; % full path to Recording to register for shifting ROIs or Recording object
-in.save_fig = 0; 
-in.overlay_trials = 1;
-in.close_img_after_save = 0; 
-in.show_roi_labels = 0; 
-in.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
-in.bin_size = 1; % 1x1 binning
-in.sort_traces = 0; % 1 to sort traces by plotROIfunc 
-in.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIfunc 
+in = plotTrialSettings; % get defaults from plotTrialSettings
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
 if isempty(img_names) % assume all .fits files are relevant trial data
@@ -99,7 +64,7 @@ if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
 end
 for i = 1:num_trials
     if strcmp(in.roi_func_mode,'separate') && num_trials > 1 && ...
-            ~strcmp(in.plot_func,'none') && all(in.plot_func~=0)
+            ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) && in.overlay_trials
         trace_axis = traces_axes{i};         
     end
     img_namei = img_names{i}; 
@@ -194,7 +159,7 @@ trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
 trials_data.img_names = img_names; 
 if in.save_fig && in.overlay_trials && plot_trials
-    if isfield(datai,'fig_dir')
+    if isfield(datai,'fig_dir') && isempty(in.data_fold)
         fig_dir = datai.fig_dir;
     else
         roiset_filename_no_ext = getROIset_name(roi_set_filename{1},...

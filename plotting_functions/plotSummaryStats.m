@@ -26,8 +26,8 @@ in.title_on = 1;
 % in.rm_anova = 0;
 in = sl.in.processVarargin(in,varargin); 
 num_conditions = length(data_array);
-mean_vals = cellfun(@(x) mean(x,'all'),data_array,'UniformOutput',1); % average across all stimuli and trials
-std_vals = cellfun(@(x) std(x,0,'all'),data_array,'UniformOutput',1);
+mean_vals = cellfun(@(x) mean(x,'all','omitnan'),data_array,'UniformOutput',1); % average across all stimuli and trials
+std_vals = cellfun(@(x) std(x,0,'all','omitnan'),data_array,'UniformOutput',1);
 % if in.rm_anova 
 %     % Run Repeated Measures ANOVA
 % %     data_table = cell2table(data_array);

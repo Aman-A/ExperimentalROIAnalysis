@@ -27,15 +27,17 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 % AUTHOR    : Aman Aberra 
 in.funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
+in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
 in.save_analysis = 1;
 in.save_dir = './'; % default save in current directory
-in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g.mat',size(traces));
+in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g.mat',size(traces,[1,2,3]));
 in.load = 1; 
 in = sl.in.processVarargin(in,varargin);
 exp_settings.convert2Frames(); % convert from time to frames units if necessary
 sampling_rate = exp_settings.sampling_rate; 
 baseline_wind = exp_settings.baseline_wind;
 stim_frame = baseline_wind + 1; 
+spike_window = exp_settings.convert2Frames(in.spike_window);
 trace_dims = size(traces,1:4);
 
 analysis_file = fullfile(in.save_dir,in.save_filename);
@@ -52,9 +54,11 @@ end
 output = struct();
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
-    [peaks,pk_inds] = max(traces,[],1);    
+    % get peaks within spike_window    
+    [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:),[],1);    
+    pk_inds = pk_inds + stim_frame; % reference to full time vector    
     peaks = squeeze(peaks);
-    pk_inds = squeeze(pk_inds);
+    pk_inds = squeeze(pk_inds);    
     peak_times = exp_settings.convert2Time(pk_inds-stim_frame);
     output.peaks = peaks;
     % average all peaks
@@ -88,12 +92,10 @@ if any(strcmp(in.funcs,'decay_fit'))
     parfor n = 1:n_traces        
 %         i = i_vec(n); j = j_vec(n); k = k_vec(n);        
         t_fit = t(pk_inds(n):end) - t(pk_inds(n)); % start at peak (t=0)
-        trace_n = traces(:,n);
-        trace_fit = trace_n(pk_inds(n):end);
         trace_w_bsline = traces(:,n); % include bsline for spike detection
-        successful_spike = spike_present(trace_w_bsline,...
-                                                baseline_wind,...
-                                                peaks(n),spike_thresh);
+        trace_fit = trace_w_bsline(pk_inds(n):end);        
+        successful_spike = spikePresent(trace_w_bsline,baseline_wind,...
+                                         spike_thresh,peaks(n)); % uses peaks computed within spike_window
         successful_spikes(n) = successful_spike;
         % only include trial if more than 4 frames and includes spike
         include_trial = length(t_fit) > 4 && successful_spike; 
@@ -148,17 +150,11 @@ if any(strcmp(in.funcs,'decay_fit'))
     output.decay_fit = decay_fit;
     output.successful_spikes = successful_spikes;
     output.spike_thresh = in.spike_thresh;  
+    output.spike_window = in.spike_window; 
 end
 if in.save_analysis
     save(analysis_file,'-STRUCT','output')
     fprintf('Saved analysis data to %s\n',analysis_file);
 end
 end
-function spike = spike_present(trace,baseline_wind,peak,thresh)
-    std_baseline = std(trace(1:baseline_wind));
-    if peak > thresh*std_baseline
-        spike = true;
-    else
-        spike  = false;
-    end
-end
+

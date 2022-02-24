@@ -30,24 +30,20 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                 obj.units = units;
                 obj.sampling_rate = sampling_rate;                        
             end            
-            convert2Frames(obj,in.print_level);  
+            convert2Frames(obj);  
             getWindInds(obj);
         end
-        function convert2Frames(obj,varargin)
-            if length(varargin) == 1
-                print_level = varargin{1};
+        function varargout = convert2Frames(obj,varargin)            
+            if nargin == 1
+                if strcmp(obj.units,'sec')
+                    obj.stim_vals = ceil(obj.stim_vals*obj.sampling_rate); % round up to next frame
+                    obj.stim_wind = ceil(obj.stim_wind*obj.sampling_rate);
+                    obj.baseline_wind = ceil(obj.baseline_wind*obj.sampling_rate);
+                    obj.units = 'frames';                    
+                end            
             else
-                print_level = 1;
+                varargout = {ceil(varargin{1}*obj.sampling_rate)};
             end
-            if strcmp(obj.units,'sec')
-                obj.stim_vals = ceil(obj.stim_vals*obj.sampling_rate); % round up to next frame
-                obj.stim_wind = ceil(obj.stim_wind*obj.sampling_rate);
-                obj.baseline_wind = ceil(obj.baseline_wind*obj.sampling_rate);
-                obj.units = 'frames';
-                if print_level > 0
-                    fprintf('Converted ExperimentSettings to frames\n');
-                end
-            end            
         end
         function varargout = convert2Time(obj,frames_val)
             % Converts contents of object to time units (sec) or converts 
@@ -71,7 +67,7 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                                       % externally
                 obj.baseline_wind_inds = (1:obj.baseline_wind)'; 
             else
-                if obj.baseline_wind + obj.baseline_start_frame >= obj.stim_vals(1)
+                if obj.baseline_wind + obj.baseline_start_frame > obj.stim_vals(1)
                     fprintf(['Warning baseline_wind of %g exceeds pre-stimulus ',...
                         'recording time, setting to max possible %g frames\n'],...
                         obj.baseline_wind,obj.stim_vals(1) - obj.baseline_start_frame);

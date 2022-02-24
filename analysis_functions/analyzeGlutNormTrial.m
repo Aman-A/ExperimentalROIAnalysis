@@ -50,7 +50,11 @@ in.glut_concentration = 5; % mM - default 5 mM, otherwise set externally
 in = sl.in.processVarargin(in,varargin);
 getting_traces = 1; 
 check_settings = in.check_settings;
+plot_settings.plot_func = 'deltaF_F0';
 plot_settings.roi_func_mode = 'separate'; % make sure set to separate
+plot_settings.roi_func_sbar_len = 4; 
+assert(strcmp(exp_output.plot_settings.roi_func_mode,plot_settings.roi_func_mode),...
+       'Need to use roi_func_mode = ''separate''')
 while getting_traces
     trace_fig = figure; 
     trace_axis = gca;
@@ -95,6 +99,7 @@ while getting_traces
         fprintf('New experiment settings for this trial:\n')
         disp(exp_settings)
         check_settings = 0; % rerun loop and skip this step
+        close(trace_fig)
     else
         break % don't loop, proceed with input settings
     end

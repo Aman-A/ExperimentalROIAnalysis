@@ -329,7 +329,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                        namei = namei(4:end); % remove 'ROI' to save space                     
 %                     end
                     namei = num2str(i,'%g'); 
-                    text(ax,xi,yi,namei,'FontName','Arial','FontSize',8,...
+                    text(ax,xi*1.025,yi,namei,'FontName','Arial','FontSize',12,...
                           'Color',coli); 
                 end
             end

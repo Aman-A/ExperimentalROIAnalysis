@@ -17,7 +17,7 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
 in.ax = []; 
 in.rois = []; % use for labeling
 in.show_legend = 1;
-in.title_on = 0;
+in.title_on = 1;
 in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
@@ -108,21 +108,26 @@ else
             end
         end
         % Set vertical offsets
-        if in.offset_factor < 1
-            offset = linspace(in.offset_factor*max(y,[],'all')*size(y,2),...
-                                0,size(y,2));
-        else
+%         if in.offset_factor < 1
+%             offset = linspace(in.offset_factor*max(y,[],'all')*size(y,2),...
+%                                 0,size(y,2));
+%         else
            if strcmp(ax.YLimMode,'auto') % YLim wasn't set, use num_rois to set it and offset               
 %                offset = linspace(1.4*num_rois-in.offset_factor,...
 %                                 0,size(y,2));
-               offset = linspace(in.offset_factor*num_rois,0,size(y,2));
-               ax.YLim = [-0.2 offset(1)*(num_rois+1)/num_rois];
+%                offset = linspace(in.offset_factor*num_rois,0,size(y,2));
+%                ax.YLim = [-0.2 offset(1)*(num_rois+1)/num_rois];
+                offset = linspace(num_rois*in.offset_factor,...
+                                    0,size(y,2));  
+                ax.YLim = [-0.2 offset(1)+max(y(:,1))];
 %                 ax.YLim = [-0.2 1.05*(offset(1)+max(y(:,1)))];
            else
-               offset = linspace(ax.YLim(2)-in.offset_factor,...
-                                0,size(y,2));  
-           end
-        end
+                offset = linspace(num_rois*in.offset_factor,...
+                                    0,size(y,2));  
+%                offset = linspace(ax.YLim(2)-in.offset_factor,...
+%                                 0,size(y,2));  
+           end           
+%         end
 %         y = func_output.(func_name);
         
         lns = plot(ax,x,y+offset); % plot trace/s
