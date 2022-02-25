@@ -61,7 +61,9 @@ Nax = trace_cols(1);  % number of separate axes
 [Nrows,Ncols] = getSubplotDimensions(Nax);
 Nt = trace_rows(1); % number of time points
 Nconds = length(traces_all); % number of conditions
-fig = figure('Units',in.fig_units);
+fig = figure('Units','normalized');
+fig.Position(1:2) = [0.01 0.01]; % place at bottom left corner
+fig.Units = in.fig_units; 
 if ~isempty(in.fig_size)
     fig.Position(3:4) = in.fig_size;
 end

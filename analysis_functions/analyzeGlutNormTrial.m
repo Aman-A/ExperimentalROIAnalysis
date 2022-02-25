@@ -135,6 +135,7 @@ norm_output.sem_peaks = cellfun(@(x) std(x,0,'all')/numel(x),...
                                 'UniformOutput',0);
 norm_output.glut_img_name = datai.recording.img_name;
 norm_output.glut_concentration = in.glut_concentration;
+norm_output.glut_ss_deltaF_F0 = ss_dFF0; 
 % WARNING: decay_fits coefficients apply to unnormalized values, not to
 % normalized values
 if in.save_data
