@@ -114,18 +114,22 @@ if any(in.plot_inds == 5) && ~isempty(decay_fits_all)
 end
 % Slow decay time constants
 if any(in.plot_inds == 6) && ~isempty(decay_fits_all)
-    figure('Units',in.fig_units,'Position',in.fig_pos); 
-    taud2_all = cellfun(@(x) x.taud2,decay_fits_all,'UniformOutput',0);
-    rsq_cutoff = 0.6; 
-    fprintf('Removing fits with R^2 < %.2f\n',rsq_cutoff);
-    % remove fits with R^2 < 0.5
-    for i = 1:length(taud2_all)
-        taud2_all{i}(decay_fits_all{i}.rsquare < rsq_cutoff) = nan; 
+    if isfield(decay_fits_all{1},'taud2')
+        figure('Units',in.fig_units,'Position',in.fig_pos); 
+        taud2_all = cellfun(@(x) x.taud2,decay_fits_all,'UniformOutput',0);
+        rsq_cutoff = 0.6; 
+        fprintf('Removing fits with R^2 < %.2f\n',rsq_cutoff);
+        % remove fits with R^2 < 0.5
+        for i = 1:length(taud2_all)
+            taud2_all{i}(decay_fits_all{i}.rsquare < rsq_cutoff) = nan; 
+        end
+        % normalize to mean control
+    %     taud1_all = cellfun(@(x) x./mean(taud1_all{1},2),taud1_all,'UniformOutput',0); 
+        plotSummaryStats(taud2_all,rel_times_cond_starts,conditions,...
+                        'Slow decay \tau','sec','save_fig',plot_settings.save_fig,...
+                        'exp_date',exp_date,'reporter',reporter,'dish',dish,...
+                        'fig_dir',summary_fig_dir,'title_on',in.title_on);
+    else
+        fprintf('Decay was fit to monoexponential, skipping slow decay time constant...\n')
     end
-    % normalize to mean control
-%     taud1_all = cellfun(@(x) x./mean(taud1_all{1},2),taud1_all,'UniformOutput',0); 
-    plotSummaryStats(taud2_all,rel_times_cond_starts,conditions,...
-                    'Slow decay \tau','sec','save_fig',plot_settings.save_fig,...
-                    'exp_date',exp_date,'reporter',reporter,'dish',dish,...
-                    'fig_dir',summary_fig_dir,'title_on',in.title_on);
 end

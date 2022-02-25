@@ -26,6 +26,7 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 % https://stackoverflow.com/questions/14040260/how-to-iterate-over-n-dimensions
 % AUTHOR    : Aman Aberra 
 in.funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
+in.decay_fit_order = 2;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
 in.save_analysis = 1;
@@ -89,6 +90,25 @@ if any(strcmp(in.funcs,'decay_fit'))
     n_traces = prod(trace_dims(2:end));    
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
     spike_thresh = in.spike_thresh;         
+    decay_fit_order = in.decay_fit_order;
+    ISI = exp_settings.convert2Time(max(diff(exp_settings.stim_vals))); % max inter-spike interval in sec
+    if decay_fit_order == 1 % monoexponential decay
+        % F = A*exp(-t/taud1)
+        fit_eqn = 'a*exp(-x/b)';
+        upper_bounds = [nan,ISI]; % replace first element in loop
+        lower_bounds = [0,0];
+        start_points = [1,0.5];
+        fprintf('Fitting decay to monoexponential function\n')
+    elseif decay_fit_order == 2 % biexponential decay
+        % F = A*(p * exp(-t/taud1) + (1-p) * exp(-t/taud2)) 
+        fit_eqn = 'a*(b*exp(-x/c) + (1-b)*exp(-x/d))';
+        upper_bounds = [nan,1,ISI,ISI];
+        lower_bounds = [0,0,0,0];
+        start_points = [1,0.8,0.5,0.5];
+        fprintf('Fitting decay to biexponential function\n')
+    else
+        error('%g decay_fit_orer not implemented',decay_fit_order);
+    end
     parfor n = 1:n_traces        
 %         i = i_vec(n); j = j_vec(n); k = k_vec(n);        
         t_fit = t(pk_inds(n):end) - t(pk_inds(n)); % start at peak (t=0)
@@ -100,15 +120,16 @@ if any(strcmp(in.funcs,'decay_fit'))
         % only include trial if more than 4 frames and includes spike
         include_trial = length(t_fit) > 4 && successful_spike; 
         if include_trial
+            upper_boundsn = upper_bounds;
+            upper_boundsn(1) = abs(max(trace_fit));
             s = fitoptions('Method','NonlinearLeastSquares',...
-                           'Lower',[0,0,0,0],...
-                           'Upper',[abs(max(trace_fit)),1,t(end),t(end)],...
-                           'Startpoint',[1,0.8,0.5,0.5]); % [amplitude, tau1 fraction, 
+                           'Lower',lower_bounds,...
+                           'Upper',upper_boundsn,...
+                           'Startpoint',start_points); % [amplitude, tau1 fraction, 
                                                           %  tau1 (sec), tau2
                                                           %  (sec)]
-            % F = A*(p * exp(-t/taud1) + (1-p) * exp(-t/taud2)) 
-            f = fittype('a*(b*exp(-x/c) + (1-b)*exp(-x/d))',...
-                        'options',s); 
+            
+            f = fittype(fit_eqn,'options',s); 
             [fitobj,gof,~] = fit(t_fit,trace_fit,f);
             fitobjs{n} = fitobj;
             if gof.rsquare < 0.5
@@ -118,14 +139,18 @@ if any(strcmp(in.funcs,'decay_fit'))
             gofs{n} = gof;
             rsquare(n) = gof.rsquare;
             A(n) = fitobj.a;
-            if fitobj.c < fitobj.d
-                taud1(n) = fitobj.c;
-                taud2(n) = fitobj.d;
-                p(n) = fitobj.b;
-            else
-                taud1(n) = fitobj.d;
-                taud2(n) = fitobj.c;
-                p(n) = 1 - fitobj.b;
+            if decay_fit_order == 1
+                taud1(n) = fitobj.b; 
+            elseif decay_fit_order == 2
+                if fitobj.c < fitobj.d
+                    taud1(n) = fitobj.c;
+                    taud2(n) = fitobj.d;
+                    p(n) = fitobj.b;
+                else
+                    taud1(n) = fitobj.d;
+                    taud2(n) = fitobj.c;
+                    p(n) = 1 - fitobj.b;
+                end
             end
         else
             A(n) = nan;
@@ -139,10 +164,12 @@ if any(strcmp(in.funcs,'decay_fit'))
     end        
     % compile into struct
     decay_fit = struct();    
-    decay_fit.taud1 = taud1; 
-    decay_fit.taud2 = taud2;
-    decay_fit.p = p; 
     decay_fit.A = A;
+    decay_fit.taud1 = taud1;         
+    if in.decay_fit_order == 2
+        decay_fit.taud2 = taud2;
+        decay_fit.p = p; 
+    end
     decay_fit.rsquare = rsquare;
     decay_fit.fitobjs = fitobjs;
     decay_fit.gofs = gofs;
