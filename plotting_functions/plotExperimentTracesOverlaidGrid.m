@@ -25,6 +25,8 @@ in.y_lim = [];
 in.x_sbar_len1 = []; % main axis scale bar length
 in.save_fig = 0;
 in.cond_inds = []; % condition indices, default use all
+in.norm_peak_ind = 0; % index of column (condition) to take peak and normalize 
+                      % all traces within ROI 
 in = sl.in.processVarargin(in,varargin);
 
 func_field = [plot_func '_all'];
@@ -47,6 +49,12 @@ if ~isempty(in.cond_inds)
     meanF = meanF(in.cond_inds);
     experiment_output.conditions = experiment_output.conditions(in.cond_inds);
     in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
+end
+if in.norm_peak_ind > 0
+    meanF = cellfun(@(x) x./max(meanF{1},[],1),meanF,'UniformOutput',0); 
+    fprintf('Normalized all responses to peak of %s\n',...
+            experiment_output.conditions{in.norm_peak_ind});
+    in.fig_name = [in.fig_name '_norm' num2str(in.norm_peak_ind)]; 
 end
 plotTracesOverlaidGrid(t,meanF,[],'x_lim',in.x_lim,...
                       'y_lim',in.y_lim,'x_sbar_len1',in.x_sbar_len1,...

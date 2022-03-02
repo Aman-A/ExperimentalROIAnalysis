@@ -124,9 +124,15 @@ else
             fixed_rec = in.registration_rec; 
         end
         if ~strcmp(fixed_rec.filepath,img.filepath)
+            if ~isempty(in.registration_rec_settings)
+                exp_settings_fixed = in.registration_rec_settings;
+            else
+                exp_settings_fixed = exp_settings; 
+            end
             [~,~,rois] = coregisterImagesAndROIs(fixed_rec,img,rois,exp_settings,...
                                                 'plot_result',0,...
-                                                'transform_type',in.transform_type); 
+                                                'transform_type',in.transform_type,...
+                                                'exp_settings_fixed',exp_settings_fixed); 
         else
             fprintf('Registering to same recording, skipping...\n'); 
         end

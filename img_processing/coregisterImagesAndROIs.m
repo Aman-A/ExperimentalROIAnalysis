@@ -1,5 +1,5 @@
 function varargout = coregisterImagesAndROIs(fixed_recording,moving_recording,...
-                                             rois,exp_settings,varargin)
+                                             rois,exp_settings_moving,varargin)
 %COREGISTERIMAGESANDROIS Coregisters images and shifts ROIs accordingly (circular only)
 %  
 %   Inputs 
@@ -25,12 +25,18 @@ in.roi_disp_shift_mode = 'mean'; % For displacement mode, specify 'mean' or
 in.dilation_factor = 4; % coregister using pixels within ROIs with radius dilated by this factor                                 
 in.plot_result = 0; 
 in.save_fig = 0; 
+in.exp_settings_fixed = []; % if need different Experiment Settings for fixed recording
 in = sl.in.processVarargin(in,varargin); 
 %% Get z-projection of each image to use for registration
-[fixed_bsline, fixed_peak, fixed_diff] = diffImage(fixed_recording,exp_settings,...
+if ~isempty(in.exp_settings_fixed)
+    exp_settings_fixed = in.exp_settings_fixed;
+else
+    exp_settings_fixed = exp_settings_moving;
+end
+[fixed_bsline, fixed_peak, fixed_diff] = diffImage(fixed_recording,exp_settings_fixed,...
                                                   'include_plots',[],...
                                                   'baseline_mode',in.baseline_mode);
-[moving_bsline, moving_peak, moving_diff] = diffImage(moving_recording,exp_settings,...
+[moving_bsline, moving_peak, moving_diff] = diffImage(moving_recording,exp_settings_moving,...
                                                   'include_plots',[],...
                                                   'baseline_mode',in.baseline_mode);
 if strcmp(in.z_proj,'baseline')       

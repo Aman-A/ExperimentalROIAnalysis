@@ -46,4 +46,5 @@ settings.bin_size = 1; % 1x1 binning
 settings.sort_traces = 0; % 1 to sort traces by plotROIfunc 
 settings.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIfunc 
 settings.roi_func_sbar_len = 1; 
+settings.registration_rec_settings = []; % if necessary, separate ExperimentSettings for registration recording
 settings = sl.in.processVarargin(settings,varargin);
