@@ -37,6 +37,7 @@ in.fig_name = 'traces_overlaid';
 in.title_on = 1;
 in.plot_func = 'deltaF_F0';
 in.leg_labels = ''; 
+in.colors = []; 
 in = sl.in.processVarargin(in,varargin);
 % Format plotTracesOverlaid options
 topts = struct(); 
@@ -49,6 +50,9 @@ topts.x_sbar_len1 = in.x_sbar_len1;
 topts.y_sbar_len1 = in.y_sbar_len1; 
 topts.x_sbar_len2 = in.x_sbar_len2;
 topts.y_sbar_len2 = in.y_sbar_len2; 
+if ~isempty(in.colors)
+    topts.cols = in.colors; 
+end
 % Reformat traces_all cell array
 if nargin < 2
     err_all = []; 
@@ -61,6 +65,7 @@ Nax = trace_cols(1);  % number of separate axes
 [Nrows,Ncols] = getSubplotDimensions(Nax);
 Nt = trace_rows(1); % number of time points
 Nconds = length(traces_all); % number of conditions
+%% Plot
 fig = figure('Units','normalized');
 fig.Position(1:2) = [0.01 0.01]; % place at bottom left corner
 fig.Units = in.fig_units; 
@@ -96,8 +101,15 @@ for i = 1:Nax
         ylabel(ax,''); 
     end
     if ~isempty(in.leg_labels)
-        if i == Ncols
-            legend(strrep(in.leg_labels,'_',' '),'Box','off');
+        if i == Nax % i == Ncols 
+            if Nax == Nrows*Ncols
+                ax_leg = ax; 
+            else
+                ax_leg = subplot(Nrows,Ncols,i+1); % plot on next empty axis                
+                plot(nan(2,Nconds),'-'); % dummy lines for legend
+                axis(ax_leg,'off');
+            end
+            legend(ax_leg,strrep(in.leg_labels,'_',' '),'Box','off');
         end
     end
 end

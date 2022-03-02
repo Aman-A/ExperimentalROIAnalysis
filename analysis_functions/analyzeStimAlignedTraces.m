@@ -26,7 +26,7 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 % https://stackoverflow.com/questions/14040260/how-to-iterate-over-n-dimensions
 % AUTHOR    : Aman Aberra 
 in.funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
-in.decay_fit_order = 2;
+in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
 in.save_analysis = 1;
@@ -91,7 +91,11 @@ if any(strcmp(in.funcs,'decay_fit'))
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
     spike_thresh = in.spike_thresh;         
     decay_fit_order = in.decay_fit_order;
-    ISI = exp_settings.convert2Time(max(diff(exp_settings.stim_vals))); % max inter-spike interval in sec
+    if length(exp_settings.stim_vals) > 1
+        ISI = exp_settings.convert2Time(max(diff(exp_settings.stim_vals))); % max inter-spike interval in sec
+    else
+        ISI = (t(end) - t(baseline_wind+1))*2; % recording time post stim
+    end
     if decay_fit_order == 1 % monoexponential decay
         % F = A*exp(-t/taud1)
         fit_eqn = 'a*exp(-x/b)';

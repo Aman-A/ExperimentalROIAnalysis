@@ -28,6 +28,7 @@ in.cond_inds = []; % condition indices, default use all
 in.norm_peak_ind = 0; % index of column (condition) to take peak and normalize 
                       % all traces within ROI, or set to -1 to normalize
                       % all trials to peak
+in.colors = lines(length(experiment_output.conditions));                       
 in = sl.in.processVarargin(in,varargin);
 
 func_field = [plot_func '_all'];
@@ -50,6 +51,7 @@ if ~isempty(in.cond_inds)
     meanF = meanF(in.cond_inds);
     experiment_output.conditions = experiment_output.conditions(in.cond_inds);
     in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
+    in.colors = in.colors(in.cond_inds,:);
 end
 
 if in.norm_peak_ind > 0
@@ -67,4 +69,5 @@ plotTracesOverlaidGrid(t,meanF,[],'x_lim',in.x_lim,...
                       'save_fig',in.save_fig,'fig_dir',in.fig_dir,...
                       'fig_name',in.fig_name,'plot_func',plot_func,...
                       'leg_labels',experiment_output.conditions,...
-                      'fig_units',in.fig_units,'fig_size',in.fig_size);
+                      'fig_units',in.fig_units,'fig_size',in.fig_size,...
+                      'colors',in.colors);

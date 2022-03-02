@@ -1,11 +1,12 @@
-function output = calcROIfuncs(img,rois,funcs,exp_settings,...
+function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
                                roi_func_mode,varargin)
 %CALCROIFUNCS Calculate functions within ROIs of image stack 
 %  
 %   Inputs 
 %   ------ 
-%   img : Recording object with vals property (M x N x time points stack of
-%         images)
+%   recording : Recording object 
+%               has 'vals' property with image stack 
+%               (M x N x time points stack of images)
 %   rois : ROIs object (todo: make generic ROI class)
 %           specifies position and size of all ROIs
 %   funcs : string or cell array
@@ -65,22 +66,23 @@ tic;
 switch roi_func_mode    
     case 'combine'
         output = struct; 
-        mask = rois.getMask(img.imsize(1:2),roi_inds); % single mask for all (or subset of) ROIs           
+        mask = rois.getMask(recording.imsize(1:2),roi_inds); % single mask for all (or subset of) ROIs           
         num_masks = 1;
         for i = 1:length(funcs) % add function output to struct in corresponding field            
-            output = apply_func(output,1,funcs{i},img.vals,mask,baseline_wind_inds); 
+            output = apply_func(output,1,funcs{i},recording.vals,mask,baseline_wind_inds); 
         end
         print_str = ['Computed funcs: ', strjoin(funcs,', '), ' on ', ...
                       num2str(length(roi_inds)), ' of ',num2str(rois.num_rois),...
                       ' ROIs combined in %.2f sec\n'];                            
     case 'separate' % separate mask for each roi
         output = struct;     
-        num_masks = rois.num_rois;
+        num_masks = rois.num_rois; 
         for j = 1:num_masks
-            maskj = rois.getMask(img.imsize(1:2),j);                
+            maskj = rois.getMask(recording.imsize(1:2),j);                
             for i = 1:length(funcs)                                   
-                output = apply_func(output,j,funcs{i},img.vals,maskj,baseline_wind_inds); 
-            end
+                output = apply_func(output,j,funcs{i},recording.vals,maskj,...
+                                    baseline_wind_inds); 
+            end            
         end
         print_str = ['Computed funcs: ', strjoin(funcs,', '), ' on ', ...
                       num2str(rois.num_rois), ' ROIs separately in %.2f sec\n']; 
@@ -105,7 +107,7 @@ if any(strcmp(funcs,'mean'))
     end
 end
 %% Add relevant information to output struct
-output.img_name = img.img_name;
+output.img_name = recording.img_name;
 % output.rois = rois; 
 output.roi_func_mode = roi_func_mode; 
 output.roi_inds = roi_inds; 
