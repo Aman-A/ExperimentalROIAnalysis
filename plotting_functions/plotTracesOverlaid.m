@@ -10,7 +10,7 @@ function plotTracesOverlaid(t,traces,varargin)
 %   Examples 
 %   --------------- 
 
-% AUTHOR    : Aman Aberra 
+% AUTHOR    : Aman Aberra  
 in.cols = lines(size(traces,2)); 
 in.x_lim = []; % main limits
 in.y_lim = []; 

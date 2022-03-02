@@ -59,8 +59,8 @@ if nargin < 2
 end
 trace_rows = cellfun(@(x) size(x,1), traces_all,'UniformOutput',1);
 trace_cols = cellfun(@(x) size(x,2), traces_all,'UniformOutput',1);
-assert(all(trace_cols == trace_cols(1)),'All conditions should have same number of traces')
-assert(all(trace_cols == trace_cols(1)),'All conditions should have same number of rows')
+assert(all(trace_rows == trace_rows(1)),'All conditions should have same number of time points')
+assert(all(trace_cols == trace_cols(1)),'All conditions should have same number of columns')
 Nax = trace_cols(1);  % number of separate axes
 [Nrows,Ncols] = getSubplotDimensions(Nax);
 Nt = trace_rows(1); % number of time points
@@ -82,6 +82,9 @@ for i = 1:Nax
         end
     end
     ax = subplot(Nrows,Ncols,i);
+%     for k = 1:size(tracesi,2)
+%         shadedErrorBar(t,tracesi(:,k),erri(:,k),'lineProps',{'Color',in.colors(k,:)})
+%     end
     plotTracesOverlaid(t,tracesi,topts); 
     if in.title_on && Nax > 1
         title(ax,num2str(i));

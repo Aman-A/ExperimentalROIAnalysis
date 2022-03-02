@@ -17,11 +17,11 @@ function plotTracesOverlaidGridArray(t,traces_all_arr,err_all_arr,varargin)
 %   ------- 
 %   Examples 
 %   --------------- 
-traces_all_cell = mat2cell(traces_all_arr,size(traces_all_arr,1),size(traces_all_arr,2),...
-                                      ones(1,size(traces_all_arr,3))); 
+traces_all_cell = squeeze(mat2cell(traces_all_arr,size(traces_all_arr,1),size(traces_all_arr,2),...
+                                      ones(1,size(traces_all_arr,3)))); 
 if nargin > 2 && ~isempty(err_all_arr)                                   
-    err_all_cell = mat2cell(err_all_arr,size(err_all_arr,1),size(err_all_arr,2),...
-                                      ones(1,size(err_all_arr,3)));   
+    err_all_cell = squeeze(mat2cell(err_all_arr,size(err_all_arr,1),size(err_all_arr,2),...
+                                      ones(1,size(err_all_arr,3))));   
 else
     err_all_cell = []; 
 end

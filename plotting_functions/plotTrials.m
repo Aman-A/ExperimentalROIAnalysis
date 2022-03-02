@@ -47,12 +47,12 @@ bslines = cell(1,num_trials);
 means = cell(1,num_trials); 
 rois_all = cell(1,num_trials); 
 % Format roi_set_filename
-if iscell(roi_set_filename) && length(roi_set_filename) == 1
-    roi_set_filename = roi_set_filename{1};
-end
 if ischar(roi_set_filename) || ~iscell(roi_set_filename)
     roi_set_filename = repmat({roi_set_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
+elseif iscell(roi_set_filename) && length(roi_set_filename) == 1
+    % replicate for each trial
+    roi_set_filename = repmat(roi_set_filename,1,num_trials);
 end
 if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
     if ischar(in.registration_rec)    
