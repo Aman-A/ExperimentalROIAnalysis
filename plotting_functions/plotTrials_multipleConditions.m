@@ -51,8 +51,10 @@ for i = 1:num_conditions
     end
     output.peaks_deltaF_F0_all{i} = concatFieldInStructArray(tdi.analysis,'peaks')'; % [num_trials x num_rois]
     % Time of peak in sec relative to first stimulus
-    output.peak_times_all{i} = concatFieldInStructArray(tdi.analysis,'peak_times')';        
-    output.poststim_ints_all{i} = concatFieldInStructArray(tdi.analysis,'poststim_ints')';       
+    output.peak_times_all{i} = concatFieldInStructArray(tdi.analysis,'peak_times')';    
+    if isfield(tdi.analysis,'poststim_ints') 
+        output.poststim_ints_all{i} = concatFieldInStructArray(tdi.analysis,'poststim_ints')';       
+    end
     if isfield(tdi.analysis,'decay_fit')        
         output.decay_fits{i} = tdi.analysis.decay_fit;  
         output.successful_spikes{i} = tdi.analysis.successful_spikes;
@@ -82,10 +84,10 @@ output.img_names = img_names_new;
 output.exp_settings = exp_settings;
 output.roi_set_filenames = roi_set_filenames;
 output.plot_settings = plot_settings;
-if in.save_summary_data    
-    roiset_filename_no_ext = getROIset_name(roi_set_filenames{1},...
+roiset_filename_no_ext = getROIset_name(roi_set_filenames{1},...
                                              plot_settings.transform_type,...
                                                 plot_settings.registration_rec);  
+if in.save_summary_data    
     summary_datafile = sprintf('%s_%s_%s_%s_%s',exp_date,reporter,dish,plot_settings.roi_func_mode,...
                             roiset_filename_no_ext);
     summary_data_filepath = fullfile(data_fold,exp_date,reporter,dish,summary_datafile);       
@@ -97,7 +99,7 @@ if in.plot_overlaid
     if ~strcmp(plot_settings.plot_func,'none') && ~isempty(plot_settings.plot_func) ...
             && all(plot_settings.plot_func~=0) 
         summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
-                        ['figs_',roi_set_filenames{1} '_' plot_settings.roi_func_mode]);        
+                        ['figs_',roiset_filename_no_ext]);        
         plotExperimentTracesOverlaidGrid(output,plot_settings.plot_func,...
                                         'fig_dir',summary_fig_dir,...
                                         'save_fig',in.save_overlaid,...
