@@ -69,6 +69,8 @@ roiset_filename_no_ext = getROIset_name(roi_set_filename,...
                                             plot_settings.registration_rec);  
 norm_datafile = sprintf('%s_%s_%s_separate_%s_glutnorm',exp_date,reporter,dish,...
                         roiset_filename_no_ext);
+y_lim = []; 
+save_fig =1 ;
 if strcmp(plot_settings.roi_func_mode,'separate')
     deltaF_F0_aligned = trials_data.deltaF_F0_aligned;
     mean_deltaF_F0_aligned = squeeze(mean(deltaF_F0_aligned,3)); % [num_frames x num_rois x num_conditions]
@@ -83,6 +85,14 @@ if strcmp(plot_settings.roi_func_mode,'separate')
         ss_dFF0 = norm_out.glut_ss_deltaF_F0;
         mean_deltaF_F0_aligned = mean_deltaF_F0_aligned./ss_dFF0;
     end
+    fig_fold_name = ['figs_',trials_data.roiset_filename_no_ext];
+    fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,fig_fold_name);
+    fig_name = [plot_settings.plot_func,'_' num2str(length(cond_inds)),'conds'];
+    cols = lines(length(trials_data.img_names));
+    leg_labels = strrep(trials_data.img_names,'.fits','');
     plotTracesOverlaidGridArray(t,mean_deltaF_F0_aligned(:,:,cond_inds),[],...
-                                'y_lim',[-0.002 0.12],'x_sbar_len1',[]);
+                                'y_lim',y_lim,'x_sbar_len1',[],...
+                                'colors',cols(cond_inds,:),...
+                                'leg_labels',leg_labels(cond_inds),...
+                                'save_fig',save_fig,'fig_name',fig_name,'fig_dir',fig_dir);
 end

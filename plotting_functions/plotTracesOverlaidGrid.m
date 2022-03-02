@@ -106,7 +106,7 @@ for i = 1:Nax
                 ax_leg = ax; 
             else
                 ax_leg = subplot(Nrows,Ncols,i+1); % plot on next empty axis                
-                plot(nan(2,Nconds),'-'); % dummy lines for legend
+                plotTracesOverlaid([0;1],nan(2,Nconds),topts)
                 axis(ax_leg,'off');
             end
             legend(ax_leg,strrep(in.leg_labels,'_',' '),'Box','off');

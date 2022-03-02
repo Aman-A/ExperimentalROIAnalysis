@@ -17,7 +17,7 @@ function plotROIfunc(func_output,func_name,stim_frames,sampling_rate,...
 in.ax = []; 
 in.rois = []; % use for labeling
 in.show_legend = 1;
-in.title_on = 0;
+in.title_on = 1;
 in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
@@ -65,7 +65,7 @@ if strcmp(func_output.roi_func_mode,'combine')
     else
         roi_str = sprintf('all %g ROIs',num_rois);
     end
-    display_names = {strcat(func_output.img_name,': ',roi_str)};
+    display_names = strcat(func_output.img_name,{': '},roi_str);
     title_str = func_output.img_name;
     if isfield(func_output,'baseline')
        title_str = [title_str sprintf(': Baseline = %.1f a.u.',...

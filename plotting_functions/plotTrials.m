@@ -158,13 +158,14 @@ trials_data.trial_times = trial_times;
 trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
 trials_data.img_names = img_names; 
+roiset_filename_no_ext = getROIset_name(roi_set_filename{1},...
+                                            in.transform_type,...
+                                            in.registration_rec);  
+trials_data.roiset_filename_no_ext = roiset_filename_no_ext; 
 if in.save_fig && in.overlay_trials && plot_trials
     if isfield(datai,'fig_dir') && isempty(in.data_fold)
         fig_dir = datai.fig_dir;
-    else
-        roiset_filename_no_ext = getROIset_name(roi_set_filename{1},...
-                                            in.transform_type,...
-                                            in.registration_rec);  
+    else        
         fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,...
                             in.condition,['figs_',roiset_filename_no_ext]);
     end
