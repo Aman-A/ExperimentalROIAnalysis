@@ -28,6 +28,7 @@ in.cond_inds = []; % condition indices, default use all
 in.norm_peak_ind = 0; % index of column (condition) to take peak and normalize 
                       % all traces within ROI, or set to -1 to normalize
                       % all trials to peak
+in.align_to = 'none'; % 'none','max', or 'min'                      
 in.colors = lines(length(experiment_output.conditions));                       
 in = sl.in.processVarargin(in,varargin);
 
@@ -41,19 +42,14 @@ else
     meanF = cellfun(@(x) mean(x,2),F,'UniformOutput',0); % mean across trials within condition/ROI
 end    
 exp_settings = experiment_output.exp_settings;
-t = exp_settings.getTimeVector(size(F{1},1));
-if regexp(plot_func,'aligned')
-    t = t - t(exp_settings.baseline_wind+1); % align to stim
-else
-    t = t - t(exp_settings.stim_vals(1)); % align to first stim
-end
+%% extract relevant columns (conditions)
 if ~isempty(in.cond_inds)
     meanF = meanF(in.cond_inds);
     experiment_output.conditions = experiment_output.conditions(in.cond_inds);
     in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
     in.colors = in.colors(in.cond_inds,:);
 end
-
+%% Normalize traces
 if in.norm_peak_ind > 0
     meanF = cellfun(@(x) x./max(meanF{1},[],1),meanF,'UniformOutput',0); 
     fprintf('Normalized all responses to peak of %s\n',...
@@ -64,6 +60,37 @@ elseif in.norm_peak_ind == -1
     fprintf('Normalized all responses to peak\n');
     in.fig_name = [in.fig_name '_norm-1']; 
 end
+%% Shift time vector/s
+t = exp_settings.getTimeVector(size(F{1},1));
+if strcmp(in.align_to,'none') % align to stimulus, not characteristics of responses 
+    if regexp(plot_func,'aligned')
+        t = t - t(exp_settings.baseline_wind+1); % align to stim
+    else
+        t = t - t(exp_settings.stim_vals(1)); % align to first stim
+    end
+else % align to some aspect of response waveforms
+    t_all = cell(1,size(meanF,2));
+%     t_all = zeros(length(t),size(meanF,2));
+    if strcmp(in.align_to,'max')       
+       for i = 1:size(meanF,2)           
+            [~,max_inds]  = max(meanF{i},[],1);
+            t_all{i} = zeros(length(t),size(meanF{i},2));
+            for j = 1:size(meanF{i},2)
+                t_all{i}(:,j) = t - t(max_inds(j)); % set t = 0 to max
+            end            
+       end
+    elseif strcmp(in.align_to,'min')
+        for i = 1:size(meanF,2)           
+            [~,min_inds]  = max(meanF{i},[],1);
+            t_all{i} = zeros(length(t),size(meanF{i},2));
+            for j = 1:size(meanF{i},2)
+                t_all{i}(:,j) = t - t(min_inds(j)); % set t = 0 to max
+            end            
+       end
+    end
+    t = t_all; % num_time_points x num_conds array instread of single vector
+end
+%% Plot
 plotTracesOverlaidGrid(t,meanF,[],'x_lim',in.x_lim,...
                       'y_lim',in.y_lim,'x_sbar_len1',in.x_sbar_len1,...
                       'save_fig',in.save_fig,'fig_dir',in.fig_dir,...

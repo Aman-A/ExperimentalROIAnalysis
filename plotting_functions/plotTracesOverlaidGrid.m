@@ -4,8 +4,9 @@ function plotTracesOverlaidGrid(t,traces_all,err_all,varargin)
 %  
 %   Inputs 
 %   ------ 
-%   t : vector
-%      time vector for all traces
+%   t : vector or cell array
+%      either time vector for all traces or 1 x num_conditions cell array
+%      of time vectors 
 %   traces_all : 1 x num_conditions cell array
 %                each element of array has num_time_points x num_traces 
 %                of traces to plot overlaid on separate axes
@@ -72,20 +73,27 @@ fig.Units = in.fig_units;
 if ~isempty(in.fig_size)
     fig.Position(3:4) = in.fig_size;
 end
-for i = 1:Nax
+ti = t; % set t if constant
+for i = 1:Nax    
     tracesi = zeros(Nt,Nconds);
     erri = zeros(Nt,Nconds);
+    if iscell(t)
+        ti = zeros(Nt,Nconds);
+    end
     for j = 1:Nconds
         tracesi(:,j) = traces_all{j}(:,i);        
         if ~isempty(err_all)
             erri(:,j) = err_all{j}(:,i);
+        end
+        if iscell(t)
+            ti(:,j) = t{j}(:,i);
         end
     end
     ax = subplot(Nrows,Ncols,i);
 %     for k = 1:size(tracesi,2)
 %         shadedErrorBar(t,tracesi(:,k),erri(:,k),'lineProps',{'Color',in.colors(k,:)})
 %     end
-    plotTracesOverlaid(t,tracesi,topts); 
+    plotTracesOverlaid(ti,tracesi,topts); 
     if in.title_on && Nax > 1
         title(ax,num2str(i));
     end

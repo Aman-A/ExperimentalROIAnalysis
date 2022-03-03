@@ -12,14 +12,16 @@ function plotTracesOverlaid(t,traces,varargin)
 
 % AUTHOR    : Aman Aberra  
 in.cols = lines(size(traces,2)); 
+in.lw = 1.5;
+in.lw2 = 1.5; 
 in.x_lim = []; % main limits
 in.y_lim = []; 
 in.x_lim2 = []; % inset limits
 in.y_lim2 = []; 
 in.inset_pos = [0.4 0.4 0.5 0.5];
-in.x_sbar_len1 = 0.5;
+in.x_sbar_len1 = 0.1;
 in.y_sbar_len1 = 0.2; 
-in.x_sbar_len2 = 0.005;
+in.x_sbar_len2 = 0.01;
 in.y_sbar_len2 = 0.2; 
 in.units = 'sec';
 in.plot_peak_times = 0;
@@ -29,7 +31,7 @@ if ~iscell(in.cols)
 else
     cols = in.cols;
 end
-lhands = plot(t,traces); 
+lhands = plot(t,traces,'LineWidth',in.lw); 
 ax = gca;
 hold(ax,'on'); 
 box(ax,'off'); 
@@ -52,7 +54,7 @@ end
 
 if ~isempty(in.inset_pos)
     ax2 = axes('Position',in.inset_pos);    
-    lhands = plot(ax2,t,traces); 
+    lhands = plot(ax2,t,traces,'LineWidth',in.lw2); 
     hold(ax2,'on'); 
     box(ax2,'off')
     set(lhands,{'color'},cols);
