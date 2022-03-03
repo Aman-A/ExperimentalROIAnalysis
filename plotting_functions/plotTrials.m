@@ -1,4 +1,4 @@
-function trials_data = plotTrials(img_names,exp_settings,roi_set_filename,...
+function trials_data = plotTrials(img_names,exp_settings,roiset_filename,...
                                   varargin)
 %PLOTTRIALS Plot set of trials on same axis  
 %   
@@ -47,12 +47,12 @@ bslines = cell(1,num_trials);
 means = cell(1,num_trials); 
 rois_all = cell(1,num_trials); 
 % Format roi_set_filename
-if ischar(roi_set_filename) || ~iscell(roi_set_filename)
-    roi_set_filename = repmat({roi_set_filename},1,num_trials);
+if ischar(roiset_filename) || ~iscell(roiset_filename)
+    roiset_filename = repmat({roiset_filename},1,num_trials);
     % roi_set_filename should be cell array of length num_trials
-elseif iscell(roi_set_filename) && length(roi_set_filename) == 1
+elseif iscell(roiset_filename) && length(roiset_filename) == 1
     % replicate for each trial
-    roi_set_filename = repmat(roi_set_filename,1,num_trials);
+    roiset_filename = repmat(roiset_filename,1,num_trials);
 end
 if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
     if ischar(in.registration_rec)    
@@ -68,7 +68,7 @@ for i = 1:num_trials
         trace_axis = traces_axes{i};         
     end
     img_namei = img_names{i}; 
-    datai = plotTrial(img_namei,exp_settings,roi_set_filename{i},...
+    datai = plotTrial(img_namei,exp_settings,roiset_filename{i},...
                        trace_axis,in);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
@@ -158,7 +158,7 @@ trials_data.trial_times = trial_times;
 trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
 trials_data.img_names = img_names; 
-roiset_filename_no_ext = getROIset_name(roi_set_filename{1},...
+roiset_filename_no_ext = getROIset_name(roiset_filename{1},...
                                             in.transform_type,...
                                             in.registration_rec);  
 trials_data.roiset_filename_no_ext = roiset_filename_no_ext; 

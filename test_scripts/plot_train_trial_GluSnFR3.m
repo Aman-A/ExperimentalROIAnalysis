@@ -61,38 +61,42 @@ datai = plotTrial(img_name,exp_settings,roi_set_filename,...
 %% Plot trials within each condition
 img_names = {}; % use all images in condition folder
 trials_data = plotTrials(img_names,exp_settings,roi_set_filename,plot_settings);
+%% Save summary data from all train trials as experiment output file
+plot_settings.show_diff_image = []; % can include [1,2,3]
+plot_settings.save_fig = 0; 
+plot_settings.plot_func = 'none';
+plot_settings.roi_func_mode = 'separate';
+summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,...
+                            ['figs_',roiset_filename_no_ext]);
+summary_datafile = sprintf('%s_%s_%s_%s_%s_train',exp_date,reporter,dish,plot_settings.roi_func_mode,...
+                                    roiset_filename_no_ext);
+out = plotTrials_multipleConditions(data_fold,exp_date,reporter,dish,...
+                               {condition},{position},{{}},exp_settings,...
+                               {roi_set_filename},...
+                               plot_settings,...
+                               'summary_fig_dir',summary_fig_dir,...
+                               'summary_datafile',summary_datafile,...
+                               'plot_overlaid',0);
 %% Plot overlaid if roi_func_mode is separate
-cond_inds = 2:3; 
-glut_norm = 1;
-roiset_filename_no_ext = getROIset_name(roi_set_filename,...
-                                         plot_settings.transform_type,...
-                                            plot_settings.registration_rec);  
+cond_inds = 1:4; 
+glut_norm = 1; % load already generated glut_norm file
 norm_datafile = sprintf('%s_%s_%s_separate_%s_glutnorm',exp_date,reporter,dish,...
                         roiset_filename_no_ext);
-y_lim = []; 
-save_fig =1 ;
 if strcmp(plot_settings.roi_func_mode,'separate')
     deltaF_F0_aligned = trials_data.deltaF_F0_aligned;
     mean_deltaF_F0_aligned = squeeze(mean(deltaF_F0_aligned,3)); % [num_frames x num_rois x num_conditions]
     t = exp_settings.getTimeVector(size(mean_deltaF_F0_aligned,1));
+    
     if regexp(plot_settings.plot_func,'aligned')
         t = t - t(exp_settings.baseline_wind+1); % align to stim
     else
-        t = t - t(exp_settings.stim_vals(1)); % align to first stim
+        t = t - t(exp_settings.convert2Time(exp_settings.stim_vals(1))); % align to first stim
     end    
     if glut_norm
         norm_out = load(fullfile(data_fold,exp_date,reporter,dish,[norm_datafile '.mat'])); 
         ss_dFF0 = norm_out.glut_ss_deltaF_F0;
         mean_deltaF_F0_aligned = mean_deltaF_F0_aligned./ss_dFF0;
     end
-    fig_fold_name = ['figs_',trials_data.roiset_filename_no_ext];
-    fig_dir = fullfile(data_fold,exp_date,reporter,dish,condition,fig_fold_name);
-    fig_name = [plot_settings.plot_func,'_' num2str(length(cond_inds)),'conds'];
-    cols = lines(length(trials_data.img_names));
-    leg_labels = strrep(trials_data.img_names,'.fits','');
     plotTracesOverlaidGridArray(t,mean_deltaF_F0_aligned(:,:,cond_inds),[],...
-                                'y_lim',y_lim,'x_sbar_len1',[],...
-                                'colors',cols(cond_inds,:),...
-                                'leg_labels',leg_labels(cond_inds),...
-                                'save_fig',save_fig,'fig_name',fig_name,'fig_dir',fig_dir);
+                                'y_lim',[-0.002 0.12],'x_sbar_len1',[]);
 end
