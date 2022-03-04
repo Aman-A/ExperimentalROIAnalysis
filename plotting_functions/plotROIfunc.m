@@ -30,10 +30,14 @@ else
     ax = in.ax; 
 end
 y = func_output.(func_name);
-if regexp(func_name,'aligned','ONCE')
+if regexp(func_name,'aligned','ONCE') 
     std_y = std(y,0,ndims(y));
-    y = mean(y,ndims(y)); % mean across 2nd dim for combined ROIs, 3rd dim 
+    if strcmp(func_output.roi_func_mode,'combine')
+        y = mean(y,ndims(y));
+    else
+        y = mean(y,3); % mean across 2nd dim for combined ROIs, 3rd dim 
                            % for separate ROIs              
+    end
 end
 if nargin < 4
     x = 1:size(y,1); % frames    
