@@ -24,6 +24,8 @@ if ischar(roiset_filename)
                                                      fixed_img_name,...
                                                      transform_type); 
     end
+elseif iscell(roiset_filename)
+    error('Input string or valid input to ROIs constructer')
 else
     roiset_filename_no_ext = 'custom';
 end

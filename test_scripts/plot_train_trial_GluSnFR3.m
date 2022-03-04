@@ -7,7 +7,7 @@ dish = 'dish3';
 div = 16; 
 condition = 'train'; % 'control', '5nM_DTX', '50nM_DTX'
 roi_set_filename = 'RoiSet_pos0';
-img_name = '50nM_DTX_Sr';
+img_name = 'control';
 num_stim = 20; 
 del = 0; % sec 
 freq = 0.5; % Hz
@@ -50,6 +50,10 @@ ps.transform_type = 'displace'; % 'none' or 'displace'
 ps.registration_rec = fullfile(data_fold,exp_date,...
                                           reporter,dish,'burst',...
                                           'control.fits'); 
+burst_stim_vals = defineStimTrain(3,50,0.1); % burst
+exp_settings2 = ExperimentSettings(burst_stim_vals,stim_wind,baseline_wind,...
+                                  units,sampling_rate); % automatically converts to frames                                 
+plot_settings.registration_rec_settings = exp_settings2;                                       
 ps.show_roi_labels = 1;  
 ps.close_img_after_save = 1;                           
 %%
