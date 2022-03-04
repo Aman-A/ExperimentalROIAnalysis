@@ -12,6 +12,13 @@ function plotExpDefaultSummaryStats(out,plot_settings,varargin)
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
+% 1 - peak
+% 2 - post-stim integral
+% 3 - peak time
+% 4 - baseline
+% 5 - fast decay time constant
+% 6 - slow decay time constant (for dual exponential)
+% 7 - normalized full width half max (nFWHM)
 in.plot_inds = [1,2,3,4];
 in.roi_set_filename = ''; 
 in.summary_fig_dir = ''; 
