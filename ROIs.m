@@ -12,10 +12,10 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         names % names from ImageJ
         num_rois % number of rois
         types % Cell array of ROItypes, e.g. 'Oval'/'Circle' or 'Rectangle'
-        roi_set_filename char {mustBeTextScalar} % file name
+        roiset_filename char {mustBeTextScalar} % file name
         format char {mustBeTextScalar} % file extension (default '.zip')
-        roi_set_filedir char {mustBeTextScalar} % directory file is in
-        roi_set_filepath char {mustBeTextScalar} % full path to file
+        roiset_filedir char {mustBeTextScalar} % directory file is in
+        roiset_filepath char {mustBeTextScalar} % full path to file
         loaded = false 
         y_inverted = false; 
         registration_rec char {mustBeTextScalar} % full path to recording for coregistration
@@ -30,40 +30,40 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             %                       ImageJ ROIs saved as zip file to be
             %                       loaded
             % Optional inputs:
-            in.roi_set_filedir = pwd; % directory from which to load ImageJ 
+            in.roiset_filedir = pwd; % directory from which to load ImageJ 
                                       % roi file, if not included in 
                                       % file_or_roi_array arg
             in.print_status = 1; 
             in.names = {}; 
             in = sl.in.processVarargin(in,varargin);
             if ischar(file_or_roi_array)
-               roi_set_filename = file_or_roi_array;                
+               roiset_filename = file_or_roi_array;                
                load_roi = true;
             else
-               obj.roi_set_filename = 'none';
+               obj.roiset_filename = 'none';
                load_roi = false;
             end            
             
             if load_roi
-                [path_to_roiset,roi_set_name,ext] = fileparts(roi_set_filename);
+                [path_to_roiset,roiset_name,ext] = fileparts(roiset_filename);
                 if isempty(path_to_roiset)
-                    obj.roi_set_filedir = in.roi_set_filedir;
+                    obj.roiset_filedir = in.roiset_filedir;
                 else
-                    obj.roi_set_filedir = path_to_roiset;
+                    obj.roiset_filedir = path_to_roiset;
                 end
-                obj.roi_set_filename = roi_set_name;            
+                obj.roiset_filename = roiset_name;            
                 if isempty(ext)
                    obj.format= '.zip'; % assume zip format 
                 else
                     obj.format = ext; 
                 end                                
-                obj.roi_set_filepath = fullfile(obj.roi_set_filedir,...
-                                                [obj.roi_set_filename obj.format]);
-                ROIarray = ReadImageJROI(obj.roi_set_filepath); % load .zip ROI set
+                obj.roiset_filepath = fullfile(obj.roiset_filedir,...
+                                                [obj.roiset_filename obj.format]);
+                ROIarray = ReadImageJROI(obj.roiset_filepath); % load .zip ROI set
                 obj.num_rois = length(ROIarray);         
                 obj.loaded = true;
                 if in.print_status > 0
-                    fprintf('Loaded %g ROIs from %s\n',obj.num_rois,obj.roi_set_filepath); 
+                    fprintf('Loaded %g ROIs from %s\n',obj.num_rois,obj.roiset_filepath); 
                 end
                 % Process ROIs into easier to work with format
                 obj.processROIs(ROIarray);    

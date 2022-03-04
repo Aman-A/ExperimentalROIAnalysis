@@ -12,7 +12,7 @@ function output_data = plotTrial(img_name,exp_settings,rois_or_roiset_filename,.
 %              data_fold, exp_date, reporter, dish, and condition not
 %              input, assumes in current working directory, otherwise 
 %              should include full path to file
-%   exp_settings: ExperimentalSettings object
+%   exp_settings: ExperimentSettings object
 %                 instance of ExperimentalSettings object containing
 %                 parameters for experimental recording, stimulation times, 
 %                 and desired baseline window
@@ -106,7 +106,7 @@ else
     if isempty(in.roiset_filedir)
        in.roiset_filedir = [img.filedir filesep '..']; % default location
     end
-    rois = ROIs(rois_or_roiset_filename,'roi_set_filedir',...
+    rois = ROIs(rois_or_roiset_filename,'roiset_filedir',...
                 in.roiset_filedir); % assume directory above data for this condition
     if ischar(rois_or_roiset_filename)
         if regexp(rois_or_roiset_filename,'pc')
