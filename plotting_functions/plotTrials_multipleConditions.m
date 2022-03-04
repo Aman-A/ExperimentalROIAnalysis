@@ -33,6 +33,8 @@ output.mean_peaks = cell(1,num_conditions);
 output.std_peaks = cell(1,num_conditions);
 output.sem_peaks = cell(1,num_conditions);
 output.decay_fits = cell(1,num_conditions);
+output.fwhm = cell(1,num_conditions);
+output.mean_fwhm = cell(1,num_conditions);
 output.successful_spikes = cell(1,num_conditions);
 output.trial_times_all = cell(1,num_conditions);
 output.baselines_all = cell(1,num_conditions); 
@@ -66,6 +68,12 @@ for i = 1:num_conditions
             output.spike_window = tdi.analysis.spike_window; 
         end
     end    
+    if isfield(tdi.analysis,'fwhm')
+        output.fwhm{i} = tdi.analysis.fwhm;
+    end
+    if isfield(tdi.analysis,'mean_fwhm')
+        output.mean_fwhm{i} = tdi.analysis.mean_fwhm;
+    end
     output.mean_peaks{i} = [tdi.analysis.mean_peak];
     output.std_peaks{i} = [tdi.analysis.std_peak];
     output.sem_peaks{i} = [tdi.analysis.sem_peak];

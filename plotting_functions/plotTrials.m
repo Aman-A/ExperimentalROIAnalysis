@@ -85,7 +85,7 @@ end
 if strcmp(in.reporter,'GluSnFR3')
     analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 else
-    analysis_funcs = {'peaks','peak_times'};
+    analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
 end
 if ~exist('filedir','var')
     filedir = datai.recording.filedir;
@@ -101,7 +101,7 @@ if strcmp(in.roi_func_mode,'combine')
         deltaF_F0_aligned = cell2mat(reshape(deltaF_F0_aligned,1,1,num_trials)); % [num_frames x num_stim x num_trials]
         analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings,...
                                             'funcs',analysis_funcs,...
-                                            'load',in.load_processed_data,...
+                                            'load',0,...%in.load_processed_data,...
                                             'save_dir',filedir);  
         mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3]); % average across stimuli and trials
         mean_peak_deltaF_F0 = analysis.mean_peak;

@@ -25,10 +25,11 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 % always time. Could use recursive loop like matlab answer here: 
 % https://stackoverflow.com/questions/14040260/how-to-iterate-over-n-dimensions
 % AUTHOR    : Aman Aberra 
-in.funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
+in.funcs = {'peaks','peak_times','poststim_ints','decay_fit','fwhm','mean_fwhm'};
 in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
+in.frac_amp = 0.5; 
 in.save_analysis = 1;
 in.save_dir = './'; % default save in current directory
 in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g.mat',size(traces,[1,2,3]));
@@ -182,6 +183,46 @@ if any(strcmp(in.funcs,'decay_fit'))
     output.successful_spikes = successful_spikes;
     output.spike_thresh = in.spike_thresh;  
     output.spike_window = in.spike_window; 
+end
+if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces   
+    n_traces = prod(trace_dims(2:end));    
+    [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
+    t = exp_settings.getTimeVector(size(traces,1));      
+    stim_index = exp_settings.baseline_wind + 1;     
+    frac_amp = in.frac_amp;
+    fwhm = zeros(trace_dims(2:end));
+    tic
+    parfor n = 1:n_traces
+        fwhm(n) = spikeWidth(t,traces(:,n),stim_index,frac_amp)
+    end
+    elapsed_time = toc;
+    fprintf('Computed FWHM of %g traces in %.2f sec\n',n_traces,elapsed_time)
+    if any(isnan(fwhm))
+        fprintf('%g of %g errors\n',sum(isnan(fwhm),'all'),numel(fwhm));
+    end
+    output.fwhm = fwhm; 
+end
+if any(strcmp(in.funcs,'mean_fwhm'))
+    if trace_dims(4) == 1 % single ROI
+        mean_traces = squeeze(mean(traces,2)); 
+    else % multiple ROIs
+        mean_traces = squeeze(mean(traces,3)); 
+    end
+    mean_trace_dims = size(mean_traces,1:3);
+    t = exp_settings.getTimeVector(size(traces,1));      
+    stim_index = exp_settings.baseline_wind + 1; 
+    frac_amp = in.frac_amp;
+    n_traces = prod(mean_trace_dims(2:end));
+    mean_fwhm = zeros(mean_trace_dims(2:end));
+    for n = 1:n_traces
+        mean_fwhm(n) = spikeWidth(t,mean_traces(:,n),stim_index,frac_amp);
+    end
+    fprintf('Computed FWHM of %g stim-averaged traces in %.2f sec\n',...
+            n_traces,elapsed_time)
+    if any(isnan(mean_fwhm))
+        fprintf('%g of %g errors\n',sum(isnan(mean_fwhm),'all'),numel(mean_fwhm));
+    end
+    output.mean_fwhm = mean_fwhm; 
 end
 if in.save_analysis
     save(analysis_file,'-STRUCT','output')
