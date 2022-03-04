@@ -24,7 +24,8 @@ function [bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
 %          specify colormap as string or N x 3 RGB array
 %   include_plots : integer array
 %                   Specify which plots to include, can include 1, 2, 3 in
-%                   any order (1 - Baseline, 2 - Peak, 3 - Difference)
+%                   any order (1 - Baseline, 2 - Peak, 3 - Difference, 
+%                   or 4 - Difference averaged across stimuli)
 %   filt_width : double
 %               width (std) of symmetric gaussian spatial filter, NOTE:
 %               REQUIRES IMAGE PROCESSING TOOLBOX
@@ -38,7 +39,7 @@ if nargin < 2
     exp_settings = ExperimentSettings(300,100,100,'frames',100);    
 end
 in.cmap = 'inferno';
-in.include_plots = [3];
+in.include_plots = [3]; % (1 - Baseline, 2 - Peak, 3 - Difference)
 in.baseline_mode = 'mean'; % 'mean' or 'max' - metric to calculate on 
                            % baseline frames for bsline_img
 in.filt_width = 0;
@@ -68,7 +69,12 @@ if in.filt_width > 0
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
-diff_img = peak_stim_img-bsline_img;
+if any(in.include_plots == 4)
+    diff_img = meanDiffImage(img.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
+                            exp_settings.stim_wind);
+else
+    diff_img = peak_stim_img-bsline_img;
+end
 if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
     fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,img.img_name,...
                    exp_settings,in);

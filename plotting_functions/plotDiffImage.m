@@ -59,10 +59,14 @@ if any(in.include_plots==2) % Peak image
                  'resolutions',in.resolutions)
     end
 end
-if any(in.include_plots==3) % Difference image
+if any(in.include_plots==3) || any(in.include_plots==4) % Difference or mean difference image
     % subplot(3,1,3);
     fig = figure(in.fig_settings{:});
-    title_str = sprintf('%s: Peak - mean baseline, %s',img_name,filt_str);
+    if any(in.include_plots==3)
+        title_str = sprintf('%s: Peak - baseline, %s',img_name,filt_str);
+    else
+        title_str = sprintf('%s: Mean peak - baseline, %s',img_name,filt_str);
+    end
     plot_img(diff_img,title_str,in.cmap,in.cb_settings,in.title_settings,...
              in.cax_mode,in.cax_lims,in.pixel_size);        
     fig_hands = [fig_hands,fig];
