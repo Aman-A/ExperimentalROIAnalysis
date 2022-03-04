@@ -110,7 +110,20 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                print_status = 1; 
             end
             if strcmp(obj.format,'.fits')
-                obj.vals = fitsread(obj.filepath); 
+                if exist(obj.filepath,'file')
+                    obj.vals = fitsread(obj.filepath); 
+                else % try getting local data_fold and reconstruct path
+                    data_fold_loc = getDataFold(); 
+                    filedir_loc = fullfile(data_fold_loc,obj.exp_date,obj.reporter,...
+                                        obj.dish,obj.condition);
+                    filepath_loc = fullfile(filedir_loc,[obj.img_name,obj.format]);
+                    if exist(filepath_loc,'file')
+                        obj.data_fold = data_fold_loc;
+                        obj.filedir = filedir_loc;
+                        obj.filepath = filepath_loc; 
+                    end  
+                    obj.vals = fitsread(obj.filepath); % now try loading again
+                end
 %                 if ispc
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 

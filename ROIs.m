@@ -36,6 +36,9 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             in.print_status = 1; 
             in.names = {}; 
             in = sl.in.processVarargin(in,varargin);
+            if nargin == 0
+                return; % allow for empty ROIs object for no input
+            end
             if ischar(file_or_roi_array)
                roiset_filename = file_or_roi_array;                
                load_roi = true;
@@ -115,7 +118,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     end
                 end
                 obj.loaded = false;
-            end 
+            end             
         end
         function processROIs(obj,ROIarray)
             % Process ImageJ ROI array output by ReadImageJROI.m function
