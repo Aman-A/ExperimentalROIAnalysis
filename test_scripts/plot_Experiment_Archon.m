@@ -45,10 +45,14 @@ plot_settings.roi_func_mode = 'combine';
 plot_settings.save_processed_data = 1;
 plot_settings.load_processed_data = 1;
 plot_settings.save_fig = 1;
-plot_settings.y_lim = [-0.01 0.18];
-% plot_settings.x_lim = [stim_delay stim_delay+stim_duration];
-plot_settings.x_lim = [-0.05 0.15];
 plot_settings.plot_func = 'deltaF_F0_aligned'; % 'deltaF_F0'
+if strcmp(plot_settings.plot_func,'deltaF_F0')
+   plot_settings.x_lim = [stim_delay stim_delay+stim_duration];
+   plot_settings.y_lim = [];
+else
+    plot_settings.x_lim = [-baseline_wind,stim_wind];
+    plot_settings.y_lim = [];
+end
 plot_settings.recenterROIs = 0;
 plot_settings.show_roi_labels = 1;
 plot_settings.close_img_after_save = 0; 
@@ -97,9 +101,7 @@ plotExperimentTracesOverlaidGrid(out,plot_settings.plot_func,...
 plot_inds = [1,3,4];
 summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
             ['figs_',out.roiset_filename_no_ext,'_' out.plot_settings.roi_func_mode]);       
-plotDefaultSummaryStats(out.peaks_deltaF_F0_all,[],out.peak_times_all,...
-                         out.baselines_all,out.decay_fits,out.rel_times_cond_starts,...
-                         out.conditions,exp_date,reporter,dish,out.plot_settings,...
+plotExpDefaultSummaryStats(out,out.plot_settings,...
                          'plot_inds',plot_inds,'summary_fig_dir',summary_fig_dir,...
                          'save_fig',1) 
 %% Get AP peaks

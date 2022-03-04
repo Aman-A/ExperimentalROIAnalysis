@@ -186,14 +186,13 @@ if any(strcmp(in.funcs,'decay_fit'))
 end
 if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces   
     n_traces = prod(trace_dims(2:end));    
-    [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
     t = exp_settings.getTimeVector(size(traces,1));      
     stim_index = exp_settings.baseline_wind + 1;     
     frac_amp = in.frac_amp;
     fwhm = zeros(trace_dims(2:end));
     tic
     parfor n = 1:n_traces
-        fwhm(n) = spikeWidth(t,traces(:,n),stim_index,frac_amp)
+        fwhm(n) = spikeWidth(t,traces(:,n),stim_index,frac_amp);
     end
     elapsed_time = toc;
     fprintf('Computed FWHM of %g traces in %.2f sec\n',n_traces,elapsed_time)

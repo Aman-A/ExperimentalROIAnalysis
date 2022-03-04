@@ -5,7 +5,7 @@ function spike_width = spikeWidth(t,y,stim_index,frac_amp) %#codegen
 %   Inputs 
 %   ------ 
 %   t : vector
-%       time points
+%       time points in sec
 %   y : vector
 %       recording values (e.g. fluorescence, voltage)
 %   stim_index : scalar
@@ -26,18 +26,25 @@ function spike_width = spikeWidth(t,y,stim_index,frac_amp) %#codegen
 if nargin < 4
     frac_amp = 0.5; 
 end
+max_width = 0.01; % sec - max allowed spike width 10 ms
 plot_fig = 0; 
 %% Get peak amplitude
-[peak_val,~] = max(y,[],1);
+[peak_val,peak_ind] = max(y,[],1);
 % Get baseline
 bsline = sum(y(1:stim_index-1))/(stim_index-1); % mean in baseline window
 amp = peak_val - bsline; 
+% std_bsline = std(y(1:stim_index-1),0);
+% if amp < (bsline + std_bsline)
+%    spike_width = nan;
+%    fprintf('Peak < std(baselin)*mean(baseline), skipping\n');
+%    return;
+% end
 width_val = amp*frac_amp + bsline; % value at which to find width
 onset_found = 0;
 offset_found = 0;
 for i = 1:length(y)
     if ~onset_found 
-        if y(i) >= width_val
+        if y(i) >= width_val && (t(peak_ind) - t(i)) < max_width/2
             onset_index = i; 
             onset_found = 1;
         end
@@ -51,6 +58,7 @@ for i = 1:length(y)
     end
 end
 if onset_found && offset_found % linear interpolation between samples to find value at frac_amp
+%     fprintf('onset %g, y(onset_index) = %g, width_val %f\n',onset_index,y(onset_index),width_val);
     slope_onset = (y(onset_index)-y(onset_index-1))/(t(onset_index)-t(onset_index-1));
     start_time = (amp*frac_amp - y(onset_index-1))/slope_onset + t(onset_index-1);    
 
