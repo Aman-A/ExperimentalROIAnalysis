@@ -59,7 +59,7 @@ ps.condition = 'control'; % 'control', '50nM_DTX'
 img_names = {}; % use all images in condition folder
 trials_data = plotTrials(img_names,exp_settings,roiset_filename,ps);
 %% Plot multiple trials, multiple conditions       
-conditions = {'control','10nM_DTX'}; 
+conditions = {'control','50nM_DTX'}; 
 ps.save_fig = 1;
 ps.plot_func = 'deltaF_F0';
 ps.show_diff_image = [3];      
@@ -72,7 +72,7 @@ end
 if regexp(ps.plot_func,'aligned')
     ps.x_lim = [-baseline_wind, stim_wind];
 else
-    ps.x_lim = [-0.2 stim_vals(end) + stim_wind];
+    ps.x_lim = [-0.2 0.5];
 end
 % set(0,'DefaultFigureVisible','off') % to avoid window taking screen focus
 out = plotTrials_multipleConditions(conditions,ps,exp_settings,...
