@@ -118,14 +118,14 @@ if any(in.plot_inds == 5) && isfield(out,'decay_fits')
                     'fig_dir',summary_fig_dir,'title_on',in.title_on);
 end
 % Slow decay time constants
-if any(in.plot_inds == 6) && isfield(out,'decay_fits_all')
+if any(in.plot_inds == 6) && isfield(out,'decay_fits')
     if isfield(out.decay_fits_all{1},'taud2')
         figure('Units',in.fig_units,'Position',in.fig_pos); 
-        taud2_all = cellfun(@(x) x.taud2,out.decay_fits_all,'UniformOutput',0);        
+        taud2_all = cellfun(@(x) x.taud2,out.decay_fits,'UniformOutput',0);        
         fprintf('Removing fits with R^2 < %.2f\n',in.rsq_cutoff);
         % remove fits with R^2 < 0.5
         for i = 1:length(taud2_all)
-            taud2_all{i}(out.decay_fits_all{i}.rsquare < in.rsq_cutoff) = nan; 
+            taud2_all{i}(out.decay_fits{i}.rsquare < in.rsq_cutoff) = nan; 
         end
         % normalize to mean control
     %     taud1_all = cellfun(@(x) x./mean(taud1_all{1},2),taud1_all,'UniformOutput',0); 
