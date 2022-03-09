@@ -360,5 +360,18 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         obj.x = r_new(:,1); 
         obj.y = r_new(:,2); 
         end
+        function removeROIs(obj,roi_inds)            
+            if all(strcmp(obj.types,'Oval'))
+                obj.x0(roi_inds) = []; 
+                obj.y0(roi_inds) = []; 
+                obj.x(roi_inds) = []; 
+                obj.y(roi_inds) = []; 
+                obj.names(roi_inds) = [];  
+                obj.types(roi_inds) = []; 
+                obj.num_rois = size(obj.x,1); 
+            else
+                error('Not implemented yet for shapes other than Oval')
+            end
+        end
     end    
 end

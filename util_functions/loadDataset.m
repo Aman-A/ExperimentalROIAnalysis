@@ -1,4 +1,4 @@
-function [data,norm_data,train_data] = loadDataset(dataset_def_filename,...
+function [data,def,norm_data,train_data] = loadDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin)
 %LOADDATASET Compiles data from multiple dishes defined in dataset
 %definition file and loads
@@ -25,8 +25,12 @@ in = sl.in.processVarargin(in,varargin);
 [~,dataset_name,~] = fileparts(dataset_def_filename);
 dataset_filepath = fullfile(in.dataset_fold,[dataset_name '.mat']); % save compiled dataset
 if in.load_compiled_dataset && exist(dataset_filepath,'file')
+    fprintf('Compiled dataset found, loading...\n');
+    tic
     all_data = load(dataset_filepath);
+    elapsed_time = toc; 
     data = all_data.data;
+    def = all_data.def; 
     if isfield(all_data,'norm_data')
         norm_data = all_data.norm_data;
     else
@@ -36,8 +40,8 @@ if in.load_compiled_dataset && exist(dataset_filepath,'file')
         train_data = all_data.train_data;
     else
         train_data = []; 
-    end
-    fprintf('Loaded compiled dataset from %s\n',dataset_filepath);
+    end    
+    fprintf('Loaded compiled dataset from %s in %.3f sec\n',dataset_filepath, elapsed_time);
 else
     % Load processed data and compile
     def = loadDatasetDefinition(dataset_def_filename);
@@ -62,7 +66,8 @@ else
             data{i} = datai;
             fprintf('Loaded %s (%g of %g)\n',summary_data_filepath,i,num_dishes);
             num_loaded = num_loaded + 1; 
-            if ~isempty(def.norm_suffix{i}) % check for normalization 
+            if any(strcmp(def.Properties.VariableNames,'norm_suffix')) && ...
+                        ~isempty(def.norm_suffix{i}) % check for normalization 
                 
                 norm_data_file = [summary_data_file '_' def.norm_suffix{i} '.mat']; 
                 norm_data_filepath = fullfile(exp_data_fold,norm_data_file);
@@ -74,7 +79,8 @@ else
                     fprintf('   !!Normalized data file not found: %s \n',norm_data_filepath)
                 end
             end
-            if ~isempty(def.train_suffix{i}) % check for train trials
+            if any(strcmp(def.Properties.VariableNames,'train_suffix')) && ...
+                    ~isempty(def.train_suffix{i}) % check for train trials
                 
                 train_data_file = [summary_data_file '_' def.train_suffix{i} '.mat']; 
                 train_data_filepath = fullfile(exp_data_fold,train_data_file);
@@ -91,7 +97,11 @@ else
         end
     end
     elapsed_time = toc; 
-    fprintf('Finished loading dataset: %s in %.2f sec\n',dataset_name,elapsed_time)
+    if num_loaded > 0
+        fprintf('Finished loading dataset: %s in %.2f sec\n',dataset_name,elapsed_time)
+    else
+        fprintf('No data was loaded\n')
+    end
     if any(strcmp(def.Properties.VariableNames,'norm_suffix'))    
         num_norm = sum(~cellfun(@isempty,def.norm_suffix,'UniformOutput',1));
         if num_norm > 0
@@ -105,18 +115,20 @@ else
                 num_train_loaded,num_train);
     end
     % Save compiled dataset to .mat file
-    if in.save_compiled_dataset
+    if in.save_compiled_dataset && num_loaded > 0
         if ~exist(in.dataset_fold,'dir')
             mkdir(in.dataset_fold);
         end
         save_data = struct(); 
+        save_data.def = def; 
         save_data.data = data;
-        if any(~isempty(def.norm_suffix))
+        if any(strcmp(def.Properties.VariableNames,'norm_suffix')) && any(~isempty(def.norm_suffix))
             save_data.norm_data = norm_data;
         end
-        if any(~isempty(def.train_suffix))
+        if any(strcmp(def.Properties.VariableNames,'train_suffix')) && any(~isempty(def.train_suffix))
             save_data.train_data = train_data;
         end
+        fprintf('Saving...\n')
         save(dataset_filepath,'-STRUCT','save_data');
         fprintf('Saved compiled dataset to %s\n',dataset_filepath);
     end

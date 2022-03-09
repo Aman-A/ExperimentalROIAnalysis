@@ -59,7 +59,7 @@ ps.condition = 'control'; % 'control', '50nM_DTX'
 img_names = {}; % use all images in condition folder
 trials_data = plotTrials(img_names,exp_settings,roiset_filename,ps);
 %% Plot multiple trials, multiple conditions       
-conditions = {'control','50nM_DTX'}; 
+conditions = {'control','50nM_DTX','wash'}; 
 ps.save_fig = 1;
 ps.plot_func = 'deltaF_F0';
 ps.show_diff_image = [3];      

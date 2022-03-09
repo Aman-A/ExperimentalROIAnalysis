@@ -95,7 +95,7 @@ if strcmp(in.transform_type,'displace')
        fprintf('WARNING: Displacement of >5 um on %g ROIs!!!\n', sum(sum(sqrt(dr(:,1).^2 + dr(:,2).^2))>5));
     end
     rois2.shift(dr); % shift each ROI by [x,y] vector (pixels)    
-    varargout = {D,dr,rois2}; 
+    varargout = {D,dr,rois2,moving_reg}; 
 else
     % mask images with dilated ROIs for registration
     rois_reg = rois.copy(); 

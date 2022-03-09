@@ -61,7 +61,7 @@ end
 baseline_wind_inds = exp_settings.baseline_wind_inds; 
 exp_settings.convert2Frames(); 
 stim_frames = exp_settings.stim_vals; % stimulus frames 
-num_stim = length(stim_frames);
+if recording.loaded == 0; recording.load(); end
 tic; 
 switch roi_func_mode    
     case 'combine'

@@ -32,7 +32,7 @@ in.spike_window = 0.1; % sec - peak must be within this time of stim to be consi
 in.frac_amp = 0.5; 
 in.save_analysis = 1;
 in.save_dir = './'; % default save in current directory
-in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g.mat',size(traces,[1,2,3]));
+in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g_%g.mat',size(traces,[1,2,3,4]));
 in.load = 1; 
 in = sl.in.processVarargin(in,varargin);
 exp_settings.convert2Frames(); % convert from time to frames units if necessary

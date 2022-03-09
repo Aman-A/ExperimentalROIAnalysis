@@ -20,10 +20,11 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         time_start
         loaded = false 
         imsize % [rows x columns x time points]
+        vals % make sure raw data isn't altered after being loaded
     end
-    properties (SetAccess = private)
-       vals % make sure raw data isn't altered after being loaded
-    end
+%     properties (SetAccess = private)
+%        vals % make sure raw data isn't altered after being loaded
+%     end
     methods
         function obj = Recording(img_name,varargin)
 %             Recording(img_name,position,condition,dish,reporter,...

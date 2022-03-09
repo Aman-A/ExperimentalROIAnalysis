@@ -102,13 +102,13 @@ if any(in.plot_inds == 4)
                     'fig_dir',summary_fig_dir,'title_on',in.title_on); 
 end
 % Fast decay time constants
-if any(in.plot_inds == 5) && isfield(out,'decay_fits_all')
+if any(in.plot_inds == 5) && isfield(out,'decay_fits')
     figure('Units',in.fig_units,'Position',in.fig_pos); 
-    taud1_all = cellfun(@(x) x.taud1,out.decay_fits_all,'UniformOutput',0);    
+    taud1_all = cellfun(@(x) x.taud1,out.decay_fits,'UniformOutput',0);    
     fprintf('Removing fits with R^2 < %.2f\n',in.rsq_cutoff);
     % remove fits with R^2 < 0.5
     for i = 1:length(taud1_all)
-        taud1_all{i}(out.decay_fits_all{i}.rsquare < in.rsq_cutoff) = nan; 
+        taud1_all{i}(out.decay_fits{i}.rsquare < in.rsq_cutoff) = nan; 
     end
     % normalize to mean control
 %     taud1_all = cellfun(@(x) x./mean(taud1_all{1},2),taud1_all,'UniformOutput',0); 
@@ -150,5 +150,5 @@ if any(in.plot_inds == 7)
                      out.rel_times_cond_starts,out.conditions,...
                      'nFWHM','','save_fig',in.save_fig,...
                      'exp_date',out.exp_date,'reporter',out.reporter,'dish',out.dish,...
-                     'fig_dir',summary_fig_dir);
+                     'fig_dir',summary_fig_dir,'title_on',in.title_on);
 end

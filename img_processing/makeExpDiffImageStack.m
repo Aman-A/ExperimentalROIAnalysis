@@ -1,4 +1,4 @@
-function makeExpDiffImageStack(exp_folder,trial_folders,exp_settings,varargin)
+function img_stack = makeExpDiffImageStack(exp_folder,trial_folders,exp_settings,varargin)
 %MAKEEXPDIFFIMAGESTACK Save fits image stack of diff images for set of trials 
 %  
 %   Inputs 

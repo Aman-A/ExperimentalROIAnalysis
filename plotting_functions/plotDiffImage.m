@@ -3,7 +3,7 @@ function fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,img_name,..
 % Plots and saves single frame images output by diffImage (baseline,
 % peak, and peak - baseline)
 in.cmap = 'inferno';
-in.include_plots = [1,2,3];
+in.include_plots = [1,2,3]; % [1,2,3 or 4]
 in.baseline_mode = 'mean'; % 'mean' or 'max' - metric to calculate on 
                            % baseline frames for bsline_img
 in.filt_width = 0;

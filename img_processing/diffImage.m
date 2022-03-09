@@ -1,4 +1,4 @@
-function [bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
+function [bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(recording,...
                                                                    exp_settings,...
                                                                    varargin)
 %DIFFIMAGE Plots mean baseline, peak during stim window, and difference
@@ -6,7 +6,7 @@ function [bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
 %  
 %   Inputs 
 %   ------ 
-%   img : Recording object with 'vals' field (N x M x num_time_points
+%   recording : Recording object with 'vals' field (N x M x num_time_points
 %               z stack of image matrices)
 %   exp_settings : object, instance of Settings class 
 %              Imaging and stimulus settings, with fields:
@@ -53,30 +53,30 @@ in.cb_settings = {'Color','w','FontSize',14};
 in.title_settings = {'Interpreter','none','Color','w'}; 
 in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
-in.pixel_size = img.pixel_size*img.bin_size;
+in.pixel_size = recording.pixel_size*recording.bin_size;
 in = sl.in.processVarargin(in,varargin);
-if isa(img,'Recording') && img.loaded == 0
-    img.load(); 
+if isa(recording,'Recording') && recording.loaded == 0
+    recording.load(); 
 end
 if strcmp(in.baseline_mode,'mean')
-    bsline_img = mean(img.vals(:,:,exp_settings.baseline_wind_inds(:,1)),3); % use first stimulus if applied as train
+    bsline_img = mean(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),3); % use first stimulus if applied as train
 elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
-    bsline_img = max(img.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
+    bsline_img = max(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
 end
-peak_stim_img = max(img.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
 if in.filt_width > 0
     bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 if any(in.include_plots == 4)
-    diff_img = meanDiffImage(img.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
+    diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
                             exp_settings.stim_wind);
 else
     diff_img = peak_stim_img-bsline_img;
 end
 if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
-    fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,img.img_name,...
+    fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,recording.img_name,...
                    exp_settings,in);
 else
     fig_hands = {}; 
