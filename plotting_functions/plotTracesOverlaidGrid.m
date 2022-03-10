@@ -23,7 +23,7 @@ function plotTracesOverlaidGrid(t,traces_all,err_all,varargin)
 % AUTHOR    : Aman Aberra 
 in.fig_units = 'centimeters';
 in.fig_size = [50 25];
-in.inset_pos = []; 
+in.inset_pos = []; % [0.4 0.4 0.5 0.5] 
 in.x_lim = []; % main limits
 in.y_lim = []; 
 in.x_lim2 = []; % inset limits

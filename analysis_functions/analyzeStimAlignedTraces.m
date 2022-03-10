@@ -192,7 +192,11 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
     fwhm = zeros(trace_dims(2:end));
     tic
     parfor n = 1:n_traces
-        fwhm(n) = spikeWidth(t,traces(:,n),stim_index,frac_amp);
+        try
+            fwhm(n) = spikeWidth(t,traces(:,n),stim_index,frac_amp);
+        catch
+            fwhm(n) = nan; 
+        end
     end
     elapsed_time = toc;
     fprintf('Computed FWHM of %g traces in %.2f sec\n',n_traces,elapsed_time)
