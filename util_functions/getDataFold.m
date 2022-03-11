@@ -28,6 +28,7 @@ if exist(data_fold_file,'file')
     fid = fopen(data_fold_file);
     data_fold = fscanf(fid,'%c');
     fclose(fid);
+    data_fold = strtrim(data_fold); % remove trailing new line
 else
     error('Need to create %s containing path to top level data folder',data_fold_file); 
 end

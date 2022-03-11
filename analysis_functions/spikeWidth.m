@@ -26,7 +26,7 @@ function spike_width = spikeWidth(t,y,stim_index,frac_amp) %#codegen
 if nargin < 4
     frac_amp = 0.5; 
 end
-max_width = 0.01; % sec - max allowed spike width 10 ms
+max_width = 0.05; % sec - max allowed spike width 20 ms
 plot_fig = 0; 
 %% Get peak amplitude
 [peak_val,peak_ind] = max(y,[],1);
@@ -60,8 +60,11 @@ end
 if onset_found && offset_found % linear interpolation between samples to find value at frac_amp
 %     fprintf('onset %g, y(onset_index) = %g, width_val %f\n',onset_index,y(onset_index),width_val);
     slope_onset = (y(onset_index)-y(onset_index-1))/(t(onset_index)-t(onset_index-1));
+%     if slope_onset < 0
+%         % calculate slope from onset to peak
+%         slope_onset = (y(peak_ind)-y(onset_index-1))/(t(peak_ind)-t(onset_index-1));
+%     end
     start_time = (amp*frac_amp - y(onset_index-1))/slope_onset + t(onset_index-1);    
-
     slope_offset = (y(offset_index)-y(offset_index-1))/(t(offset_index)-t(offset_index-1));
     end_time = (amp*frac_amp - y(offset_index-1))/slope_offset + t(offset_index-1); 
     spike_width = end_time - start_time; 
@@ -82,6 +85,6 @@ if plot_fig
     box off; 
     xlabel('time'); ylabel('amplitude'); 
     legend('Box','off')
-    xlim([0.09 0.12])
+%     xlim([0.09 0.12])    
 end
 end
