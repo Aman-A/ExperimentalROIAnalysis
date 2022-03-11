@@ -47,7 +47,7 @@ if ischar(roiset_filenames) || ~iscell(roiset_filenames)
 elseif iscell(roiset_filenames)
     if length(roiset_filenames) == 1
         roiset_filenames = repmat(roiset_filenames,1,num_conditions);
-    else
+    elseif length(roiset_filenames) ~= num_conditions
         error('Number of roiset_filenames should match number of conditions'); 
     end
 end

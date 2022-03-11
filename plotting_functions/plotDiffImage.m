@@ -99,5 +99,5 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
         addScaleBar(pixel_size,size(vals),ax,...
                   'Color',cb_settings{find(strcmp('Color',cb_settings))+1})
     end
-%     ax.YDir = 'normal';
+    ax.YDir = 'normal';
 end

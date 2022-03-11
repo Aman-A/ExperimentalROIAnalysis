@@ -59,10 +59,10 @@ if ~isempty(in.inset_pos)
     box(ax2,'off')
     set(lhands,{'color'},cols);
     
-    if ~isempty(in.x_lim)
+    if ~isempty(in.x_lim2)
         ax2.XLim = in.x_lim2;
     end
-    if ~isempty(in.y_lim)
+    if ~isempty(in.y_lim2)
         ax2.YLim = in.y_lim2;
     end        
     if ~isempty(in.x_sbar_len2) && in.x_sbar_len2 > 0
