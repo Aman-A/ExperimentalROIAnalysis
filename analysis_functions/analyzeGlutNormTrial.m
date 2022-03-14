@@ -53,8 +53,7 @@ check_settings = in.check_settings;
 plot_settings.plot_func = 'deltaF_F0';
 plot_settings.roi_func_mode = 'separate'; % make sure set to separate
 plot_settings.roi_func_sbar_len = 4; 
-assert(strcmp(exp_output.plot_settings.roi_func_mode,plot_settings.roi_func_mode),...
-       'Need to use roi_func_mode = ''separate''')
+
 while getting_traces
     trace_fig = figure; 
     trace_axis = gca;
@@ -111,45 +110,52 @@ if isempty(mean_wind)
     fprintf('Using mean_wind from frame %g to %g\n',mean_wind(1),mean_wind(end));
 end
 ss_dFF0 = mean(deltaF_F0(mean_wind,:),1);
-% Normalize data from experiment in exp_output
-norm_output = exp_output;
-data_to_norm = {'deltaF_F0_all','mean_deltaF_F0_all','peaks_deltaF_F0_all',...
-                'deltaF_F0_aligned_all','mean_deltaF_F0_aligned_all',...
-                'poststim_ints_all'
-                };
-for i = 1:length(data_to_norm)
-    fieldi = data_to_norm{i};
-    if isfield(norm_output,fieldi)
-        norm_output.(fieldi) = cellfun(@(x) x./ss_dFF0,exp_output.(fieldi),...
-                                    'UniformOutput',0);
+%% Normalize data from experiment in exp_output
+if nargin > 5 && ~isempty(exp_output)
+    assert(strcmp(exp_output.plot_settings.roi_func_mode,plot_settings.roi_func_mode),...
+       'Need to use roi_func_mode = ''separate''')
+    
+    norm_output = exp_output;
+    data_to_norm = {'deltaF_F0_all','mean_deltaF_F0_all','peaks_deltaF_F0_all',...
+                    'deltaF_F0_aligned_all','mean_deltaF_F0_aligned_all',...
+                    'poststim_ints_all'
+                    };
+    for i = 1:length(data_to_norm)
+        fieldi = data_to_norm{i};
+        if isfield(norm_output,fieldi)
+            norm_output.(fieldi) = cellfun(@(x) x./ss_dFF0,exp_output.(fieldi),...
+                                        'UniformOutput',0);
+        end
     end
-end
-norm_output.mean_peaks = cellfun(@(x) mean(x,'all'),...
-                                norm_output.peaks_deltaF_F0_all,...
-                                'UniformOutput',0);
-norm_output.std_peaks = cellfun(@(x) std(x,0,'all'),...
-                                norm_output.peaks_deltaF_F0_all,...
-                                'UniformOutput',0);
-norm_output.sem_peaks = cellfun(@(x) std(x,0,'all')/numel(x),...
-                                norm_output.peaks_deltaF_F0_all,...
-                                'UniformOutput',0);
-norm_output.glut_img_name = datai.recording.img_name;
-norm_output.glut_concentration = in.glut_concentration;
-norm_output.glut_ss_deltaF_F0 = ss_dFF0; 
-% WARNING: decay_fits coefficients apply to unnormalized values, not to
-% normalized values
-if in.save_data
-    data_fold = plot_settings.data_fold;
-    exp_date = plot_settings.exp_date; 
-    reporter = plot_settings.reporter; 
-    dish = plot_settings.dish; 
-    roiset_filename_no_ext = getROIset_name(roi_set_filename,...
-                                             plot_settings.transform_type,...
-                                                plot_settings.registration_rec);  
-    norm_datafile = sprintf('%s_%s_%s_%s_%s_glutnorm',exp_date,reporter,dish,plot_settings.roi_func_mode,...
-                            roiset_filename_no_ext);
-    norm_data_filepath = fullfile(data_fold,exp_date,reporter,dish,norm_datafile);
-    save(norm_data_filepath,'-STRUCT','norm_output');
-    fprintf('Saved normalized summary data to %s\n',norm_data_filepath);
+    norm_output.mean_peaks = cellfun(@(x) mean(x,'all'),...
+                                    norm_output.peaks_deltaF_F0_all,...
+                                    'UniformOutput',0);
+    norm_output.std_peaks = cellfun(@(x) std(x,0,'all'),...
+                                    norm_output.peaks_deltaF_F0_all,...
+                                    'UniformOutput',0);
+    norm_output.sem_peaks = cellfun(@(x) std(x,0,'all')/numel(x),...
+                                    norm_output.peaks_deltaF_F0_all,...
+                                    'UniformOutput',0);
+    norm_output.glut_img_name = datai.recording.img_name;
+    norm_output.glut_concentration = in.glut_concentration;
+    norm_output.glut_ss_deltaF_F0 = ss_dFF0; 
+    % WARNING: decay_fits coefficients apply to unnormalized values, not to
+    % normalized values
+    if in.save_data
+        data_fold = plot_settings.data_fold;
+        exp_date = plot_settings.exp_date; 
+        reporter = plot_settings.reporter; 
+        dish = plot_settings.dish; 
+        roiset_filename_no_ext = getROIset_name(roi_set_filename,...
+                                                 plot_settings.transform_type,...
+                                                    plot_settings.registration_rec);  
+        norm_datafile = sprintf('%s_%s_%s_%s_%s_glutnorm',exp_date,reporter,dish,plot_settings.roi_func_mode,...
+                                roiset_filename_no_ext);
+        norm_data_filepath = fullfile(data_fold,exp_date,reporter,dish,norm_datafile);
+        save(norm_data_filepath,'-STRUCT','norm_output');
+        fprintf('Saved normalized summary data to %s\n',norm_data_filepath);
+    end
+else
+    norm_output = []; 
 end
 end
