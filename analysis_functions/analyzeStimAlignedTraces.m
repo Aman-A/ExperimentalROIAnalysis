@@ -206,11 +206,12 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
     output.fwhm = fwhm; 
 end
 if any(strcmp(in.funcs,'mean_fwhm'))
-    if trace_dims(4) == 1 % single ROI
-        mean_traces = squeeze(mean(traces,2)); 
-    else % multiple ROIs
-        mean_traces = squeeze(mean(traces,3)); 
-    end
+    mean_traces = squeeze(mean(traces,3)); % stimuli always in 3rd dimension
+%     if trace_dims(3) == 1 % single ROI
+%         mean_traces = squeeze(mean(traces,2)); 
+%     else % multiple ROIs
+%         mean_traces = squeeze(mean(traces,3)); 
+%     end
     mean_trace_dims = size(mean_traces,1:3);
     t = exp_settings.getTimeVector(size(traces,1));      
     stim_index = exp_settings.baseline_wind + 1; 
