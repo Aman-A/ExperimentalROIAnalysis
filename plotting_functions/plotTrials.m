@@ -65,13 +65,23 @@ if ~strcmp(in.transform_type,'none') && ~isempty(in.registration_rec)
         end
     end
 end
+% Format exp_settings
+if length(exp_settings) == 1
+    exp_settings = repmat(exp_settings,num_trials,1); % convert to object array
+else
+    if iscell(exp_settings) % cell array of ExperimentSettings objects
+        % convert to object array
+        exp_settings = [exp_settings{:}];
+    end
+end
+%% Loop
 for i = 1:num_trials
     if strcmp(in.roi_func_mode,'separate') && num_trials > 1 && ...
             ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) && in.overlay_trials
         trace_axis = traces_axes{i};         
     end
     img_namei = img_names{i}; 
-    datai = plotTrial(img_namei,exp_settings,roiset_filename{i},...
+    datai = plotTrial(img_namei,exp_settings(i),roiset_filename{i},...
                        trace_axis,in);
     func_outputs{i} = datai.func_output; 
     deltaF_F0{i} = datai.func_output.deltaF_F0;
@@ -102,7 +112,7 @@ if strcmp(in.roi_func_mode,'combine')
     end
     if isfield(datai.func_output,'deltaF_F0_aligned')        
         deltaF_F0_aligned = cell2mat(reshape(deltaF_F0_aligned,1,1,num_trials)); % [num_frames x num_stim x num_trials]
-        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings,...
+        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings(1),...
                                             'funcs',analysis_funcs,...
                                             'load',in.load_processed_data,...
                                             'save_dir',filedir);  
@@ -110,19 +120,19 @@ if strcmp(in.roi_func_mode,'combine')
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else
-        analysis = analyzeTraces(deltaF_F0,exp_settings,'funcs',analysis_funcs);    
+        analysis = analyzeTraces(deltaF_F0,exp_settings(1),'funcs',analysis_funcs);    
         mean_peak_deltaF_F0 = mean(analysis.mean_peak); 
         std_peak_deltaF_F0 = std(analysis.peaks,0);
     end
     fprintf('%s: Peak deltaF_F0 across stimuli and trials (mean +/- std) = %.3f +/- %.3f\n',...
              in.condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
     fprintf('  Mean baseline (%g frames, 1st stim) across trials = %.3f +/- %.3f\n',...
-            exp_settings.baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
+            exp_settings(1).baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
 elseif strcmp(in.roi_func_mode,'separate') 
     % [num_frames x num_rois x num_stim x num_trials]    
     if isfield(datai.func_output,'deltaF_F0_aligned')
         deltaF_F0_aligned = squeeze(cell2mat(reshape(deltaF_F0_aligned,1,1,1,num_trials)));
-        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings,...
+        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings(1),...
                                             'funcs',analysis_funcs,...
                                             'load',in.load_processed_data,...
                                             'save_dir',filedir);                                   
@@ -138,13 +148,23 @@ elseif strcmp(in.roi_func_mode,'separate')
     end
     
     bslines = squeeze(cell2mat(reshape(bslines,1,1,num_trials))); % [num_rois x num_stim x num_trials]     
-    deltaF_F0 = cell2mat(reshape(deltaF_F0,1,1,num_trials)); % [num_frames x num_rois x num_trials]
-    mean_deltaF_F0 = mean(deltaF_F0,3); % average traces across trials    
+    num_frames = cellfun(@(x) size(x,1),deltaF_F0,'UniformOutput',1);
+    if all(num_frames == num_frames(1))
+        deltaF_F0 = cell2mat(reshape(deltaF_F0,1,1,num_trials)); % [num_frames x num_rois x num_trials]
+        mean_deltaF_F0 = mean(deltaF_F0,3); % average traces across trials    
+    else % pad trials with fewer frames with nans
+        max_frames = max(num_frames);
+        mean_deltaF_F0 = nan(max_frames,rois_all{1}.num_rois,num_trials);
+        for i = 1:length(deltaF_F0)
+            mean_deltaF_F0(1:num_frames(i),:,i) = deltaF_F0{i};
+        end
+        mean_deltaF_F0 = mean(mean_deltaF_F0,3,'omitnan');
+    end
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
              in.condition, mean(mean_peak_deltaF_F0(1,:,:),[2,3]),...
              mean(std_peak_deltaF_F0(1,:,:),[2,3])); 
     fprintf('  Mean baseline (%g frames) across trials and ROIs = %.3f +/- %.3f\n',...
-            exp_settings.baseline_wind,mean(bslines,'all'),std(bslines,0,'all'));
+            exp_settings(1).baseline_wind,mean(bslines,'all'),std(bslines,0,'all'));
 end
 trials_data = struct(); 
 trials_data.deltaF_F0 = deltaF_F0;

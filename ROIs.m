@@ -349,8 +349,15 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         % shift_vec : [shift_x shift_y] (in pixels) applied to all ROIs
         % if 1x2, applies same shift to all ROIs, if num_rois x 2, can apply
         % different shift to all ROIs
-            obj.x = obj.x + shift_vec(:,1); 
-            obj.y = obj.y + shift_vec(:,2); 
+            if iscell(obj.x)
+                for i = 1:size(shift_vec,1)
+                    obj.x{i} = obj.x{i} + shift_vec(i,1);
+                    obj.y{i} = obj.y{i} + shift_vec(i,1);
+                end
+            else
+                obj.x = obj.x + shift_vec(:,1); 
+                obj.y = obj.y + shift_vec(:,2); 
+            end
         end
         function affine2d(obj,T)
         % Apply forward affine transformation using 3x3 matrix T, convention 

@@ -16,6 +16,7 @@ if ischar(roiset_filename)
     [~,roiset_filename_no_ext] = fileparts(roiset_filename);     
     if ~strcmp(transform_type,'none') &&  ~isempty(transform_type)
         if ischar(registration_rec)
+            registration_rec = strrep(registration_rec,'\','/');
             [~,fixed_img_name,~] = fileparts(registration_rec); 
         elseif isa(registration_rec,'Recording')
             fixed_img_name = registration_rec.img_name; 
