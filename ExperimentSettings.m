@@ -21,8 +21,8 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
     methods
         function obj = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,...
                                 sampling_rate,varargin)
-            in.print_level = 0;                 
-            in = sl.in.processVarargin(in,varargin); 
+%             in.print_level = 0;                 
+%             in = sl.in.processVarargin(in,varargin); 
             if nargin > 0
                 obj.stim_vals = stim_vals;
                 obj.stim_wind = stim_wind;
