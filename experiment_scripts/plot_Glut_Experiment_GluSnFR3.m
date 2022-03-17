@@ -1,15 +1,19 @@
-%% Script to plot single trial
-% Overlay single trails on same figure by running with different img_name
-data_fold = getDataFold();
+%% Script to analyze glutamate calibration measurements with GluSnFR3
+% Script is intended to be to run in sections (i.e., using 'Run Section'
+% button)
+% By default, data should be organized with following folder structure:
+% <data_fold>/<exp_date>/<reporter>/<dish>/<condition>/<img_name>.fits
+data_fold = getDataFold(); % Loads default top level directory for data
 exp_date = '20220314';
 reporter = 'GluSnFR3';
 dish = 'dish10';
-div = 20; 
-% condition = 'control'; % 'control', '5nM_DTX', '50nM_DTX'
-roiset_filename = 'RoiSet_pos3';
-% roiset_filename = 'RoiSet_pos3b';
-% roiset_filename = [1 78 1 512]; % full FOV
-num_stim = 1; 
+div = 20; % Days in vitro
+roiset_filename = 'RoiSet_pos3'; % name of .zip file, expected to be found at
+                                 % <data_fold>/<exp_date>/<reporter>/<dish>/<roiset_filename>.zip
+% roiset_filename = [1 78 1 512]; % Can also enter dimensions of ROI for
+                                  % single ROI: 
+                                  % [lower_row upper_row, left_column, right_column]
+num_stim = 1; % Enter stimulation parameters (irrelevant to glutamate measurements)
 del = 3; % sec 
 freq = 1/6; % Hz
 dur = num_stim/freq; 
@@ -29,10 +33,13 @@ ps.reporter = reporter;
 ps.dish = dish;
 ps.div = div; 
 ps.condition = condition;
-ps.show_diff_image = 3; % can include [1,2,3]
-ps.filt_width = 0;
+ps.show_diff_image = [3]; % [1 - baseline image, 2 - peak image, 3 - diff image], 
+                          % include numbers of desired plots in vector
+ps.filt_width = 0; % if >0, applies gaussian filter for visualization 
 ps.funcs = {'mean','baseline','deltaF_F0'};
-ps.roi_func_mode = 'separate'; % 'combine' or 'separate'
+ps.roi_func_mode = 'separate'; % 'combine' or 'separate' - computes functions 
+                               % across all ROIs in each frame ('combine') 
+                               % or within ROI ('separate')
 ps.save_processed_data = 1;
 ps.load_processed_data = 1;
 ps.save_fig = 1;
@@ -152,34 +159,30 @@ fprintf('Done\n')
 % F_i = F_0 + (F_max - F_0)*[Glu]^n/(K_d^n + [Glu]^n)
 % x : glut_concs
 % y : mean_ss_meanFs
-% v857 Kd = 8.2 uM from Aggarwal 2022, n = 1 +/- 0.2
+% v857 Kd = 8.2 uM in cultured neurons from Aggarwal 2022, n = 1 +/- 0.2
+% v857 Kd = 196 µM for soluble protein in solution 
 save_fit = 1;
 fit_eqn = 'a + (b - a)*(x.^c)./(d^c + x.^c)';
-fit_mode = 1; % 1 - deltaF/F, 2 - mean F
-if fit_mode == 1
-    upper_bounds = [mean_ss_dFF0s(1),max(mean_ss_dFF0s),4,1000];
-    lower_bounds = [mean_ss_dFF0s(1),max(mean_ss_dFF0s),0,0.1]; 
-    start_points = [mean_ss_dFF0s(1),max(mean_ss_dFF0s),1,10];
-    fprintf('Fitting deltaF/F\n')
-else    
-    upper_bounds = [mean_ss_meanFs(1),max(mean_ss_meanFs),4,1000];
-    lower_bounds = [mean_ss_meanFs(1),max(mean_ss_meanFs),0,0.1]; 
-    start_points = [mean_ss_meanFs(1),max(mean_ss_meanFs),1,10];
-    fprintf('Fitting mean F\n')
-end
-s = fitoptions('Method','NonlinearLeastSquares',...
-                'Lower',lower_bounds,'Upper',upper_bounds,...
-                'Startpoint',start_points);
-f = fittype(fit_eqn,'options',s);
-[fitobj1,gof1,~] = fit(glut_concs',mean_ss_dFF0s',f);
-[fitobj2,gof2,~] = fit(glut_concs',mean_ss_meanFs',f);
-if fit_mode == 1
-    fitobj = fitobj1; gof = gof1; 
-else    
-    fitobj = fitobj2; gof = gof2; 
-end
+% deltaF/F
+upper_bounds1 = [mean_ss_dFF0s(1),max(mean_ss_dFF0s),4,1000];
+lower_bounds1 = [mean_ss_dFF0s(1),max(mean_ss_dFF0s),0,0.1]; 
+start_points1 = [mean_ss_dFF0s(1),max(mean_ss_dFF0s),1,10];
+% mean F
+upper_bounds2 = [mean_ss_meanFs(1),max(mean_ss_meanFs),4,1000];
+lower_bounds2 = [mean_ss_meanFs(1),max(mean_ss_meanFs),0,0.1]; 
+start_points2 = [mean_ss_meanFs(1),max(mean_ss_meanFs),1,10];
+s1 = fitoptions('Method','NonlinearLeastSquares',...
+                'Lower',lower_bounds1,'Upper',upper_bounds1,...
+                'Startpoint',start_points1);
+s2 = fitoptions('Method','NonlinearLeastSquares',...
+                'Lower',lower_bounds2,'Upper',upper_bounds2,...
+                'Startpoint',start_points2);
+f1 = fittype(fit_eqn,'options',s1);
+f2 = fittype(fit_eqn,'options',s2);
+[fitobj1,gof1,~] = fit(glut_concs',mean_ss_dFF0s',f1);
+[fitobj2,gof2,~] = fit(glut_concs',mean_ss_meanFs',f2);
 glut_concs_int = logspace(log10(glut_concs(1)),log10(glut_concs(end)),100); 
-disp(fitobj)
+fprintf('Done with fits\n')
 if save_fit
     fit_filename = sprintf('glut_fit_data_%s_%s_%s',exp_date,dish,roiset_filename_no_ext);
     fit_data = struct(); 
@@ -206,6 +209,13 @@ if save_fit
     fprintf('Saved fit data to %s\n',fit_filename)
 end
 %% Plot
+fit_mode = 1; % 1 - deltaF/F, 2 - mean F
+if fit_mode == 1
+    fitobj = fitobj1; gof = gof1; 
+else    
+    fitobj = fitobj2; gof = gof2; 
+end
+disp(fitobj)
 cols = jet(length(img_suffs)); 
 fig = figure('Units','centimeters');
 fig.Position(3:4) = [34.5 10];
@@ -225,6 +235,10 @@ ax.XScale = 'log';
 y_lim = ax.YLim;
 ax.YLim = y_lim;
 plot(ax,glut_concs_int,fitobj(glut_concs_int),'-r');
+fitobj3 = fitobj; 
+fitobj3.c = 1;
+fitobj3.d = 8.2; % 196 soluble protein, 8.2 cultured neurons
+plot(ax,glut_concs_int,fitobj3(glut_concs_int),'Color',[0.9290,0.6940,0.1250]);
 % plot(glut_concs,mean_ss_dFF0s(1)*glut_concs/glut_concs(1),'--k');
 % plot(glut_concs,mean_ss_meanFs(1)*glut_concs/glut_concs(1),'--k');
 grid on;
@@ -242,7 +256,7 @@ else
     ylabel('F (a.u.)');
 end
 box off;
-% l2 = plot([
+
 for i = 1:length(l)
     l(i).Color = cols(i,:);
     l2(i).Color = cols(i,:);
