@@ -41,7 +41,7 @@ if isfield(experiment_output,mean_func_field)
 else
     meanF = cellfun(@(x) mean(x,2),F,'UniformOutput',0); % mean across trials within condition/ROI
 end    
-exp_settings = experiment_output.exp_settings;
+exp_settings = experiment_output.exp_settings(1);
 %% extract relevant columns (conditions)
 if ~isempty(in.cond_inds)
     meanF = meanF(in.cond_inds);

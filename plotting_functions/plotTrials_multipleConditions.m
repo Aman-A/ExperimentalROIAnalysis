@@ -51,11 +51,20 @@ elseif iscell(roiset_filenames)
         error('Number of roiset_filenames should match number of conditions'); 
     end
 end
+% Format exp_settings
+if length(exp_settings) == 1
+    exp_settings = repmat(exp_settings,num_conditions,1); % convert to object array
+else
+    if iscell(exp_settings) % cell array of ExperimentSettings objects
+        % convert to object array
+        exp_settings = [exp_settings{:}];
+    end
+end
 for i = 1:num_conditions    
     roiset_filename = roiset_filenames{i};
     plot_settings.condition = conditions{i};    
     % trial data for ith condition
-    tdi = plotTrials(in.img_names{i},exp_settings,roiset_filename,plot_settings);    
+    tdi = plotTrials(in.img_names{i},exp_settings(i),roiset_filename,plot_settings);    
     out.deltaF_F0_all{i} = tdi.deltaF_F0;    
     out.mean_deltaF_F0_all{i} = tdi.mean_deltaF_F0;    
     if isfield(tdi,'deltaF_F0_aligned')

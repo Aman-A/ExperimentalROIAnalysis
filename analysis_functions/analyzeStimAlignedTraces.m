@@ -39,7 +39,11 @@ exp_settings.convert2Frames(); % convert from time to frames units if necessary
 sampling_rate = exp_settings.sampling_rate; 
 baseline_wind = exp_settings.baseline_wind;
 stim_frame = baseline_wind + 1; 
+stim_wind = exp_settings.stim_wind;
 spike_window = exp_settings.convert2Frames(in.spike_window);
+if spike_window > stim_wind
+   spike_window = stim_wind; 
+end
 trace_dims = size(traces,1:4);
 
 analysis_file = fullfile(in.save_dir,in.save_filename);
@@ -182,7 +186,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     output.decay_fit = decay_fit;
     output.successful_spikes = successful_spikes;
     output.spike_thresh = in.spike_thresh;  
-    output.spike_window = in.spike_window; 
+    output.spike_window = spike_window; 
 end
 if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces   
     n_traces = prod(trace_dims(2:end));    

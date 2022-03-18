@@ -45,10 +45,12 @@ if nargin < 4
 else    
     x = (1:size(y,1))/sampling_rate; % convert frames to time in sec
     stim_frames = stim_frames/sampling_rate; 
-    if length(stim_frames) == 1 % set t = 0 to single stimulus time
-        x = x - stim_frames; 
-        stim_frames = 0;     
-    end
+%     if length(stim_frames) == 1 % set t = 0 to single stimulus time
+%         x = x - stim_frames; 
+%         stim_frames = 0;     
+%     end
+    x = x - stim_frames(1); 
+    stim_frames = stim_frames - stim_frames(1); 
     if regexp(func_name,'aligned','ONCE')
         x = x - x(size(func_output.baseline_wind_inds,1)+1); 
     end

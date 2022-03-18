@@ -11,7 +11,7 @@ function img_stack = makeExpDiffImageStack(exp_folder,trial_folders,exp_settings
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-in.include_plots = 0; % same format as diffImage, 1 - baseline, 2 - peak, 
+in.include_plots = [0 4]; % same format as diffImage, 1 - baseline, 2 - peak, 
                       % 3 diff image, leave empty or set to 0 to skip 
                       % plotting
 in.img_stack_name = 'diffimage_stack';     
