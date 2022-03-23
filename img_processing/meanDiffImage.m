@@ -13,6 +13,13 @@ function mean_diff = meanDiffImage(vals,stim_frames,baseline_wind,stim_wind)
 % AUTHOR    : Aman Aberra 
 img_size = size(vals,[1 2]);
 mean_diff = zeros(img_size);
+remove_stim_inds = stim_frames + stim_wind > size(vals,3);
+if any(remove_stim_inds)
+   fprintf('Warning: %g stim frames excluded due to stim_wind exceeding recording length\n',...
+           sum(remove_stim_inds));  
+   stim_frames(remove_stim_inds) = []; % remove stimuli at frames where window 
+                                       % goes beyond 
+end
 num_stim = length(stim_frames);
 for i = 1:num_stim
     peaki = max(vals(:,:,stim_frames(i):(stim_frames(i)+stim_wind)),[],3); % max at each pixel

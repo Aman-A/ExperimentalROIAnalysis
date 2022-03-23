@@ -97,6 +97,8 @@ for i = 1:num_trials
 end
 if strcmp(in.reporter,'GluSnFR3')
     analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
+elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
+    analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
 else
     analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
 end
