@@ -118,7 +118,7 @@ if strcmp(in.roi_func_mode,'combine')
                                             'funcs',analysis_funcs,...
                                             'load',in.load_processed_data,...
                                             'save_dir',filedir);  
-        mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3]); % average across stimuli and trials
+        mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3 4]); % average across stimuli and trials
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else

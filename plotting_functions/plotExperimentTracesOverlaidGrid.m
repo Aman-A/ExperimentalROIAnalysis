@@ -50,13 +50,18 @@ if ~isempty(in.cond_inds)
     in.colors = in.colors(in.cond_inds,:);
 end
 %% Normalize traces
-if in.norm_peak_ind > 0
-    meanF = cellfun(@(x) x./max(meanF{1}(exp_settings.stim_vals(1):end,:),[],1),meanF,'UniformOutput',0); 
+if regexp(plot_func,'aligned')
+    stim_wind_inds = (exp_settings.baseline_wind + 1):size(meanF{1},1);
+else
+    stim_wind_inds = exp_settings.stim_vals(1):size(meanF{1},1);
+end
+if in.norm_peak_ind > 0   
+    meanF = cellfun(@(x) x./max(meanF{1}(stim_wind_inds,:),[],1),meanF,'UniformOutput',0); 
     fprintf('Normalized all responses to peak of %s\n',...
             experiment_output.conditions{in.norm_peak_ind});
     in.fig_name = [in.fig_name '_norm' num2str(in.norm_peak_ind)]; 
 elseif in.norm_peak_ind == -1
-    meanF = cellfun(@(x) x./max(x(exp_settings.stim_wind_inds(:,1),:),[],1),meanF,'UniformOutput',0); 
+    meanF = cellfun(@(x) x./max(x(stim_wind_inds,:),[],1),meanF,'UniformOutput',0); 
     fprintf('Normalized all responses to peak\n');
     in.fig_name = [in.fig_name '_norm-1']; 
 end
@@ -73,18 +78,18 @@ else % align to some aspect of response waveforms
 %     t_all = zeros(length(t),size(meanF,2));
     if strcmp(in.align_to,'max')       
        for i = 1:size(meanF,2)           
-            [~,max_inds]  = max(meanF{i}(exp_settings.stim_wind_inds(:,1),:),[],1); % use 1st stim
+            [~,max_inds]  = max(meanF{i}(stim_wind_inds,:),[],1); % use 1st stim
             t_all{i} = zeros(length(t),size(meanF{i},2));
             for j = 1:size(meanF{i},2)
-                t_all{i}(:,j) = t - t(exp_settings.stim_wind_inds(max_inds(j),1)); % set t = 0 to max
+                t_all{i}(:,j) = t - t(stim_wind_inds(max_inds(j))); % set t = 0 to max
             end            
        end
     elseif strcmp(in.align_to,'min')
         for i = 1:size(meanF,2)           
-            [~,min_inds]  = min(meanF{i}(exp_settings.stim_wind_inds(:,1)),[],1); % use 1st stim
+            [~,min_inds]  = min(meanF{i}(stim_wind_inds,:),[],1); % use 1st stim
             t_all{i} = zeros(length(t),size(meanF{i},2));
             for j = 1:size(meanF{i},2)
-                t_all{i}(:,j) = t - t(exp_settings.stim_wind_inds(min_inds(j),1)); % set t = 0 to max
+                t_all{i}(:,j) = t - t(stim_wind_inds(min_inds(j))); % set t = 0 to max
             end            
        end
     end
