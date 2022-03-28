@@ -10,6 +10,10 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 %            Columns are time series with N time points, and m, n, and k are
 %            additional trials/ROIs/stimuli aligned to single stim per
 %            column (max allowable dimensions is 4 currently)
+%           Standard dimensions:
+%           m - num_rois
+%           n - num_stimuli
+%           k - num_trials
 %   settings: ExperimentSettings object
 
 %   Optional Inputs 
@@ -209,14 +213,15 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
     end
     output.fwhm = fwhm; 
 end
-if any(strcmp(in.funcs,'mean_fwhm'))
-    mean_traces = squeeze(mean(traces,3)); % stimuli always in 3rd dimension
+if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
+    % Stim and trial averaged traces
+    mean_traces = mean(traces,[3 4]); % Across across stim within trial and across trials    
 %     if trace_dims(3) == 1 % single ROI
 %         mean_traces = squeeze(mean(traces,2)); 
 %     else % multiple ROIs
 %         mean_traces = squeeze(mean(traces,3)); 
 %     end
-    mean_trace_dims = size(mean_traces,1:3);
+    mean_trace_dims = size(mean_traces,1:2);
     t = exp_settings.getTimeVector(size(traces,1));      
     stim_index = exp_settings.baseline_wind + 1; 
     frac_amp = in.frac_amp;

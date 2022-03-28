@@ -99,8 +99,10 @@ if strcmp(in.reporter,'GluSnFR3')
     analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
     analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
-else
+elseif strcmp(in.reporter,'QuasAr') || strcmp(in.reporter,'Archon')
     analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
+else
+    analysis_funcs = {'peaks','peak_times'};
 end
 if ~exist('filedir','var')
     filedir = datai.recording.filedir;
@@ -133,7 +135,7 @@ if strcmp(in.roi_func_mode,'combine')
 elseif strcmp(in.roi_func_mode,'separate') 
     % [num_frames x num_rois x num_stim x num_trials]    
     if isfield(datai.func_output,'deltaF_F0_aligned')
-        deltaF_F0_aligned = squeeze(cell2mat(reshape(deltaF_F0_aligned,1,1,1,num_trials)));
+        deltaF_F0_aligned = cell2mat(reshape(deltaF_F0_aligned,1,1,1,num_trials));
         analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings(1),...
                                             'funcs',analysis_funcs,...
                                             'load',in.load_processed_data,...

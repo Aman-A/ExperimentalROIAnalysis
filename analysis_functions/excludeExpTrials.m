@@ -29,8 +29,10 @@ keep_rois = ones(1,num_rois);
 wash_ind = strcmp(conditions,'wash');
 control_ind = strcmp(conditions,'control');
 data_out = data; 
-fprintf('****APPLYING EXCLUSION CRITERIA TO %s/%s/%s\n',...
-        data.exp_date,data.reporter,data.dish);
+if in.print_level > 0
+    fprintf('****APPLYING EXCLUSION CRITERIA TO %s/%s/%s\n',...
+            data.exp_date,data.reporter,data.dish);
+end
 % Exclude specific trials
 if ~isempty(trial_criteria)    
     baselines_all = data.baselines_all; 
