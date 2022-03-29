@@ -107,8 +107,12 @@ else
     if isempty(in.roiset_filedir)
        in.roiset_filedir = [img.filedir filesep '..']; % default location
     end
-    rois = ROIs(rois_or_roiset_filename,'roiset_filedir',...
-                in.roiset_filedir); % assume directory above data for this condition
+    if isa(rois_or_roiset_filename,'ROIs')
+        rois = rois_or_roiset_filename;
+    else
+        rois = ROIs(rois_or_roiset_filename,'roiset_filedir',...
+                    in.roiset_filedir); % assume directory above data for this condition
+    end
     if ischar(rois_or_roiset_filename)
         if regexp(rois_or_roiset_filename,'pc')
             % TEMPORARY FIX: include 'pc' in file name to indicate ROIs created on

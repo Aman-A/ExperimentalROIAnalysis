@@ -1,4 +1,6 @@
 classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
+    % TODO: Make plot_inds method to plot selected ROI indices (instead of
+    % all ROIs). Maybe make it wrapper for plot function, modify plot
     properties
         % circle ROI properties
          x0 % original center x's
