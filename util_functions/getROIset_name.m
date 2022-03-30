@@ -38,5 +38,7 @@ if ~strcmp(transform_type,'none') &&  ~isempty(transform_type)
     roiset_filename_no_ext2 = sprintf('%s_%s_%s',roiset_filename_no_ext1,...
         fixed_img_name,...
         transform_type);
+else
+    roiset_filename_no_ext2 = roiset_filename_no_ext1;
 end
 end

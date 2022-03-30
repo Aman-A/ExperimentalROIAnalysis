@@ -135,6 +135,23 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
             output_new.baseline(ind,k) = mean(img(:,:,baseline_wind_inds(:,k)).*mask,...
                                               'all','omitnan');        
         end
+    elseif strcmp(func,'deltaF') % DeltaF of ROI pixels (averaged)
+        if isfield(output,'mean')
+            output_mean = output.mean(:,ind);
+        else
+            output_mean = squeeze(mean(img.*mask,[1 2],'omitnan'));  
+        end
+        % use baseline of first stim for global deltaF/F0 peak, check 
+        % if value was calculated for this index (ind)
+        if isfield(output,'baseline') && ~isnan(output.baseline(ind,1)) 
+            baseline = output.baseline(ind,1);
+        else
+            baseline = mean(img(:,:,baseline_wind_inds(:,1)).*mask,'all','omitnan');    
+        end
+        if ind == 1
+            output_new.deltaF_F0 = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
+        end
+        output_new.deltaF(:,ind) = (output_mean - baseline);    
     elseif strcmp(func,'deltaF_F0') % DeltaF/F0 of ROI pixels (averaged)
         if isfield(output,'mean')
             output_mean = output.mean(:,ind);

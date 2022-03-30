@@ -1,6 +1,6 @@
-function [deltaF_F0_traces_norm,ss_dFF0,nh4cl_deltaF_F0] = analyzeNH4ClNormTrial(img_name,...
+function [F_traces_norm,ss_dFF0,nh4cl_trace] = analyzeNH4ClNormTrial(img_name,...
                                                 exp_settings,roiset_filename,...
-                                                plot_settings,mean_wind,deltaF_F0_traces,...
+                                                plot_settings,mean_wind,F_traces,...
                                                 varargin)
 %ANALYZENH4CLNORMTRIAL ... 
 %  
@@ -18,8 +18,9 @@ function [deltaF_F0_traces_norm,ss_dFF0,nh4cl_deltaF_F0] = analyzeNH4ClNormTrial
 %                        function, plotting options for plotTrials
 %   mean_wind : 1 x N vector
 %               indices within which to calculate mean glutamate response
-%   deltaF_F0_traces : array
-%
+%   F_traces : num_frames x num_traces array
+%              Can be either deltaF/F0 or deltaF depending on setting of
+%              in.norm_func
 %   Optional Inputs 
 %   --------------- 
 %   check_settings : 1 or 0
@@ -42,13 +43,15 @@ function [deltaF_F0_traces_norm,ss_dFF0,nh4cl_deltaF_F0] = analyzeNH4ClNormTrial
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
+in.norm_func = 'deltaF'; % deltaF or deltaF_F0
 in.check_settings = 1; 
 in.save_data = 1;
 in.scaling_factor = 1; % mM - default 5 mM, otherwise set externally
 in = sl.in.processVarargin(in,varargin);
 getting_traces = 1; 
 check_settings = in.check_settings;
-plot_settings.plot_func = 'deltaF_F0';
+plot_settings.funcs = {'mean','baseline','deltaF','deltaF_F0'}; % calculate all functions just in case
+plot_settings.plot_func = in.norm_func;
 plot_settings.roi_func_mode = 'combine'; % make sure set to separate
 plot_settings.roi_func_sbar_len = 4; 
 
@@ -63,7 +66,7 @@ while getting_traces
                 all(plot_settings.plot_func==0) 
             % Plot wasn't generated so generate first
             t = exp_settings.getTimeVector(datai.recording.imsize(3));
-            plot(trace_axis,t,datai.func_output.deltaF_F0)        
+            plot(trace_axis,t,datai.func_output.(in.norm_func))        
         else
             display_names = {trace_axis.Children.DisplayName};
             t = trace_axis.Children(1).XData;            
@@ -102,17 +105,17 @@ while getting_traces
     end
 end
 % get mean value during steady state phase of glutamate response
-nh4cl_deltaF_F0 = datai.func_output.deltaF_F0;
+nh4cl_trace = datai.func_output.(in.norm_func);
 if isempty(mean_wind)
     mean_wind = exp_settings.stim_wind_inds(:,1);
     fprintf('Using mean_wind from frame %g to %g\n',mean_wind(1),mean_wind(end));
 end
 if in.scaling_factor ~= 1    
-    nh4cl_deltaF_F0 = nh4cl_deltaF_F0*in.scaling_factor;
+    nh4cl_trace = nh4cl_trace*in.scaling_factor;
     fprintf('Scaling factor of %g applied\n',in.scaling_factor);
 else
     fprintf('No scaling factor applied\n')
 end
-ss_dFF0 = mean(nh4cl_deltaF_F0(mean_wind,:),1);
-deltaF_F0_traces_norm = deltaF_F0_traces/ss_dFF0; 
+ss_dFF0 = mean(nh4cl_trace(mean_wind,:),1);
+F_traces_norm = F_traces/ss_dFF0; 
 end

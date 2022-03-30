@@ -169,6 +169,8 @@ end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 if strcmp(func_name,'deltaF_F0')
     ylabel(ax,'\Delta F/F_{0}')
+elseif strcmp(func_name,'deltaF')
+    ylabel(ax,'\Delta F')
 elseif strcmp(func_name,'deltaF_F0_aligned')
     ylabel(ax,'Mean \Delta F/F_{0}')
 else
