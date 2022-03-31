@@ -1,4 +1,4 @@
-function [norm_output,ss_dFF0,exp_settings] = analyzeGlutNormTrial(img_name,...
+function [norm_output,ss_F_trace,exp_settings] = analyzeGlutNormTrial(img_name,...
                                                 exp_settings,roi_set_filename,...
                                                 plot_settings,mean_wind,exp_output,...
                                                 varargin)
@@ -47,11 +47,12 @@ function [norm_output,ss_dFF0,exp_settings] = analyzeGlutNormTrial(img_name,...
 in.check_settings = 1; 
 in.save_data = 1;
 in.glut_concentration = 5; % mM - default 5 mM, otherwise set externally
+in.norm_func = 'deltaF_F0';
 in = sl.in.processVarargin(in,varargin);
 getting_traces = 1; 
 check_settings = in.check_settings;
-plot_settings.plot_func = 'deltaF_F0';
-plot_settings.roi_func_mode = 'separate'; % make sure set to separate
+plot_settings.plot_func = in.norm_func;
+% plot_settings.roi_func_mode = 'separate'; % make sure set to separate
 plot_settings.roi_func_sbar_len = 4; 
 
 while getting_traces
@@ -65,10 +66,15 @@ while getting_traces
                 all(plot_settings.plot_func==0) 
             % Plot wasn't generated so generate first
             t = exp_settings.getTimeVector(datai.recording.imsize(3));
-            plot(trace_axis,t,datai.func_output.deltaF_F0)        
+            plot(trace_axis,t,datai.func_output.(in.norm_func))        
         else
             display_names = {trace_axis.Children.DisplayName};
-            t = trace_axis.Children(strcmp(display_names,datai.rois.names{1})).XData;            
+            if strcmp(plot_settings.roi_func_mode,'separate')
+                roi_ind = strcmp(display_names,datai.rois.names{1});
+            else
+                roi_ind = 1;
+            end
+            t = trace_axis.Children(roi_ind).XData;            
             t0 = t-t(1); % set first time point to 0
         end
         % Get stim start
@@ -104,12 +110,12 @@ while getting_traces
     end
 end
 % get mean value during steady state phase of glutamate response
-deltaF_F0 = datai.func_output.deltaF_F0;
+F_trace = datai.func_output.(in.norm_func);
 if isempty(mean_wind)
     mean_wind = exp_settings.stim_wind_inds(:,1);
     fprintf('Using mean_wind from frame %g to %g\n',mean_wind(1),mean_wind(end));
 end
-ss_dFF0 = mean(deltaF_F0(mean_wind,:),1);
+ss_F_trace = mean(F_trace(mean_wind,:),1);
 %% Normalize data from experiment in exp_output
 if nargin > 5 && ~isempty(exp_output)
     assert(strcmp(exp_output.plot_settings.roi_func_mode,plot_settings.roi_func_mode),...
@@ -123,7 +129,7 @@ if nargin > 5 && ~isempty(exp_output)
     for i = 1:length(data_to_norm)
         fieldi = data_to_norm{i};
         if isfield(norm_output,fieldi)
-            norm_output.(fieldi) = cellfun(@(x) x./ss_dFF0,exp_output.(fieldi),...
+            norm_output.(fieldi) = cellfun(@(x) x./ss_F_trace,exp_output.(fieldi),...
                                         'UniformOutput',0);
         end
     end
@@ -138,7 +144,8 @@ if nargin > 5 && ~isempty(exp_output)
                                     'UniformOutput',0);
     norm_output.glut_img_name = datai.recording.img_name;
     norm_output.glut_concentration = in.glut_concentration;
-    norm_output.glut_ss_deltaF_F0 = ss_dFF0; 
+    ss_trace_name = sprintf('glut_ss_%s',in.norm_func); 
+    norm_output.(ss_trace_name) = ss_F_trace; 
     % WARNING: decay_fits coefficients apply to unnormalized values, not to
     % normalized values
     if in.save_data

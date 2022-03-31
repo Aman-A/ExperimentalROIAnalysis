@@ -149,7 +149,7 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
             baseline = mean(img(:,:,baseline_wind_inds(:,1)).*mask,'all','omitnan');    
         end
         if ind == 1
-            output_new.deltaF_F0 = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
+            output_new.deltaF = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
         end
         output_new.deltaF(:,ind) = (output_mean - baseline);    
     elseif strcmp(func,'deltaF_F0') % DeltaF/F0 of ROI pixels (averaged)
