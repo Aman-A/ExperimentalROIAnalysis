@@ -27,9 +27,10 @@ end
 max_width = 0.05; % sec - max allowed spike width 20 ms
 plot_fig = 1; 
 %% Get peak amplitude
-[peak_val,peak_ind] = max(y,[],1);
+[peak_val,peak_ind] = max(y,[],1,'omitnan');
 % Get baseline
-bsline = sum(y(1:stim_index-1))/(stim_index-1); % mean in baseline window
+bsline = 0; % assume already baseline normalized
+% bsline = sum(y(1:stim_index-1),'omitnan')/(stim_index-1); % mean in baseline window
 amp = peak_val - bsline; 
 % std_bsline = std(y(1:stim_index-1),0);
 % if amp < (bsline + std_bsline)
@@ -39,7 +40,7 @@ amp = peak_val - bsline;
 % end
 onset_found = 0;
 offset_found = 0;
-for i = 1:length(y)
+for i = stim_index:length(y)
     if ~onset_found 
         if y(i) >= width_val && (t(peak_ind) - t(i)) < max_width/2
             onset_index = i; 
