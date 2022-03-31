@@ -77,7 +77,7 @@ if strcmp(func_output.roi_func_mode,'combine')
        title_str = [title_str sprintf(': Baseline = %.1f a.u.',...
                                         func_output.baseline(1))];
     end
-    title_str = [title_str sprintf(' (%s combined)',roi_str)];
+%     title_str = [title_str sprintf(' (%s combined)',roi_str)];
     % Plot on single axis
     lns = plot(ax,x,y); % plot trace/s
 %     lns = shadedErrorBar(x,y,std_y);
@@ -91,8 +91,8 @@ else
     title_str = [func_output.img_name ':']; 
     if isfield(func_output,'baseline')
         title_str = {title_str, sprintf('B = %.1f ± %.1f a.u.',...
-                                        mean(func_output.baseline(1,:)),...
-                                        std(func_output.baseline(1,:),0))};
+                                        mean(func_output.baseline(:,1)),...
+                                        std(func_output.baseline(:,1),0))};
     end
 %     title_str = [title_str sprintf(' %g ROIs',num_rois)];     
     if in.offset_factor > 0
