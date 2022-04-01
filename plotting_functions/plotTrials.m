@@ -99,14 +99,18 @@ for i = 1:num_trials
         deltaF{i} = datai.func_output.deltaF;        
     end
 end
-if strcmp(in.reporter,'GluSnFR3')
-    analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
-elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
-    analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
-elseif strcmp(in.reporter,'QuasAr') || strcmp(in.reporter,'Archon')
-    analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
+if isempty(in.analysis_funcs)
+    if strcmp(in.reporter,'GluSnFR3')
+        analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
+    elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
+        analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
+    elseif strcmp(in.reporter,'QuasAr') || strcmp(in.reporter,'Archon')
+        analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
+    else
+        analysis_funcs = {'peaks','peak_times'};
+    end
 else
-    analysis_funcs = {'peaks','peak_times'};
+   analysis_funcs = in.analysis_funcs; 
 end
 if ~exist('filedir','var')
     filedir = datai.recording.filedir;
