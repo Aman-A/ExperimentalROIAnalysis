@@ -1,4 +1,4 @@
-function spike_width = spikeWidth(t,y,stim_index,frac_amp) %#codegen
+function [spike_width,width_val] = spikeWidth(t,y,stim_index,frac_amp) %#codegen
 %SPIKEWIDTH Computes spike width at desired fraction of spike amplitude
 % assumes single well-defined peak in trace and stim at t = 0
 %  
@@ -42,7 +42,7 @@ amp = peak_val - bsline;
 width_val = amp*frac_amp + bsline; % value at which to find width
 onset_found = 0;
 offset_found = 0;
-for i = 1:length(y)
+for i = stim_index:length(y)
     if ~onset_found 
         if y(i) >= width_val && (t(peak_ind) - t(i)) < max_width/2
             onset_index = i; 

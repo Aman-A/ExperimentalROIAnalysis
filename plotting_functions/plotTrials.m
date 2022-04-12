@@ -116,7 +116,7 @@ if ~exist('filedir','var')
     filedir = datai.recording.filedir;
 end
 if strcmp(in.roi_func_mode,'combine')    
-    deltaF_F0 = trialsCell2Mat(deltaF_F0); % converto to matrix
+    deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
     bslines = squeeze(cell2mat(bslines')'); % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2,'omitnan'); % average across trials    
     if isfield(datai.func_output,'deltaF_F0_aligned')        

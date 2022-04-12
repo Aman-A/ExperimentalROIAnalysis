@@ -5,11 +5,9 @@ num_rows = cellfun(@(x) size(x,1),traces_cell_array);
 num_cols = cellfun(@(x) size(x,2),traces_cell_array); 
 num_trials = length(traces_cell_array);
 if all(num_rows == num_rows(1)) % all same number of frames    
-    if all(num_cols == 1) % all single ROI
-        traces_mat = cell2mat(traces_cell_array); % [nrows x ncols] 2D matrix
-    elseif all(num_cols == num_cols(1))% all same number of ROIs       
-        % [num_frames x num_stim x num_trials] 3D matrix
-        % or [num_frames x num_rois x num_stim x num_trials] 4D matrix
+    if all(num_cols == num_cols(1))% all same number of ROIs       
+        % [num_frames x num_rois x num_stim x num_trials] 4D matrix
+        % if num_rois == 1, gives [num_frames x 1 x num_stim x num_trials]
         traces_mat = cell2mat(reshape(traces_cell_array,1,1,1,num_trials)); 
     else
         error('Number of columns (ROIs) not consistent between trials'); 

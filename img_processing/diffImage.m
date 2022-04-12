@@ -39,7 +39,7 @@ if nargin < 2
     exp_settings = ExperimentSettings(300,100,100,'frames',100);    
 end
 in.cmap = 'inferno';
-in.include_plots = [3]; % (1 - Baseline, 2 - Peak, 3 - Difference)
+in.include_plots = [4]; % (1 - Baseline, 2 - Peak, 3 - Difference)
 in.baseline_mode = 'mean'; % 'mean' or 'max' - metric to calculate on 
                            % baseline frames for bsline_img
 in.filt_width = 0;

@@ -1,5 +1,6 @@
 function spike_width = spikeWidth2(t,y,stim_index,width_val) %#codegen
-%SPIKEWIDTH Computes spike width at desired fraction of spike amplitude
+%SPIKEWIDTH Computes spike width at specified amplitude (rather than
+%fraction of peak)
 % assumes single well-defined peak in trace and stim at t = 0
 %  
 %   Inputs 
@@ -25,13 +26,13 @@ if nargin < 4
     width_val = 0.05; 
 end
 max_width = 0.05; % sec - max allowed spike width 20 ms
-plot_fig = 1; 
+plot_fig = 0; 
 %% Get peak amplitude
 [peak_val,peak_ind] = max(y,[],1,'omitnan');
 % Get baseline
 bsline = 0; % assume already baseline normalized
 % bsline = sum(y(1:stim_index-1),'omitnan')/(stim_index-1); % mean in baseline window
-amp = peak_val - bsline; 
+% amp = peak_val - bsline; 
 % std_bsline = std(y(1:stim_index-1),0);
 % if amp < (bsline + std_bsline)
 %    spike_width = nan;

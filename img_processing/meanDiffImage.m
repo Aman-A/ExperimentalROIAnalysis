@@ -20,12 +20,18 @@ if any(remove_stim_inds)
    stim_frames(remove_stim_inds) = []; % remove stimuli at frames where window 
                                        % goes beyond 
 end
-num_stim = length(stim_frames);
-for i = 1:num_stim
-    peaki = max(vals(:,:,stim_frames(i):(stim_frames(i)+stim_wind)),[],3); % max at each pixel
-    bslinei = mean(vals(:,:,(stim_frames(i)-baseline_wind):(stim_frames(i)-1)),3); % mean at each pixel
-    mean_diff = mean_diff + peaki - bslinei;
-%     mean_diff = mean_diff + (peaki - bslinei)./bslinei;
+num_trains = size(stim_frames,1);
+num_stim = size(stim_frames,2);
+for i = 1:num_trains
+    mean_diffi = zeros(img_size); % mean image of ith pulse train
+    for j = 1:num_stim
+        peakj = max(vals(:,:,stim_frames(i,j):(stim_frames(i,j)+stim_wind)),[],3); % max at each pixel for stim j within train
+        bslinej = mean(vals(:,:,(stim_frames(i,j)-baseline_wind):(stim_frames(i,j)-1)),3); % mean at each pixel
+        mean_diffi = mean_diffi + peakj - bslinej;
+    %     mean_diff = mean_diff + (peaki - bslinei)./bslinei;
+    end
+    mean_diffi = mean_diffi/num_stim; % average across stimuli within train
+    mean_diff = mean_diff + mean_diffi;
 end
-mean_diff = mean_diff/num_stim; % average
+mean_diff = mean_diff/num_trains; % average across trains
 end

@@ -14,13 +14,14 @@ function data_out = removeROIsExpData(data,keep_rois)
 % AUTHOR    : Aman Aberra 
 data_out = data; 
 num_conditions = length(data.conditions);
-data_out.deltaF_F0_all = cellfun(@(x) x(:,keep_rois,:),data_out.deltaF_F0_all,'UniformOutput',0);
-data_out.mean_deltaF_F0_all = cellfun(@(x) x(:,keep_rois),data_out.mean_deltaF_F0_all,'UniformOutput',0);
-data_out.peaks_deltaF_F0_all = cellfun(@(x) x(:,keep_rois),data_out.peaks_deltaF_F0_all,'UniformOutput',0);
-data_out.deltaF_F0_aligned_all = cellfun(@(x) x(:,keep_rois,:),data_out.deltaF_F0_aligned_all,'UniformOutput',0);
-data_out.mean_deltaF_F0_aligned_all = cellfun(@(x) x(:,keep_rois),data_out.mean_deltaF_F0_aligned_all,'UniformOutput',0);
-data_out.peak_times_all = cellfun(@(x) x(:,keep_rois),data_out.peak_times_all,'UniformOutput',0);
-data_out.poststim_ints_all = cellfun(@(x) x(:,keep_rois),data_out.poststim_ints_all,'UniformOutput',0);
+data_out.baselines_all = cellfun(@(x) x(keep_rois,:,:),data_out.baselines_all,'UniformOutput',0);
+data_out.deltaF_F0_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.deltaF_F0_all,'UniformOutput',0);
+data_out.mean_deltaF_F0_all = cellfun(@(x) x(:,keep_rois,:),data_out.mean_deltaF_F0_all,'UniformOutput',0);
+data_out.peaks_deltaF_F0_all = cellfun(@(x) x(:,keep_rois,:),data_out.peaks_deltaF_F0_all,'UniformOutput',0);
+data_out.deltaF_F0_aligned_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.deltaF_F0_aligned_all,'UniformOutput',0);
+data_out.mean_deltaF_F0_aligned_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.mean_deltaF_F0_aligned_all,'UniformOutput',0);
+data_out.peak_times_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.peak_times_all,'UniformOutput',0);
+data_out.poststim_ints_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.poststim_ints_all,'UniformOutput',0);
 if numel(data_out.mean_peaks{1}) == 1
     % recompute means/std peaks across trials from remaining ROIs
     for i = 1:num_conditions

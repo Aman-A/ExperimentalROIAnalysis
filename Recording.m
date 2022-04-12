@@ -60,50 +60,52 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             obj.pixel_size = in.pixel_size; 
             obj.bin_size = in.bin_size; 
             % Check if file path is in img name
-            [path_to_img,name,ext] = fileparts(img_name); 
-            if isempty(path_to_img)
-                if isempty(obj.data_fold) 
-                    % No path in file name and no data_fold given, 
-                    % assume file is in current directory
-                    obj.filedir = pwd;
-                else
-                    % Build directory path using experiment properties, 
-                    % e.g. data_fold/exp_date/reporter/dish/condition
-                    if strcmp(in.file_structure,'default')                        
-                        assert(all([~isempty(obj.exp_date),~isempty(obj.reporter),...
-                                    ~isempty(obj.dish),~isempty(obj.condition)]),...
-                                    ['If specifying data_fold, need to input exp_date,',...
-                                    'reporter, dish, and condition\n']);
-                        obj.filedir = fullfile(obj.data_fold,obj.exp_date,...
-                                                obj.reporter,obj.dish,obj.condition);                                            
+            if nargin > 0
+                [path_to_img,name,ext] = fileparts(img_name); 
+                if isempty(path_to_img)
+                    if isempty(obj.data_fold) 
+                        % No path in file name and no data_fold given, 
+                        % assume file is in current directory
+                        obj.filedir = pwd;
                     else
-                        error('%s file_structure not implemented',in.file_structure);
-                    end
-                end                
-            else
-               % File name includes path, assume relative path to current
-               % directory
-               obj.filedir = path_to_img;               
-            end
-            obj.img_name = name;
-            % Get file format
-            if isempty(in.format)
-                if isempty(ext)                   
-                   obj.format = '.fits'; % assume .fits
+                        % Build directory path using experiment properties, 
+                        % e.g. data_fold/exp_date/reporter/dish/condition
+                        if strcmp(in.file_structure,'default')                        
+                            assert(all([~isempty(obj.exp_date),~isempty(obj.reporter),...
+                                        ~isempty(obj.dish),~isempty(obj.condition)]),...
+                                        ['If specifying data_fold, need to input exp_date,',...
+                                        'reporter, dish, and condition\n']);
+                            obj.filedir = fullfile(obj.data_fold,obj.exp_date,...
+                                                    obj.reporter,obj.dish,obj.condition);                                            
+                        else
+                            error('%s file_structure not implemented',in.file_structure);
+                        end
+                    end                
                 else
-                    obj.format = ext;                    
-                end                
-            else
-               obj.format = in.format; 
-            end                        
-            % Build full path to file
-            obj.filepath = fullfile(obj.filedir,[obj.img_name,obj.format]); 
-            if exist(obj.filepath,'file')
-                d = dir(obj.filepath);             
-                [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
-                obj.time_start = datetime(Y,M,D,H,MI,S);
-            else
-               error('%s does not exist\n',obj.filepath);  
+                   % File name includes path, assume relative path to current
+                   % directory
+                   obj.filedir = path_to_img;               
+                end
+                obj.img_name = name;
+                % Get file format
+                if isempty(in.format)
+                    if isempty(ext)                   
+                       obj.format = '.fits'; % assume .fits
+                    else
+                        obj.format = ext;                    
+                    end                
+                else
+                   obj.format = in.format; 
+                end                        
+                % Build full path to file
+                obj.filepath = fullfile(obj.filedir,[obj.img_name,obj.format]); 
+                if exist(obj.filepath,'file')
+                    d = dir(obj.filepath);             
+                    [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
+                    obj.time_start = datetime(Y,M,D,H,MI,S);
+                else
+                   error('%s does not exist\n',obj.filepath);  
+                end
             end
         end
         function load(obj,print_status)
