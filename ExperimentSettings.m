@@ -47,9 +47,9 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
         function varargout = convert2Frames(obj,varargin)            
             if nargin == 1
                 if strcmp(obj.units,'sec')
-                    obj.stim_vals = ceil(obj.stim_vals*obj.sampling_rate); % round up to next frame
-                    obj.stim_wind = ceil(obj.stim_wind*obj.sampling_rate);
-                    obj.baseline_wind = ceil(obj.baseline_wind*obj.sampling_rate);
+                    obj.stim_vals = round(obj.stim_vals*obj.sampling_rate); % round to nearest frame
+                    obj.stim_wind = round(obj.stim_wind*obj.sampling_rate);
+                    obj.baseline_wind = round(obj.baseline_wind*obj.sampling_rate);
                     obj.units = 'frames';                    
                 end            
             else

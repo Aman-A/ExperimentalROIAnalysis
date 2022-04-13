@@ -42,6 +42,16 @@ else
     meanF = cellfun(@(x) mean(x,2),F,'UniformOutput',0); % mean across trials within condition/ROI
 end    
 exp_settings = experiment_output.exp_settings(1);
+%% Pad ending of shorter traces with nans
+num_frames = cellfun(@(x) size(x,1),meanF,'UniformOutput',1);
+if any(num_frames ~= num_frames(1))
+    max_frames = max(num_frames); 
+    for i = 1:length(meanF)
+        if num_frames(i) ~= max_frames
+            meanF{i} = [meanF{i};nan(max_frames-num_frames(i),size(meanF{i},2))];
+        end
+    end
+end
 %% extract relevant columns (conditions)
 if ~isempty(in.cond_inds)
     meanF = meanF(in.cond_inds);

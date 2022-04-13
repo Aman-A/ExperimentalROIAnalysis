@@ -104,7 +104,7 @@ if isempty(in.analysis_funcs)
         analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
     elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
         analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
-    elseif strcmp(in.reporter,'QuasAr') || strcmp(in.reporter,'Archon')
+    elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon'})))
         analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
     else
         analysis_funcs = {'peaks','peak_times'};
@@ -117,7 +117,7 @@ if ~exist('filedir','var')
 end
 if strcmp(in.roi_func_mode,'combine')    
     deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
-    bslines = squeeze(cell2mat(bslines')'); % num_stim x num_trials 
+    bslines = squeeze(cell2mat(bslines')); % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2,'omitnan'); % average across trials    
     if isfield(datai.func_output,'deltaF_F0_aligned')        
         deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
