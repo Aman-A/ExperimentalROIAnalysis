@@ -51,6 +51,13 @@ end
 trace_dims = size(traces,1:4);
 num_stim = exp_settings.num_stim; % num stim within train
 num_trains = exp_settings.num_trains;
+if num_trains > 1 
+    % make sure spike window is shorter than interspike interval within train
+    min_isi = min(diff(exp_settings.stim_vals(1,:)));
+    if spike_window > min_isi
+        spike_window = min_isi; 
+    end
+end
 analysis_file = fullfile(in.save_dir,in.save_filename);
 if in.load
     % check if exists    
@@ -65,12 +72,31 @@ end
 output = struct();
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
-    % get peaks within spike_window    
-    [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:),[],1);    
-    pk_inds = pk_inds + stim_frame; % reference to full time vector    
-    peaks = squeeze(peaks);
-    pk_inds = squeeze(pk_inds);    
-    peak_times = exp_settings.convert2Time(pk_inds-stim_frame);
+    % get peaks within spike_window 
+    if num_trains > 1
+        % [num_rois x num_trains x num_stim x num_trials]
+        peaks = zeros([trace_dims(2),num_trains,num_stim,trace_dims(4)]);
+        pk_inds = zeros([trace_dims(2),num_trains,num_stim,trace_dims(4)]);
+        for i = 1:num_stim
+            if i > 1
+                stim_framei = stim_frame + cumsum(diff(exp_settings.stim_vals(1,1:i)))*(i-1);
+            else
+                stim_framei = stim_frame; 
+            end
+            [peaks(:,:,i,:),pk_inds(:,:,i,:)] =  max(traces((stim_framei+1):(stim_framei+spike_window),:,:,:),[],1);   
+            pk_inds(:,:,i,:) = pk_inds(:,:,i,:) + stim_framei;  % reference to full time vector 
+        end
+        peaks = squeeze(peaks); 
+        pk_inds = squeeze(pk_inds);
+        peak_times = exp_settings.convert2Time(pk_inds-stim_frame); % referenced to first stim in train
+        
+    else
+        [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:),[],1);    
+        pk_inds = pk_inds + stim_frame; % reference to full time vector
+        peaks = squeeze(peaks);
+        pk_inds = squeeze(pk_inds);
+        peak_times = exp_settings.convert2Time(pk_inds-stim_frame);
+    end    
     output.peaks = peaks;
     % average all peaks
     output.mean_peak = mean(peaks,'all'); 
@@ -248,14 +274,14 @@ if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
     t = exp_settings.getTimeVector(size(traces,1));          
     frac_amp = in.frac_amp;
     n_traces = prod(mean_trace_dims(2:end));
-    if num_trains > 1
+    if num_trains > 1 % get average FWHM of each spike within train (averaged across multiple trains)
         stim_indices = baseline_wind + 1 + exp_settings.stim_vals(1,:)-exp_settings.stim_vals(1);
         mean_fwhm = zeros([mean_trace_dims(2:end),num_stim]); % [num_rois x num_stim] average across trains/trials
         for n = 1:n_traces
             mean_fwhm(n,:) = spikeWidths(t,mean_traces(:,n),stim_indices,frac_amp,...
                                         1,baseline_wind);
         end
-    else
+    else % get average FWHM of all spikes averaged together (single train)
         stim_index = exp_settings.baseline_wind + 1; 
         mean_fwhm = zeros(mean_trace_dims(2:end));
         for n = 1:n_traces
