@@ -117,7 +117,7 @@ if ~exist('filedir','var')
 end
 if strcmp(in.roi_func_mode,'combine')    
     deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
-    bslines = squeeze(cell2mat(bslines')); % num_stim x num_trials 
+    bslines = cell2mat(bslines); % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2,'omitnan'); % average across trials    
     if isfield(datai.func_output,'deltaF_F0_aligned')        
         deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
@@ -155,7 +155,7 @@ elseif strcmp(in.roi_func_mode,'separate')
         mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
         std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
     end    
-    bslines = squeeze(cell2mat(reshape(bslines,1,1,num_trials))); % [num_rois x num_stim x num_trials]     
+    bslines = cell2mat(reshape(bslines,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = trialsCell2Mat(deltaF_F0);
     mean_deltaF_F0 = mean(deltaF_F0,3,'omitnan');    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
