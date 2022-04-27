@@ -157,7 +157,7 @@ elseif strcmp(in.roi_func_mode,'separate')
     end    
     bslines = cell2mat(reshape(bslines,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = trialsCell2Mat(deltaF_F0);
-    mean_deltaF_F0 = mean(deltaF_F0,3,'omitnan');    
+    mean_deltaF_F0 = mean(deltaF_F0,[3 4],'omitnan');    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
              in.condition, mean(mean_peak_deltaF_F0(1,:,:),[2,3]),...
              mean(std_peak_deltaF_F0(1,:,:),[2,3])); 

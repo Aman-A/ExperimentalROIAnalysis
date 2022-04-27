@@ -20,6 +20,7 @@ in.data_fold = getDataFold();
 in.load_compiled_dataset = 1;
 in.save_compiled_dataset = 1;
 in.dataset_fold = './datasets';
+in.summary_data_file_suffix = [];
 in = sl.in.processVarargin(in,varargin);
 
 [~,dataset_name,~] = fileparts(dataset_def_filename);
@@ -58,8 +59,13 @@ else
         roiset_filename_no_ext = getROIset_name(def.roiset_filename{i},...
                                                  def.transform_type{i},...
                                                   def.registration_rec{i});  
-        summary_data_file = sprintf('%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
-                                   roi_func_mode,roiset_filename_no_ext);
+        if isempty(in.summary_data_file_suffix)
+            summary_data_file = sprintf('%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
+                                       roi_func_mode,roiset_filename_no_ext);
+        else
+            summary_data_file = sprintf('%s_%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
+                                       roi_func_mode,roiset_filename_no_ext,in.summary_data_file_suffix);
+        end
         summary_data_filepath = fullfile(exp_data_fold,[summary_data_file '.mat']);
         if exist(summary_data_filepath,'file')
             datai = load(summary_data_filepath);

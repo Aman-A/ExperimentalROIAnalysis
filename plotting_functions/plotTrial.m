@@ -161,7 +161,8 @@ else
         fprintf('Skipping diff image plot\n'); 
     end   
     %% Calculate deltaF/F0 
-    func_output = calcROIfuncs(img,rois,in.funcs,exp_settings,in.roi_func_mode);
+    func_output = calcROIfuncs(img,rois,in.funcs,exp_settings,in.roi_func_mode,...
+                               'rem_pbleach',in.rem_pbleach);
     %% Generate output data structure
     output_data = struct();
     output_data.recording = img.unload(); % save with data unloaded, reduce HD usage
@@ -211,23 +212,6 @@ if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0
     if in.save_fig > 1 % set to 2 to plot individual trials   
        fig_name = [img.img_name '_' in.plot_func]; 
        printFig(fig,fig_dir,fig_name); 
-    end
-end
-end
-function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name,...
-                               close_after_save,show_roi_labels)
-for i = 1:length(fig_hands)
-    ax = fig_hands(i).Children(end);    
-    rois.plot('y',ax,0); % plot starting
-    rois.plot('g',ax,1,show_roi_labels); % plot current after shift    
-%     rois.plot(jet(rois.num_rois),ax,1,show_roi_labels); % plot current after shift    
-    drawnow; 
-    if save_fig  % Save images with ROI overlays (if exist)
-        printFig(fig_hands(i),fig_dir,[img_name,'_',fig_hands(i).Name],...
-            'formats','png','resolutions','-r300')
-        if close_after_save
-            close(fig_hands(i));
-        end
     end
 end
 end

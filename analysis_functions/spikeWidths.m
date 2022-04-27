@@ -1,4 +1,4 @@
-function spike_widths = spikeWidths(t,y,stim_indices,frac_amp,mode,baseline_wind)
+function spike_widths = spikeWidths(t,y,stim_indices,frac_amp,width_mode,baseline_wind,varargin)
 %SPIKEWIDTHS Compute spike widths of multiple spikes within train, included
 %in single trace
 %  
@@ -12,19 +12,31 @@ function spike_widths = spikeWidths(t,y,stim_indices,frac_amp,mode,baseline_wind
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
+in.spline_interp = 0; 
+in.spline_sampling_factor = 50; % factor above actual sampling rate for 
+                                % spline interpolation
+in = sl.in.processVarargin(in,varargin);                                
 num_stim = length(stim_indices);
 if nargin < 5
-    mode = 1; % 1 - use baseline and frac_amp of first spike to calculate
-              % width of all spikes in train
+    width_mode = 1; % 1 - use baseline and frac_amp of first spike to calculate
+              % width of all spikes in train (nFWHM from Cho 2020)
               % 2 - use local baseline to compute amplitude of each spike, 
               % calculate width at frac_amp of each spike              
+end
+% Upsample trace with cubic spline interpolation
+if in.spline_interp
+    dt = mode(t(2)-t(1));
+    t_interp = (t(1):(dt/in.spline_sampling_factor):t(end))';
+    stim_indices = stim_indices*in.spline_sampling_factor - in.spline_sampling_factor; 
+    y = spline(t,y,t_interp);
+    t = t_interp; 
 end
 if nargin < 6
     baseline_wind = min(diff(stim_indices)); % only applies to mode 2
 end
 spike_widths = zeros(num_stim,1);
 inds = [1,stim_indices,length(y)];
-if mode == 1    
+if width_mode == 1    
     for i = 2:num_stim+1
         % get width of first AP
         ti = t(inds(i-1):inds(i+1)); % get trace from start to 2nd stim

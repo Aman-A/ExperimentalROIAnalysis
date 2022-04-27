@@ -34,6 +34,7 @@ in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
 in.frac_amp = 0.5; 
+in.fwhm_spline_interp = 0; % cubic spline interpolation for FWHM calculation
 in.save_analysis = 1;
 in.save_dir = './'; % default save in current directory
 in.save_filename = sprintf('analysis_trials_dims_%g_%g_%g_%g.mat',size(traces,[1,2,3,4]));
@@ -69,6 +70,7 @@ if in.load
         fprintf('No analysis file to load, running analysis...\n')
     end
 end
+fwhm_spline_interp = in.fwhm_spline_interp; % avoid broadcasting below
 output = struct();
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
@@ -236,12 +238,14 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
         % first frame after each stim within train
         stim_indices = baseline_wind + 1 + exp_settings.stim_vals(1,:)-exp_settings.stim_vals(1);
         fwhm = squeeze(zeros([trace_dims(2),num_stim,num_trains]));
-        parfor n = 1:n_traces
+        for n = 1:n_traces
             try
-                fwhm(:,n) = spikeWidths(t,traces(:,n),stim_indices,frac_amp,...
-                                        1,baseline_wind);
+                [i,j] = ind2sub(trace_dims(2:end),n);
+                fwhm(i,:,j) = spikeWidths(t,traces(:,n),stim_indices,frac_amp,...
+                                        1,baseline_wind,...
+                                        'spline_interp',fwhm_spline_interp);                              
             catch
-                fwhm(:,n) = nan;
+                fwhm(n) = nan;
             end
         end  
     else
@@ -256,7 +260,7 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
         end       
     end    
     elapsed_time = toc;
-    fprintf('Computed FWHM of %g traces in %.2f sec\n',n_traces,elapsed_time)
+    fprintf('Computed FWHM of %g traces in %.4f sec\n',n_traces,elapsed_time)
     if any(isnan(fwhm))
         fprintf('%g of %g errors\n',sum(isnan(fwhm),'all'),numel(fwhm));
     end
@@ -274,21 +278,23 @@ if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
     t = exp_settings.getTimeVector(size(traces,1));          
     frac_amp = in.frac_amp;
     n_traces = prod(mean_trace_dims(2:end));
+    tic
     if num_trains > 1 % get average FWHM of each spike within train (averaged across multiple trains)
         stim_indices = baseline_wind + 1 + exp_settings.stim_vals(1,:)-exp_settings.stim_vals(1);
         mean_fwhm = zeros([mean_trace_dims(2:end),num_stim]); % [num_rois x num_stim] average across trains/trials
         for n = 1:n_traces
             mean_fwhm(n,:) = spikeWidths(t,mean_traces(:,n),stim_indices,frac_amp,...
-                                        1,baseline_wind);
+                                        1,baseline_wind,'spline_interp',fwhm_spline_interp);
         end
     else % get average FWHM of all spikes averaged together (single train)
         stim_index = exp_settings.baseline_wind + 1; 
-        mean_fwhm = zeros(mean_trace_dims(2:end));
+        mean_fwhm = zeros(mean_trace_dims(2),1);
         for n = 1:n_traces
             mean_fwhm(n) = spikeWidth(t,mean_traces(:,n),stim_index,frac_amp);
         end
     end
-    fprintf('Computed FWHM of %g stim-averaged traces in %.2f sec\n',...
+    elapsed_time = toc;
+    fprintf('Computed FWHM of %g stim-averaged traces in %.4f sec\n',...
             n_traces,elapsed_time)
     if any(isnan(mean_fwhm))
         fprintf('%g of %g errors\n',sum(isnan(mean_fwhm),'all'),numel(mean_fwhm));

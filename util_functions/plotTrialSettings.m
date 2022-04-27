@@ -48,4 +48,5 @@ settings.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIf
 settings.roi_func_sbar_len = 1; 
 settings.registration_rec_settings = []; % if necessary, separate ExperimentSettings for registration recording
 settings.analysis_funcs = {}; % for plotTrials
+settings.rem_pbleach = 0; % 1 to remove photobleaching in calcROIfuncs
 settings = sl.in.processVarargin(settings,varargin);

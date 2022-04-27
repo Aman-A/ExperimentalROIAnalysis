@@ -39,6 +39,8 @@ function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
 
 % AUTHOR    : Aman Aberra 
 in.print_level = 1;
+in.rem_pbleach = 0;
+in.rem_pbleach_method = 1; % 1 - Cohen method, smooths based on min value every interp_interval
 in = sl.in.processVarargin(in,varargin); 
 if nargin < 4
    exp_settings = ExperimentSettings([],[],20,'frames',100); 
@@ -49,6 +51,14 @@ end
 if ischar(funcs)
     funcs = {funcs};
 end
+% Sort funcs to ensure mean computed first, allows computing baseline
+% from mean traces
+if any(strcmp(funcs,'mean')) && any(strcmp(funcs,'baseline'))
+   inds = 1:length(funcs);
+   inds1 = [find(strcmp(funcs,'mean')),find(strcmp(funcs,'baseline'))];   
+   funcs = [funcs(inds1),funcs(setdiff(inds,inds1))];
+end
+% Get roi_func_mode
 if ~ischar(roi_func_mode) && isvector(roi_func_mode)
     roi_inds = roi_func_mode;
     roi_func_mode = 'combine'; % treat as combine mode below
@@ -58,10 +68,12 @@ else
     error(['roi_func_mode should be either string (''combine'' or ''separate'')',...
            ' or vector of indices to apply function to']);
 end
+% Get stim and baseline settings
 baseline_wind_inds = exp_settings.baseline_wind_inds; 
 exp_settings.convert2Frames(); 
 stim_frames = exp_settings.stim_vals; % stimulus frames 
 if recording.loaded == 0; recording.load(); end
+% Compute functions in ROIs
 tic; 
 switch roi_func_mode    
     case 'combine'
@@ -92,6 +104,39 @@ end
 time_elapsed = toc; 
 if in.print_level > 0
     fprintf(print_str,time_elapsed);
+end
+%% Apply photobleaching correction
+if in.rem_pbleach
+    assert(any(strcmp(funcs,'mean')),'Need to compute mean for photobleach correction')    
+    max_stim_interval = max(diff(stim_frames(:)));
+    if in.rem_pbleach_method == 1 % method from Adam Cohen rem_pbleach code
+        interp_interval = min(round(max_stim_interval*1.2),size(output.mean,1));
+    elseif in.rem_pbleach_method == 2
+%         interp_interval = min(round(max_stim_interval*1.2),50e-3*exp_settings.sampling_rate); % 100 frames for 2kHz (50 ms)
+        interp_interval = 3; % matches Gonzalez Sabater 2021
+    end
+    [mean_pb,pbleach] = removePhotoBleach(output.mean,... % also removes initial transient
+                                         'method',in.rem_pbleach_method,...
+                                         'interp_interval',interp_interval,...
+                                         'skip_initial_frames',3);    
+    output.mean_raw = output.mean; 
+    output.mean = mean_pb; % replace mean with photobleach corrected values
+    output.pbleach = pbleach; 
+    % Recompute and replace deltaF_F0 and deltaF with photobleach corrected values,
+    % retain raw values with <func>_raw fields in output
+    baseline_new = mean(output.mean(baseline_wind_inds(:,1,1),:),1,'omitnan');    
+    if any(strcmp(funcs,'deltaF_F0'))
+        output.deltaF_F0_raw = output.deltaF_F0;         
+        output.deltaF_F0 = (output.mean - baseline_new)./baseline_new; 
+    end
+    if any(strcmp(funcs,'deltaF'))
+        output.deltaF_raw = output.deltaF; 
+        output.deltaF = (output.mean-baseline_new); 
+    end
+    if in.print_level > 0
+        fprintf('Applied photobleach correction with method %g and interp_interval %g\n',...
+                in.rem_pbleach_method,interp_interval);
+    end
 end
 %% If contains more than one stimulus, generate stim-aligned traces using means
 if any(strcmp(funcs,'mean'))
@@ -130,13 +175,23 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
         if ind == 1
             % rows are rois, columns for for each stimulus
             output_new.baseline = nan([num_masks,size(baseline_wind_inds,2:3)]); % [num_masks x num_stim x num_trains]
-        end
-        for l = 1:size(baseline_wind_inds,3) % loop over stim trains
-            for k = 1:size(baseline_wind_inds,2) % loop over stimuli
-                output_new.baseline(ind,k,l) = mean(img(:,:,baseline_wind_inds(:,k,l)).*mask,...
-                                                  'all','omitnan');        
+        end        
+        if isfield(output,'mean') % compute from mean traces
+            output_mean = output.mean(:,ind);
+            for l = 1:size(baseline_wind_inds,3) % loop over stim trains
+                for k = 1:size(baseline_wind_inds,2) % loop over stimuli
+                    output_new.baseline(ind,k,l) = mean(output_mean(baseline_wind_inds(:,k,l)),...
+                                                                'omitnan');        
+                end
             end
-        end
+        else
+            for l = 1:size(baseline_wind_inds,3) % loop over stim trains
+                for k = 1:size(baseline_wind_inds,2) % loop over stimuli
+                    output_new.baseline(ind,k,l) = mean(img(:,:,baseline_wind_inds(:,k,l)).*mask,...
+                                                      'all','omitnan');        
+                end
+            end
+        end        
     elseif strcmp(func,'deltaF') % DeltaF of ROI pixels (averaged)
         if isfield(output,'mean')
             output_mean = output.mean(:,ind);
@@ -165,7 +220,7 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
         if isfield(output,'baseline') && ~isnan(output.baseline(ind,1)) 
             baseline = output.baseline(ind,1,1);
         else
-            baseline = mean(img(:,:,baseline_wind_inds(:,1,1)).*mask,'all','omitnan');    
+            baseline = mean(output_mean(baseline_wind_inds(:,1,1)),'omitnan');    
         end
         if ind == 1
             output_new.deltaF_F0 = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
