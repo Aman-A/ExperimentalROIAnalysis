@@ -49,4 +49,5 @@ settings.roi_func_sbar_len = 1;
 settings.registration_rec_settings = []; % if necessary, separate ExperimentSettings for registration recording
 settings.analysis_funcs = {}; % for plotTrials
 settings.rem_pbleach = 0; % 1 to remove photobleaching in calcROIfuncs
+settings.fwhm_spline_interp = 0; % 1 to use cubic spline interpolation for FWHM calculation
 settings = sl.in.processVarargin(settings,varargin);

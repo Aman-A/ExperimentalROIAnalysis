@@ -27,6 +27,7 @@ out.deltaF_F0_all = cell(1,num_conditions);
 out.mean_deltaF_F0_all = cell(1,num_conditions); 
 out.peaks_deltaF_F0_all = cell(1,num_conditions);
 out.deltaF_F0_aligned_all = cell(1,num_conditions); 
+out.deltaF_F0_aligned2_all = cell(1,num_conditions); 
 out.mean_deltaF_F0_aligned_all= cell(1,num_conditions);
 out.peak_times_all = cell(1,num_conditions); % time of peak relative to stimulus (sec)
 out.poststim_ints_all = cell(1,num_conditions); % integrals in post-stim window (a.u. * sec)
@@ -70,6 +71,9 @@ for i = 1:num_conditions
     if isfield(tdi,'deltaF_F0_aligned')
         out.deltaF_F0_aligned_all{i} = tdi.deltaF_F0_aligned;
         out.mean_deltaF_F0_aligned_all{i} = tdi.mean_deltaF_F0_aligned;
+    end
+    if isfield(tdi,'deltaF_F0_aligned2')
+        out.deltaF_F0_aligned2_all{i} = tdi.deltaF_F0_aligned2;        
     end
     % Output metrics with dimensions: [num_stim x num_rois x num_trials]
     out.peaks_deltaF_F0_all{i} = permute(concatFieldInStructArray(tdi.analysis,'peaks'),[2 1 3 4]); 

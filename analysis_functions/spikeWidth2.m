@@ -1,4 +1,4 @@
-function spike_width = spikeWidth2(t,y,stim_index,width_val) %#codegen
+function spike_width = spikeWidth2(t,y,stim_index,width_val,plot_fig) %#codegen
 %SPIKEWIDTH Computes spike width at specified amplitude (rather than
 %fraction of peak)
 % assumes single well-defined peak in trace and stim at t = 0
@@ -25,8 +25,10 @@ function spike_width = spikeWidth2(t,y,stim_index,width_val) %#codegen
 if nargin < 4
     width_val = 0.05; 
 end
+if nargin < 5
+    plot_fig = 0;
+end
 max_width = 0.05; % sec - max allowed spike width 20 ms
-plot_fig = 0; 
 %% Get peak amplitude
 [peak_val,peak_ind] = max(y,[],1,'omitnan');
 % Get baseline

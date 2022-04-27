@@ -41,6 +41,12 @@ function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
 in.print_level = 1;
 in.rem_pbleach = 0;
 in.rem_pbleach_method = 1; % 1 - Cohen method, smooths based on min value every interp_interval
+in.align_use_train_baseline = 1; % if num_trains > 1, in addition to 
+                                 % aligning traces to trains, also aligns
+                                 % to individual stimuli. Set to 1 to
+                                 % generate deltaF_F0 with baseline of
+                                 % first stim in train, 0 to use baseline
+                                 % before individual stim responses
 in = sl.in.processVarargin(in,varargin); 
 if nargin < 4
    exp_settings = ExperimentSettings([],[],20,'frames',100); 
@@ -142,13 +148,22 @@ end
 if any(strcmp(funcs,'mean'))
     baseline_wind = exp_settings.baseline_wind;
     stim_wind = exp_settings.stim_wind;
-    [deltaF_F0_aligned, mean_aligned] = calcStimAlignedResponses(output.mean,...
-                                                stim_frames,baseline_wind,...
-                                                stim_wind);
-    output.mean_aligned = mean_aligned;
-    output.deltaF_F0_aligned = deltaF_F0_aligned; 
-    if in.print_level > 1
-        fprintf('Generated stimulus aligned means and deltaF/F0 traces\n')
+    align_output = calcStimAlignedResponses(output.mean,stim_frames,...
+                                            baseline_wind,stim_wind,...
+                                            'use_train_baseline',...
+                                            in.align_use_train_baseline);
+    output.mean_aligned = align_output.mean_aligned;
+    output.deltaF_F0_aligned = align_output.deltaF_F0_aligned; 
+    print_str = 'Generated stimulus aligned means and deltaF/F0 traces\n';
+    if isfield(align_output,'deltaF_F0_aligned2') % for num_trains > 1, 
+        output.mean_aligned2 = align_output.mean_aligned2;
+        output.deltaF_F0_aligned2 = align_output.deltaF_F0_aligned2; 
+        print_str = [print_str,...
+                    sprintf(' Also aligned to individual spikes in train, use_train_baseline = %g\n',...
+                    in.align_use_train_baseline)];        
+    end
+    if in.print_level > 0        
+        fprintf(print_str)
     end
 end
 %% Add relevant information to output struct

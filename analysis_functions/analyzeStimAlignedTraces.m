@@ -33,6 +33,8 @@ in.funcs = {'peaks','peak_times','poststim_ints','decay_fit','fwhm','mean_fwhm'}
 in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
+in.train_spike_width_mode = 1; % 1 - Cho 2020 method for nFWHM, use half 
+                               % amp of 1st AP in train for rest of APs in train
 in.frac_amp = 0.5; 
 in.fwhm_spline_interp = 0; % cubic spline interpolation for FWHM calculation
 in.save_analysis = 1;
@@ -242,7 +244,7 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
             try
                 [i,j] = ind2sub(trace_dims(2:end),n);
                 fwhm(i,:,j) = spikeWidths(t,traces(:,n),stim_indices,frac_amp,...
-                                        1,baseline_wind,...
+                                        in.train_spike_width_mode,baseline_wind,...
                                         'spline_interp',fwhm_spline_interp);                              
             catch
                 fwhm(n) = nan;
@@ -284,8 +286,8 @@ if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
         mean_fwhm = zeros([mean_trace_dims(2:end),num_stim]); % [num_rois x num_stim] average across trains/trials
         for n = 1:n_traces
             mean_fwhm(n,:) = spikeWidths(t,mean_traces(:,n),stim_indices,frac_amp,...
-                                        1,baseline_wind,'spline_interp',fwhm_spline_interp);
-        end
+                                        in.train_spike_width_mode,baseline_wind,'spline_interp',fwhm_spline_interp);
+        end        
     else % get average FWHM of all spikes averaged together (single train)
         stim_index = exp_settings.baseline_wind + 1; 
         mean_fwhm = zeros(mean_trace_dims(2),1);
@@ -300,6 +302,8 @@ if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
         fprintf('%g of %g errors\n',sum(isnan(mean_fwhm),'all'),numel(mean_fwhm));
     end
     output.mean_fwhm = mean_fwhm; 
+    output.train_spike_width_mode = in.train_spike_width_mode;
+    output.fwhm_spline_interp = in.fwhm_spline_interp; 
 end
 if in.save_analysis
     save(analysis_file,'-STRUCT','output')

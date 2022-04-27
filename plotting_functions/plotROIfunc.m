@@ -31,12 +31,11 @@ else
 end
 y = func_output.(func_name);
 if regexp(func_name,'aligned','ONCE') 
-    std_y = std(y,0,ndims(y));
+%     std_y = std(y,0,ndims(y));
     if strcmp(func_output.roi_func_mode,'combine')
-        y = mean(y,ndims(y));
+        y = squeeze(mean(y,3)); % mean across trains or stimuli
     else
-        y = mean(y,3); % mean across 2nd dim for combined ROIs, 3rd dim 
-                           % for separate ROIs              
+        y = squeeze(mean(y,3:ndims(y))); 
     end
 end
 if nargin < 4
@@ -171,7 +170,7 @@ if strcmp(func_name,'deltaF_F0')
     ylabel(ax,'\Delta F/F_{0}')
 elseif strcmp(func_name,'deltaF')
     ylabel(ax,'\Delta F')
-elseif strcmp(func_name,'deltaF_F0_aligned')
+elseif regexp(func_name,'aligned','ONCE')
     ylabel(ax,'Mean \Delta F/F_{0}')
 else
    ylabel(ax,func_name);  
