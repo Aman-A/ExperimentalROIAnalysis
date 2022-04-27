@@ -9,8 +9,8 @@ condition = '50Hz'; % 'control', '5nM_DTX', '50nM_DTX'
 % roiset_filename = [2 98 2 96]*.5;
 roiset_filename = 'RoiSet_pos7';
 num_stim = 2; 
-del = 1; % sec 
-train_interval = 1.25; % 1.25 sec - time after start of each stim train to start next train
+del = 0.5; % sec 
+train_interval = 0.5; % 1.25 sec - time after start of each stim train to start next train
 freqs_all = [4, 10, 20, 50]; % Hz
 stim_wind = 0.02; % window
 baseline_wind = 0.015; % frames before stim/s to take baseline
@@ -20,8 +20,10 @@ units = 'sec'; % specify units 'frames' or 'sec'
 num_freqs = length(freqs_all);
 exp_settings(num_freqs,1) = ExperimentSettings;
 durs = zeros(num_freqs,1);
+doric_dels = zeros(num_freqs,1); 
 for i = 1:num_freqs    
     durs(i) = num_stim/freqs_all(i);     
+    doric_dels(i) = train_interval - durs(i); 
     stim_vals = defineStimTrains(del,freqs_all(i),durs(i),num_trains,train_interval);
     exp_settings(i) = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                   units,sampling_rate); % automatically converts to frames
@@ -55,6 +57,8 @@ ps.registration_rec = fullfile(data_fold,exp_date,reporter,dish,...
 ps.show_roi_labels = 1;  
 ps.close_img_after_save = 1;
 ps.bin_size = 1; 
+ps.rem_pbleach = 0;
+ps.fwhm_spline_interp = 0;
 % makeExpDiffImageStack(fullfile(data_fold,exp_date,reporter,dish),{'control'},exp_settings);
 %%
 freq_plot = 50;
@@ -74,9 +78,8 @@ img_names = {}; % use all images in condition folder
 ps.x_lim = [-0.2 1];
 trials_data = plotTrials(img_names,exp_settings(freqs_all == freq_plot),roiset_filename,ps);
 %% Plot multiple trials, multiple conditions        
-% conditions = {'200Hz_record_2Hz_stim'}; 
-freqs = [4, 10, 20, 50]; % Hz
 
+freqs = [4, 10, 20, 50]; % Hz
 [~,freq_inds] = intersect(freqs_all,freqs); 
 conditions = arrayfun(@(x) sprintf('%gHz',x),freqs,'UniformOutput',0);
 ps.save_fig = 1;
@@ -97,12 +100,12 @@ end
 roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                          ps.transform_type,...
                                         ps.registration_rec);  
-summary_datafile = sprintf('%s_%s_%s_%s_%s',ps.exp_date,...
+summary_datafile = sprintf('%s_%s_%s_%s_%s_ppulse',ps.exp_date,...
                                     'Archon',ps.dish,...
                                     ps.roi_func_mode,...
                                     roiset_filename_no_ext);
 summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
-            ['figs_Archon_',roiset_filename_no_ext,'_' ps.roi_func_mode]);                                 
+            ['figs_Archon_',roiset_filename_no_ext,'_' ps.roi_func_mode '_ppulse']);                                 
 % set(0,'DefaultFigureVisible','off') % to avoid window taking screen focus
 out = plotTrials_multipleConditions(conditions,ps,exp_settings(freq_inds),...
                                     roiset_filename,...
@@ -150,6 +153,69 @@ img_stack_name = sprintf('%s_%s_%s_%s_img_stack',exp_date,reporter,dish,...
 makeExpDiffImageStack(fullfile(data_fold,exp_date,reporter,dish),...
                       conditions,exp_settings,'img_stack_name',img_stack_name,...
                       'img_mode',stack_mode)  
+%% Analyze width
+% [ cond x num_stim] fwhm from individual trials
+mean_fwhm1 = 1e3*cell2mat(cellfun(@(x) mean(x,2,'omitnan')',out.fwhm,'UniformOutput',0)'); % average across trains 
+std_fwhm1 = 1e3*cell2mat(cellfun(@(x) std(x,0,2,'omitnan')',out.fwhm,'UniformOutput',0)'); %  across trains 
+sem_fwhm1 = std_fwhm1/size(out.fwhm{1},2); 
+mean_nfwhm1 = mean_fwhm1./mean_fwhm1(:,1); 
+std_nfwhm1 = std_fwhm1./mean_fwhm1(:,1); 
+sem_nfwhm1 = sem_fwhm1./mean_fwhm1(:,1);
+mean_fwhm2 = cell2mat(out.mean_fwhm'); 
+mean_nfwhm2 = mean_fwhm2./mean_fwhm2(:,1); 
+hs = zeros(1,length(out.conditions));
+p_vec = zeros(1,length(out.conditions));
+for i = 1:length(out.conditions)
+    [hs(i),p_vec(i)] = ttest(out.fwhm{i}(1,:)',out.fwhm{i}(2,:)');
+end
+hs(hs==0) = nan;
+fig = figure('Units','inches');
+fig.Position(3:4) = [10 4]; 
+% ax = subplot(2,1,1);
+b = bar(mean_fwhm1,'FaceColor','b'); hold on;
+title('FWHM calculated individually (mean +/- STD)')
+for i = 1:length(out.conditions) % error bars
+   errorbar(i + [b(:).XOffset],mean_fwhm1(i,:),std_fwhm1(1,:),'-k'); 
+end
+box off; 
+ax = gca;
+ax.XTickLabel = {};
+ylabel('nFWHM (ms)'); 
+% ylim([0.6 1.8])
+ax.XTick = 1:size(mean_fwhm1,1);
+ax.XTickLabel = out.conditions; 
+plot(1:length(out.conditions),hs*ax.YLim(2)*0.98,'r*')
+if ps.save_fig
+    printFig(fig,summary_fig_dir,'nfwhm');
+end
+% ax2 = subplot(2,1,2);
+% b2 = bar(mean_nfwhm2,'FaceColor','b'); 
+% title('FWHM calculated on averaged traces')
+% box off; 
+% hold on;
+% for i = 1:length(out.conditions)
+%     for j = 1:size(out.fwhm{i},2)
+%         plot(i+[b(:).XOffset],out.fwhm{i}(:,j)/mean(out.fwhm{i}(1,:)),'Color',0.6*[1 1 1]);
+%     end
+% end
+% ylim([0.7 1.3]);  
+% ax2.XTick = 1:size(mean_nfwhm1,1);
+% ax2.XTickLabel = conditions; 
+% ylabel('nFWHM ratio'); 
+
+isi_all = 1e3./freqs_all; % ms
+fig = figure('Units','inches');
+fig.Position(3:4) = [10 4];
+plot(isi_all,mean_nfwhm2(:,2),'-ko'); 
+box off; 
+xlabel('Inter-spike interval (ms)'); 
+ylabel('nFWHM ratio'); 
+% ylim([0.9 1.1])
+ax = gca;
+ax.XTick = sort(unique([ax.XTick,isi_all(2:end)]));
+if ps.save_fig
+    printFig(fig,summary_fig_dir,'nfwhm_ratio');
+end
 %% Analyze experiment
 data_filename = '20220322_Archon_dish4_combine_RoiSet_pos7';
 save_fig = 1;
