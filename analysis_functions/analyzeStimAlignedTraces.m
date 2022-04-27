@@ -231,6 +231,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     Pr = sum(successful_spikes,2)/size(successful_spikes,2);    
     fprintf('Mean Pr = %.3f +/- %.3f\n',mean(Pr,[1 3]),std(Pr,0,[1 3]));
 end
+%% FWHM of individual responses
 if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces   
     n_traces = prod(trace_dims(2:end));    
     t = exp_settings.getTimeVector(size(traces,1));          
@@ -239,17 +240,18 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
     if num_trains > 1
         % first frame after each stim within train
         stim_indices = baseline_wind + 1 + exp_settings.stim_vals(1,:)-exp_settings.stim_vals(1);
-        fwhm = squeeze(zeros([trace_dims(2),num_stim,num_trains]));
+        fwhm = zeros([trace_dims(2),num_trains,num_stim]); % [num_rois x num_trains x num_stim]
         for n = 1:n_traces
             try
                 [i,j] = ind2sub(trace_dims(2:end),n);
-                fwhm(i,:,j) = spikeWidths(t,traces(:,n),stim_indices,frac_amp,...
+                fwhm(i,j,:) = spikeWidths(t,traces(:,n),stim_indices,frac_amp,...
                                         in.train_spike_width_mode,baseline_wind,...
                                         'spline_interp',fwhm_spline_interp);                              
             catch
                 fwhm(n) = nan;
             end
         end  
+        fwhm = squeeze(fwhm);
     else
         stim_index = baseline_wind + 1;     
         fwhm = zeros(trace_dims(2:end));    
@@ -268,6 +270,7 @@ if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces
     end
     output.fwhm = fwhm; 
 end
+%% FWHM of averaged responses
 if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
     % Stim and trial averaged traces
     mean_traces = mean(traces,[3 4]); % Average across stim within trial and across trials/trains    

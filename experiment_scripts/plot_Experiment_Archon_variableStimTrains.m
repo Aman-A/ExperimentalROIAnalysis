@@ -105,7 +105,7 @@ summary_datafile = sprintf('%s_%s_%s_%s_%s_ppulse',ps.exp_date,...
                                     ps.roi_func_mode,...
                                     roiset_filename_no_ext);
 summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
-            ['figs_Archon_',roiset_filename_no_ext,'_' ps.roi_func_mode '_ppulse']);                                 
+            ['figs_',roiset_filename_no_ext,'_' ps.roi_func_mode '_ppulse']);                                 
 % set(0,'DefaultFigureVisible','off') % to avoid window taking screen focus
 out = plotTrials_multipleConditions(conditions,ps,exp_settings(freq_inds),...
                                     roiset_filename,...
@@ -124,28 +124,73 @@ plotExperimentTracesOverlaidGrid(out,ps.plot_func,...
                                 'x_lim',ps.x_lim,'cond_inds',cond_inds,...
                                 'align_to','max','norm_peak_ind',-1);
 %% Analyze width
-mean_fwhm = mean(out.fwhm{1},3,'omitnan'); % average across trials
-std_fwhm = std(out.fwhm{1},0,3,'omitnan');
-sem_fwhm = std_fwhm/size(out.fwhm{1},3); 
-mean_nfwhm = mean_fwhm./mean_fwhm(:,1); 
-mean_nfwhm_rois = mean(mean_nfwhm,1,'omitnan'); % average across ROIs
-std_fwhm_rois = std(mean_nfwhm,0,1,'omitnan');
-sem_fwhm_rois = std_fwhm_rois/size(out.fwhm{1},1);
-figure; 
-b = bar(mean_nfwhm_rois,'FaceColor','b');
-hold on;
-for i = 1:size(mean_nfwhm,1)
-   plot(1:length(mean_nfwhm),mean_nfwhm(i,:),'Color',0.6*[1 1 1]); 
+% [ cond x num_stim] fwhm from individual trials
+mean_fwhm1 = 1e3*cell2mat(cellfun(@(x) mean(x',2,'omitnan')',out.fwhm,'UniformOutput',0)'); % average across trains 
+std_fwhm1 = 1e3*cell2mat(cellfun(@(x) std(x',0,2,'omitnan')',out.fwhm,'UniformOutput',0)'); %  across trains 
+sem_fwhm1 = std_fwhm1/size(out.fwhm{1},2); 
+mean_nfwhm1 = mean_fwhm1./mean_fwhm1(:,1); 
+std_nfwhm1 = std_fwhm1./mean_fwhm1(:,1); 
+sem_nfwhm1 = sem_fwhm1./mean_fwhm1(:,1);
+mean_fwhm2 = cell2mat(out.mean_fwhm'); 
+mean_nfwhm2 = mean_fwhm2./mean_fwhm2(:,1); 
+hs = zeros(1,length(out.conditions));
+p_vec = zeros(1,length(out.conditions));
+for i = 1:length(out.conditions)
+    [hs(i),p_vec(i)] = ttest(out.fwhm{i}(1,:)',out.fwhm{i}(2,:)');
 end
-ylim([0 1.5]); 
+hs(hs==0) = nan;
+fig = figure('Units','inches');
+fig.Position(3:4) = [10 4]; 
+% ax = subplot(2,1,1);
+b = bar(mean_fwhm1,'FaceColor','b'); hold on;
+title('FWHM calculated individually (mean +/- STD)')
+for i = 1:length(out.conditions) % error bars
+   errorbar(i + [b(:).XOffset],mean_fwhm1(i,:),std_fwhm1(1,:),'-k'); 
+end
+box off; 
 ax = gca;
-ax.XTick = 1:length(mean_nfwhm);
-% ax.XTickLabel = {'1st','2nd'}; 
-ylabel('nFWHM'); 
+ax.XTickLabel = {};
+ylabel('nFWHM (ms)'); 
+% ylim([0.6 1.8])
+ax.XTick = 1:size(mean_fwhm1,1);
+ax.XTickLabel = out.conditions; 
+plot(1:length(out.conditions),hs*ax.YLim(2)*0.98,'r*')
+if ps.save_fig
+    printFig(fig,summary_fig_dir,'nfwhm');
+end
+% ax2 = subplot(2,1,2);
+% b2 = bar(mean_nfwhm2,'FaceColor','b'); 
+% title('FWHM calculated on averaged traces')
+% box off; 
+% hold on;
+% for i = 1:length(out.conditions)
+%     for j = 1:size(out.fwhm{i},2)
+%         plot(i+[b(:).XOffset],out.fwhm{i}(:,j)/mean(out.fwhm{i}(1,:)),'Color',0.6*[1 1 1]);
+%     end
+% end
+% ylim([0.7 1.3]);  
+% ax2.XTick = 1:size(mean_nfwhm1,1);
+% ax2.XTickLabel = conditions; 
+% ylabel('nFWHM ratio'); 
+isi_all = 1e3./freqs; % ms
+% isi_all = 1e3./freqs_all; % ms
+fig = figure('Units','inches');
+fig.Position(3:4) = [10 4];
+plot(isi_all,mean_nfwhm2(:,2),'-ko'); 
+box off; 
+xlabel('Inter-spike interval (ms)'); 
+ylabel('nFWHM ratio'); 
+% ylim([0.9 1.1])
+ax = gca;
+ax.XTick = sort(unique([ax.XTick,isi_all(2:end)]));
+if ps.save_fig
+    printFig(fig,summary_fig_dir,'nfwhm_ratio');
+end
 %% Plot summary data
-plot_inds = [1,2,3,4,5];
+plot_inds = [1,3,4,7];
 plotExpDefaultSummaryStats(out,out.plot_settings,'plot_inds',plot_inds,...
-                         'roi_set_filename',roiset_filename,'save_fig',1) 
+                           'roi_set_filename',roiset_filename,'save_fig',1,...
+                           'summary_fig_dir',summary_fig_dir)
 %% Generate diff image stack
 stack_mode = 'diff'; % or 'bsline'
 img_stack_name = sprintf('%s_%s_%s_%s_img_stack',exp_date,reporter,dish,...
