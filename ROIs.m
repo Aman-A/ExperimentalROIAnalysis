@@ -142,6 +142,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     obj.y = obj.y0; % current is same as original initially                    
                 elseif strcmp(obj.types{1},'Rectangle')
                     % TODO: finish
+                    % format: r = [min row, max row, min column, max column]
+                    obj.r0 = nan(length(ROIarray),4);
+                    obj.r = nan(length(ROIarray),4);
+                    for i = 1:length(ROIarray)
+                        obj.r0(i,:) = ROIarray{i}.vnRectBounds([1 3 2 4]);
+                        obj.r(i,:) = obj.r0(i,:);
+                    end
                 elseif strcmp(obj.types{1},'Polygon')
                     obj.x0 = cellfun(@(x) [x.mnCoordinates(:,1);x.mnCoordinates(1,1)],... % add first point to end
                                      ROIarray,'UniformOutput',0); % x coords
@@ -380,6 +387,16 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.num_rois = size(obj.x,1); 
             else
                 error('Not implemented yet for shapes other than Oval')
+            end
+        end
+        function num_pixels = getNumPixels(obj,imsize,roi_inds)
+            if nargin < 3
+                roi_inds = 1:obj.num_rois;
+            end
+            num_pixels = zeros(length(roi_inds),1);
+            for i = 1:length(roi_inds)
+                mask = getMask(obj,imsize(1:2),roi_inds(i));
+                num_pixels(i) = sum(mask == 1,'all'); % get number of pixels in this ROI
             end
         end
     end    

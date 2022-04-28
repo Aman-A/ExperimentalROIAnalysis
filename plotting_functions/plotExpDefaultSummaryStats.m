@@ -147,13 +147,17 @@ if any(in.plot_inds == 7)
     if out.exp_settings(1).num_trains > 1
         % normalize to first AP in train
         norm_fwhm = cellfun(@(x) x(:,2)./x(:,1),out.mean_fwhm,'UniformOutput',0); 
+        var_name = 'nFWHM ratio'; var_units = '';
     else    
         % normalize to width of first condition condition
-        norm_fwhm = cellfun(@(x) x./out.mean_fwhm{1},out.mean_fwhm,'UniformOutput',0); 
+%         norm_fwhm = cellfun(@(x) x./out.mean_fwhm{1},out.mean_fwhm,'UniformOutput',0); 
+         % nFWHM in ms
+         norm_fwhm = cellfun(@(x) x*1e3,out.mean_fwhm,'UniformOutput',0); % convert to ms 
+         var_name = 'nFWHM'; var_units = 'ms';
     end
     plotSummaryStats(norm_fwhm,...
                      out.rel_times_cond_starts,out.conditions,...
-                     'nFWHM ratio','','save_fig',in.save_fig,...
+                     var_name,var_units,'save_fig',in.save_fig,...
                      'exp_date',out.exp_date,'reporter',out.reporter,'dish',out.dish,...
                      'fig_dir',summary_fig_dir,'title_on',in.title_on);
 end

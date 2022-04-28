@@ -22,7 +22,9 @@ if ischar(img_names)
 end
 num_trials = length(img_names); 
 if num_trials == 0
-    error('No data in %s\n',filedir); 
+    trials_data = []; 
+    fprintf('No data in %s\n',filedir)
+    return; 
 end
 plot_trials = ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) ...
                 && ~isempty(in.plot_func); 

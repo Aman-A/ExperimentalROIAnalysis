@@ -33,6 +33,7 @@ if strcmp(ext,'.csv') || strcmp(ext,'.xlsx') || isempty(ext) % assume csv if emp
     % Format:
     % exp_date, reporter,
     % dish,roiset_filename,(transform_type,registration_rec,...)
+    % Convert numeric fields from chars to double    
 else
     error('Format %s not implemented yet\n',ext);
 end

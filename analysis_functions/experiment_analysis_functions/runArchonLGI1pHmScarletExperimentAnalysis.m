@@ -55,6 +55,12 @@ in.plot_exp_summary_stats_inds = []; % specify which plots in
                                             % plot for each dish, or leave
                                             % empty/set to 0 for none
 in.extra_exp_settings = []; % ExperimentSettings for AP waveform characterization                                          
+in.extra_conditions = {}; % cell array of strings of extra conditions with 
+                          % extra_exp_settings to also analyze
+in.extra_conditions_suffix = ''; % string - suffix to use for summary data file for
+                                 % extra_conditions
+in.lgi1_condition = 'lgi1_pHmScarlet';                                 
+in.lgi1_exp_settings = ExperimentSettings(51,-1,50,'frames',2e3); % dummy frame rate                                  
 in = sl.in.processVarargin(in,varargin);
 if ischar(def_or_dataset_def_filename)
     def = loadDatasetDefinition(def_or_dataset_def_filename);
@@ -90,7 +96,7 @@ suffix_fields = def_vars(~cellfun(@isempty,regexp(def_vars,'_suffix'),'UniformOu
 exp_settings_fields_all = {'sampling_rate','stim_wind','baseline_wind',...
                             'units'}; % all possible exp_settings fields                            
 exp_settings_fields = intersect(exp_settings_fields_all,def_vars); % fields present in dataset file
-stim_fields_all = {'num_stim','stim_freq','stim_delay'};
+stim_fields_all = {'num_stim','stim_freq','stim_delay','num_trains'};
 stim_fields = intersect(stim_fields_all,def_vars,'stable');
 for k = 1:length(roi_func_modes)
     % check for plot_settings modifiers in dataset definition file
@@ -108,9 +114,11 @@ for k = 1:length(roi_func_modes)
         end
         if all(strcmp(stim_fields_all,stim_fields)) % stim parameters all defined
             exp_settingsi = updateExpSettingsStimVals(exp_settingsi,def.num_stim{i},...
-                                                      def.stim_freq{i},def.stim_delay{i});
+                                                      def.stim_freq{i},def.stim_delay{i},...
+                                                      def.num_trains{i},...
+                                                      def.train_interval{i});
         end
-        % update plot_settings with modifiers for this dish and roi_func_mode
+        % update plot_settings with modifiers for this dish
         for n = 1:length(mod_fields_all)
             fieldn = mod_fields_all{n}; % fieldname in dataset/plot_settings same            
             psi.(fieldn) = def.(fieldn){i}; 
@@ -129,8 +137,8 @@ for k = 1:length(roi_func_modes)
             end
         end         
         psi_main = psi; % plotSettings for main experiment conditions
-        % update plot_settings with modifiers for this dish and
-        % roi_func_mode
+        % also update plot_settings with modifiers for this roi_func_mode   
+        % update for psi_main only, not extra conditions run below
         for n = 1:length(mod_fields_funck)        
             fieldn = mod_fields_funck{n}; % field name in dataset definition            
             % fieldname in plot_settings
@@ -143,6 +151,7 @@ for k = 1:length(roi_func_modes)
         end
         % currently only allow for single roiset for all trials
         roiset_filenamei = def.roiset_filename{i};
+        %% Run main analysis
         out = plotTrials_multipleConditions(conditions,psi_main,exp_settingsi,...
                                       roiset_filenamei);
         % Save summary figs
@@ -152,35 +161,68 @@ for k = 1:length(roi_func_modes)
                                        'roi_set_filename',roiset_filenamei,...
                                        'save_fig',psi_main.save_fig) 
         end
-        % check for extra conditions, denoted by <condition>_suffix, e.g.
-        % train_suffix        
-        for n = 1:length(suffix_fields)            
-            fieldn = suffix_fields{n};
-            if strcmp(fieldn,'norm_suffix')
-                continue; % skip glutamate normalization, run analysis manually
-            end
-            fieldn_name = fieldn(1:(regexp(fieldn,'_suffix')-1));
-            if isfield(in.extra_exp_settings,fieldn_name)
-                exp_settingsn = in.extra_exp_settings.(fieldn_name); 
-            else
-                error('Need to input ExperimentSettings object for %s extra condition',fieldn_name);
-            end              
-            roiset_filename_no_exti = getROIset_name(roiset_filenamei,...
+        %% Run LGI1 analysis
+        psi_lgi1 = psi;
+        psi_lgi1.condition = in.lgi1_condition;
+        if ~isempty(psi_main.show_diff_image)
+            psi_lgi1.show_diff_image = 1; % always show baseline
+        else
+            psi_lgi1.show_diff_image = [];
+        end
+        psi_lgi1.plot_func = 'none'; % default skip plotting
+        lgi1_rois = plotTrial(def.lgi1_trial_name{i},in.lgi1_exp_settings,...
+                            roiset_filenamei,[],psi_lgi1);
+        dish_foldi = fullfile(psi.data_fold,psi.exp_date,psi.reporter,...
+                            psi.dish);
+        background_roiset = [roiset_filenamei '_background'];        
+        background_rois_filepath = fullfile(dish_foldi,background_roiset);
+        if exist([background_rois_filepath '.zip'],'file')
+            lgi1_bg =  plotTrial(def.lgi1_trial_name{i},in.lgi1_exp_settings,...
+                                background_roiset,[],psi_lgi1);
+        else
+            lgi1_bg = []; 
+            fprintf('WARNING: No background ROI for LGI1 normalization for %s/%s\n',...
+                    psi.exp_date,psi.dish)
+        end
+        % Save
+        lgi1_data = struct('data',lgi1_rois,'background',lgi1_bg);
+        roiset_filename_no_exti = getROIset_name(roiset_filenamei,...
                                                      psi.transform_type,...
                                                      psi.registration_rec);  
-            summary_fig_dir_in = fullfile(psi.data_fold,psi.exp_date,psi.reporter,...
-                                         psi.dish,fieldn_name,...
-                                        ['figs_',roiset_filename_no_exti]);
-            summary_datafile_in = sprintf('%s_%s_%s_%s_%s_train',psi.exp_date,...
-                                          psi.reporter,psi.dish,psi.roi_func_mode,...
-                                           roiset_filename_no_exti);
-            out = plotTrials_multipleConditions({fieldn_name},psi,exp_settingsn,...
-                                          roiset_filenamei,...
-                                          'summary_fig_dir',summary_fig_dir_in,...
-                                          'summary_datafile',summary_datafile_in,...
-                                          'plot_overlaid',0); % skip overlay
+        lgi1_datafile = sprintf('%s_%s_%s_%s_%s_%s_%s',psi.exp_date,...
+                                    psi.reporter,psi.dish,...
+                                    psi.roi_func_mode,...
+                                    roiset_filename_no_exti,...
+                                    in.lgi1_condition,def.lgi1_trial_name{i});       
+        lgi1_datafilepath = fullfile(dish_foldi,lgi1_datafile);            
+        save(lgi1_datafilepath,'-STRUCT','lgi1_data');
+        fprintf('Saved LGI1 data to %s\n',lgi1_datafile);
+        %% Run extra conditions
+        if ~isempty(in.extra_conditions)            
+            summary_datafilei = sprintf('%s_%s_%s_%s_%s_%s',psi.exp_date,...
+                                    psi.reporter,psi.dish,...
+                                    psi.roi_func_mode,...
+                                    roiset_filename_no_exti,...
+                                    in.extra_conditions_suffix);
+            summary_fig_diri = fullfile(psi.data_fold,psi.exp_date,psi.reporter,...
+                                        psi.dish,['figs_',psi.reporter,'_',...
+                                        roiset_filename_no_exti,'_',...
+                                        psi.roi_func_mode, '_',...
+                                        in.extra_conditions_suffix]);   
+            out_extra = plotTrials_multipleConditions(in.extra_conditions,...
+                                                    psi_main,in.extra_exp_settings,...
+                                                    roiset_filenamei,...
+                                                    'summary_datafile',summary_datafilei,...
+                                                    'summary_fig_dir',summary_fig_diri);
+            % Save summary figs
+            if ~isempty(in.plot_exp_summary_stats_inds) && all(in.plot_exp_summary_stats_inds~=0)
+                plotExpDefaultSummaryStats(out_extra,out_extra.plot_settings,...
+                                           'plot_inds',in.plot_exp_summary_stats_inds,...
+                                           'roi_set_filename',roiset_filenamei,...
+                                           'save_fig',psi_main.save_fig) 
+            end
         end
-
+        close all;
     end
 end
 
@@ -199,7 +241,8 @@ function path_to_rec = PathToRegistrationRec(registration_rec,ps)
     end
 end
 function exp_settings_out = updateExpSettingsStimVals(exp_settings_in,num_stim,...
-                                                      stim_freq,stim_delay)
+                                                      stim_freq,stim_delay,...
+                                                      num_trains,train_interval)
 if isempty(num_stim) || isempty(stim_freq) || isempty(stim_delay)
     exp_settings_out = exp_settings_in; 
 else
@@ -210,11 +253,17 @@ else
     end
     sampling_rate = exp_settings_in.sampling_rate; 
     stim_wind = exp_settings_in.stim_wind; 
-    baseline_wind = exp_settings_in.baseline_wind;     
-    stim_duration = str2double(num_stim)/str2double(stim_freq);
-    stim_vals = defineStimTrain(str2double(stim_delay),str2double(stim_freq),...
-                               stim_duration); % sec
-    exp_settings_out = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
-                                       units,sampling_rate);
+    baseline_wind = exp_settings_in.baseline_wind;  
+    stim_freq = str2double(strsplit(stim_freq)); % convert to vector if more than one freq
+    num_freqs = length(stim_freq);
+    exp_settings_out(num_freqs,1) = ExperimentSettings;
+    for i = 1:num_freqs
+        stim_duration = str2double(num_stim)/stim_freq(i);
+        stim_vals = defineStimTrains(str2double(stim_delay),stim_freq(i),...
+                                   stim_duration,str2double(num_trains),...
+                                   str2double(train_interval)); % sec
+        exp_settings_out(i) = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
+                                           units,sampling_rate);
+    end
 end
 end

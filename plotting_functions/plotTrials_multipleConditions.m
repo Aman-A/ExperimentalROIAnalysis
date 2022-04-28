@@ -66,6 +66,7 @@ for i = 1:num_conditions
     plot_settings.condition = conditions{i};    
     % trial data for ith condition
     tdi = plotTrials(in.img_names{i},exp_settings(i),roiset_filename,plot_settings);    
+    if isempty(tdi); continue; end
     out.deltaF_F0_all{i} = tdi.deltaF_F0;    
     out.mean_deltaF_F0_all{i} = tdi.mean_deltaF_F0;    
     if isfield(tdi,'deltaF_F0_aligned')
@@ -107,7 +108,9 @@ end
 % peaks_deltaF_F0_all = cell2mat(peaks_deltaF_F0_all);
 % get start time of first trial within condition relative to first trial
 % overall
-out.rel_times_cond_starts = cellfun(@(x) minutes(x(1)-out.trial_times_all{1}(1)),out.trial_times_all,'UniformOutput',0);
+out = removeEmptyConditions(out);
+out.rel_times_cond_starts = cellfun(@(x) minutes(x(1)-out.trial_times_all{1}(1)),...
+                                out.trial_times_all,'UniformOutput',0);
 out.exp_date = plot_settings.exp_date;
 out.reporter = plot_settings.reporter;
 out.dish = plot_settings.dish;
@@ -159,4 +162,17 @@ if in.plot_overlaid
                                         'norm_peak_ind',0);
     end
 end
+end
+function out = removeEmptyConditions(out)
+    valid_conditions = ~cellfun(@isempty,out.trial_times_all,'UniformOutput',1);
+    out_fields = fieldnames(out);    
+    if any(~valid_conditions)
+        fprintf('Removing invalid conditions:\n')
+        fprintf([repmat('%s ',1,sum(~valid_conditions)),'\n'],out.conditions{~valid_conditions})
+        for i = 1:length(out_fields)
+             if iscell(out.(out_fields{i}))                
+                out.(out_fields{i}) = out.(out_fields{i})(valid_conditions);
+             end
+        end
+    end
 end

@@ -1,6 +1,6 @@
-function [data,def,norm_data,train_data] = loadDataset(dataset_def_filename,...
+function [data,def,lgi1_data] = loadArchonLGI1pHmScarletDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin)
-%LOADDATASET Compiles data from multiple dishes defined in dataset
+%LOADDEFAULTDATASET Compiles data from multiple dishes defined in dataset
 %definition file and loads
 %  
 %   Inputs 

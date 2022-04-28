@@ -172,6 +172,8 @@ elseif strcmp(func_name,'deltaF')
     ylabel(ax,'\Delta F')
 elseif regexp(func_name,'aligned','ONCE')
     ylabel(ax,'Mean \Delta F/F_{0}')
+elseif strcmp(func_name,'mean')
+    ylabel(ax,'mean F (a.u.)')
 else
    ylabel(ax,func_name);  
 end

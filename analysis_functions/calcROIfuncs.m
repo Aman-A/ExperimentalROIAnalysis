@@ -144,7 +144,7 @@ if in.rem_pbleach
                 in.rem_pbleach_method,interp_interval);
     end
 end
-%% If contains more than one stimulus, generate stim-aligned traces using means
+%% Generate stim-aligned traces using means
 if any(strcmp(funcs,'mean'))
     baseline_wind = exp_settings.baseline_wind;
     stim_wind = exp_settings.stim_wind;
