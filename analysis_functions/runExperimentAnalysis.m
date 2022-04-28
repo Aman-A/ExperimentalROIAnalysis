@@ -34,6 +34,9 @@ if all(strcmp(def.reporter,'GluSnFR3'))
 elseif all(strcmp(def.reporter,'Archon'))
     runArchonExperimentAnalysis(def,conditions,roi_func_modes,...
                                 exp_settings,plot_settings,varargin{:});
+elseif all(strcmp(def.reporter,'Archon_LGI1pHmScarlet'))
+    runArchonLGI1pHmScarletExperimentAnalysis(def,conditions,roi_func_modes,...
+                                exp_settings,plot_settings,varargin{:});
 else
     error('Not implemented for input reporter: %s',def.reporter{1});
 end
