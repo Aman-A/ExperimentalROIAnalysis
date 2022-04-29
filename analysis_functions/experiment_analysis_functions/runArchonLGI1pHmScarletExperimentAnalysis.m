@@ -92,7 +92,6 @@ end
 % structs), e.g. transform_mode, registration_rec, etc
 plotTrialSettings_fields = fieldnames(plotTrialSettings); % general settings
 mod_fields_all = intersect(plotTrialSettings_fields,def_vars); % fieldnames should match plotTrialSettings
-suffix_fields = def_vars(~cellfun(@isempty,regexp(def_vars,'_suffix'),'UniformOutput',1));
 exp_settings_fields_all = {'sampling_rate','stim_wind','baseline_wind',...
                             'units'}; % all possible exp_settings fields                            
 exp_settings_fields = intersect(exp_settings_fields_all,def_vars); % fields present in dataset file
@@ -254,12 +253,18 @@ else
     sampling_rate = exp_settings_in.sampling_rate; 
     stim_wind = exp_settings_in.stim_wind; 
     baseline_wind = exp_settings_in.baseline_wind;  
-    stim_freq = str2double(strsplit(stim_freq)); % convert to vector if more than one freq
+    stim_freq = str2double(strsplit(stim_freq)); % convert to vector if more than one freq    
     num_freqs = length(stim_freq);
+    stim_delay = str2double(strsplit(stim_delay)); % convert to vector if more than one delay    
+    if length(stim_delay) == 1
+        stim_delay = repmat(stim_delay,1,num_freqs);
+    else
+        assert(length(stim_delay)==num_freqs,'Number of delays must match number of frequencies')
+    end
     exp_settings_out(num_freqs,1) = ExperimentSettings;
     for i = 1:num_freqs
         stim_duration = str2double(num_stim)/stim_freq(i);
-        stim_vals = defineStimTrains(str2double(stim_delay),stim_freq(i),...
+        stim_vals = defineStimTrains(stim_delay(i),stim_freq(i),...
                                    stim_duration,str2double(num_trains),...
                                    str2double(train_interval)); % sec
         exp_settings_out(i) = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...

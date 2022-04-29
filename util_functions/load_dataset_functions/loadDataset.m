@@ -25,9 +25,9 @@ elseif all(strcmp(def.reporter,'Archon'))
                                                    roi_func_mode,varargin{:});
     varargout = {norm_data,train_data};
 elseif all(strcmp(def.reporter,'Archon_LGI1pHmScarlet'))
-    [data,~,lgi1_data] = loadArchonLGI1pHmScarletDataset(dataset_def_filename,...
+    [data,~,AP_data,lgi1_data] = loadArchonLGI1pHmScarletDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin{:});
-    varargout = {lgi1_data};
+    varargout = {AP_data,lgi1_data};
 else
     error('Not implemented for input reporter: %s',def.reporter{1});
 end

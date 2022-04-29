@@ -200,8 +200,8 @@ makeExpDiffImageStack(fullfile(data_fold,exp_date,reporter,dish),...
                       'img_mode',stack_mode)  
 %% Analyze width
 % [ cond x num_stim] fwhm from individual trials
-mean_fwhm1 = 1e3*cell2mat(cellfun(@(x) mean(x,2,'omitnan')',out.fwhm,'UniformOutput',0)'); % average across trains 
-std_fwhm1 = 1e3*cell2mat(cellfun(@(x) std(x,0,2,'omitnan')',out.fwhm,'UniformOutput',0)'); %  across trains 
+mean_fwhm1 = 1e3*cell2mat(cellfun(@(x) mean(x,1,'omitnan'),out.fwhm','UniformOutput',0)); % average across trains 
+std_fwhm1 = 1e3*cell2mat(cellfun(@(x) std(x,0,1,'omitnan'),out.fwhm','UniformOutput',0)); %  across trains 
 sem_fwhm1 = std_fwhm1/size(out.fwhm{1},2); 
 mean_nfwhm1 = mean_fwhm1./mean_fwhm1(:,1); 
 std_nfwhm1 = std_fwhm1./mean_fwhm1(:,1); 

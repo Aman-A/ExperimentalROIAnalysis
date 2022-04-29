@@ -22,18 +22,18 @@ num_files = length(in.formats);
 if ischar(in.resolutions) % single resolution for all files
    in.resolutions = repmat({in.resolutions},1,num_files);  
 end
-assert(num_files == length(in.resolutions),...
-    'Need to specify resolution for each format being saved');
+% assert(num_files == length(in.resolutions),...
+%     'Need to specify resolution for each format being saved');
 if ~exist(file_dir,'dir')
    mkdir(file_dir); 
    fprintf('Created figure directory: %s\n',file_dir); 
 end
 for i = 1:num_files
-    formati = in.formats{i};
-    resi = in.resolutions{i};
+    formati = in.formats{i};    
     if strcmp(formati,'fig')
         savefig(fig_handle,fullfile(file_dir,[file_name '.fig']));
     elseif strcmp(formati,'png')
+        resi = in.resolutions{i};
         if exist('export_fig','file')
             export_fig(fig_handle,fullfile(file_dir,[file_name '.png']),'-png',resi,'-cmyk');
         else
@@ -44,10 +44,10 @@ for i = 1:num_files
         end
     elseif strcmp(formati,'eps')
         if exist('export_fig','file')        
-            export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps');
+            export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps','-cmyk');
         else
 %             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
-            exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']),'-cmyk');
+            exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
         end
     end
 end
