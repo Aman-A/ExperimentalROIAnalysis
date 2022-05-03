@@ -20,7 +20,7 @@ else % different number of frames, pad with nans
            traces_mat(1:num_rows(i),i) = traces_cell_array{i}; 
         end
     elseif all(num_cols == num_cols(1))
-        traces_mat = nan(max_rows,num_cols,num_trials); 
+        traces_mat = nan(max_rows,num_cols(1),num_trials); 
         for i = 1:num_trials
            traces_mat(1:num_rows(i),:,i) = traces_cell_array{i}; 
         end

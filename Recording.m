@@ -103,6 +103,9 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     d = dir(obj.filepath);             
                     [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
                     obj.time_start = datetime(Y,M,D,H,MI,S);
+                    if strcmp(obj.format,'.fits')
+                       getFitsInfo(obj);  
+                    end
                 else
                    error('%s does not exist\n',obj.filepath);  
                 end
@@ -130,12 +133,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
 %                 if ispc
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 
-%                 end
-                info = fitsinfo(obj.filepath); 
-                obj.exposure_time = ...
-                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
-                obj.em_gain = ...
-                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'GAIN'),2};
+%                 end                
             elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')
                 tiff_info = imfinfo(obj.filepath);
                 obj.vals = zeros(tiff_info(1).Height,tiff_info(1).Width,length(tiff_info));
@@ -171,6 +169,20 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 fprintf('Unloaded image stack\n'); 
             end
         end
-    end
-    
+        function getFitsInfo(obj)
+            info = fitsinfo(obj.filepath);
+            obj.exposure_time = ...
+                info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
+            obj.em_gain = ...
+                info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'GAIN'),2};
+            hbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'HBIN'),2};
+            vbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'VBIN'),2};
+            if hbin == vbin
+                obj.bin_size = hbin;
+            else
+                obj.bin_size = [hbin vbin]; % [horizontal bin size, vertical bin size]
+                fprintf('WARNING: Non-uniform pixel binning, currently not handled by other functions\n');
+            end
+        end
+    end    
 end

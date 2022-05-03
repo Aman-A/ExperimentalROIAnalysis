@@ -74,6 +74,7 @@ if in.load
 end
 fwhm_spline_interp = in.fwhm_spline_interp; % avoid broadcasting below
 output = struct();
+if isempty(in.funcs); return; end
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
     % get peaks within spike_window 

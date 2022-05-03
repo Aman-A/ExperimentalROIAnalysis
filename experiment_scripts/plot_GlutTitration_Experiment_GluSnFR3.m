@@ -118,7 +118,6 @@ ps.plot_func = norm_func;
 trials_data = plotTrials(img_names_all,exp_settings_all,roiset_filename,ps);
 %% Load glut trials
 condition = 'glut';
-norm_func = 'deltaF_F0';
 mov_mean_wind = 5;
 % glut_concs = [1,5,10,20,50,100,200]; % uM
 % img_suffs = {'1uM','5uM','10uM','20uM','50uM','100uM','200uM'}; 
@@ -127,8 +126,7 @@ img_suffs = {'1uM','5uM','10uM','20uM','50uM','100uM','200uM','500uM','1mM','5mM
 img_data_fold = fullfile(data_fold,exp_date,reporter,dish,condition);
 roi_func_mode = 'combine';
 roiset_filename_no_ext = getROIset_name(roiset_filename,ps.transform_type,ps.registration_rec); 
-rois = ROIs(roiset_filename);
-% rois = ROIs(fullfile(data_fold,exp_date,reporter,dish,roiset_filename));
+rois = ROIs(fullfile(data_fold,exp_date,reporter,dish,roiset_filename));
 num_rois = rois.num_rois;
 ss_peaks = zeros(num_rois,length(img_suffs)); % peak within mean_wind after moving average (3 frames)
 ss_means = zeros(num_rois,length(img_suffs)); % mean of mean_wind
@@ -140,21 +138,22 @@ F_traces = nan(num_timepoints,length(img_suffs));
 % mean_traces = zeros(num_timepoints,length(img_suffs));
 for i = 1:length(img_suffs)
     img_namei = sprintf('glut_%s',img_suffs{i}); 
-   outi = load(fullfile(img_data_fold,sprintf('%s-%s-%s-data.mat',...
+    outi = load(fullfile(img_data_fold,sprintf('%s-%s-%s-data.mat',...
                 img_namei,roi_func_mode,roiset_filename_no_ext))); 
     mean_wind = outi.settings.stim_wind_inds(:,1);
-    ss_peaks(:,i) = max(movmean(outi.func_output.(norm_func)(mean_wind,:),mov_mean_wind),[],1);
+    yi = outi.func_output.(norm_func);
+    ss_peaks(:,i) = max(movmean(yi(mean_wind,:),mov_mean_wind),[],1);
 %     ss_dFF0s(:,i) = max(outi.func_output.deltaF_F0(mean_wind,:),[],1);
-    ss_means(:,i) = mean(outi.func_output.(norm_func)(mean_wind,:),1);
+    ss_means(:,i) = mean(yi(mean_wind,:),1);
     bslines(:,i) = outi.func_output.baseline;
     stim_indexi = outi.settings.stim_vals(1);
-    if stim_indexi + nafter > size(outi.func_output.(norm_func),1)
-        end_ind =  size(outi.func_output.(norm_func),1);
+    if stim_indexi + nafter > size(yi,1)
+        end_ind =  size(yi,1);
     else
         end_ind = stim_indexi + nafter; 
     end
     n_framesi = length(stim_indexi-nbefore:end_ind);
-    F_traces(1:n_framesi,i) = mean(outi.func_output.(norm_func)(stim_indexi-nbefore:end_ind,:),2);
+    F_traces(1:n_framesi,i) = mean(yi(stim_indexi-nbefore:end_ind,:),2);
 %     mean_traces(:,i) = mean(outi.func_output.(norm_func)(outi.settings.stim_vals(1)-nbefore:outi.settings.stim_vals(1)+nafter,:),2);
 end
 mean_ss_meanFs = mean(ss_means,1,'omitnan'); 
