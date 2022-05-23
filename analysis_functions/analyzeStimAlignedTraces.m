@@ -290,7 +290,8 @@ if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
         mean_fwhm = zeros([mean_trace_dims(2:end),num_stim]); % [num_rois x num_stim] average across trains/trials
         for n = 1:n_traces
             mean_fwhm(n,:) = spikeWidths(t,mean_traces(:,n),stim_indices,frac_amp,...
-                                        in.train_spike_width_mode,baseline_wind,'spline_interp',fwhm_spline_interp);
+                                        in.train_spike_width_mode,baseline_wind,...
+                                        'spline_interp',fwhm_spline_interp);
         end        
     else % get average FWHM of all spikes averaged together (single train)
         stim_index = exp_settings.baseline_wind + 1; 
