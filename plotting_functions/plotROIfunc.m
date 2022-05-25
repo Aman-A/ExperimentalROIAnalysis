@@ -33,9 +33,9 @@ y = func_output.(func_name);
 if regexp(func_name,'aligned','ONCE') 
 %     std_y = std(y,0,ndims(y));
     if strcmp(func_output.roi_func_mode,'combine')
-        y = squeeze(mean(y,3)); % mean across trains or stimuli
+        y = squeeze(mean(y,3,'omitnan')); % mean across trains or stimuli
     else
-        y = squeeze(mean(y,3:ndims(y))); 
+        y = squeeze(mean(y,3:ndims(y),'omitnan')); 
     end
 end
 if nargin < 4
