@@ -1,4 +1,4 @@
-function [spike_width,width_val] = spikeWidth(t,y,stim_index,frac_amp,plot_fig) %#codegen
+function [spike_width,width_val,start_time,end_time] = spikeWidth(t,y,stim_index,frac_amp,plot_fig) %#codegen
 %SPIKEWIDTH Computes spike width at desired fraction of spike amplitude
 % assumes single well-defined peak in trace and stim at t = 0
 %  

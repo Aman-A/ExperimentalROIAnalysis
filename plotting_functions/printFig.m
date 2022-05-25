@@ -43,12 +43,13 @@ for i = 1:num_files
                            'Resolution',resi); 
         end
     elseif strcmp(formati,'eps')
-        if exist('export_fig','file')        
-            export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps','-cmyk');
-        else
-%             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
-            exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
-        end
+        exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
+%         if exist('export_fig','file')        
+%             export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps','-cmyk');
+%         else
+% %             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
+%             exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
+%         end
     end
 end
 print_str = [sprintf('Saved %s to %s in formats: ',file_name,strrep(file_dir,'\','/')),...

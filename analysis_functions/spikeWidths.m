@@ -25,12 +25,9 @@ if nargin < 5
               % calculate width at frac_amp of each spike              
 end
 % Upsample trace with cubic spline interpolation
-if in.spline_interp
-    dt = mode(t(2)-t(1));
-    t_interp = (t(1):(dt/in.spline_sampling_factor):t(end))';
+if in.spline_interp    
+    [t,y] = splineInterp(t,y,in.spline_sampling_factor);
     stim_indices = stim_indices*in.spline_sampling_factor - in.spline_sampling_factor; 
-    y = spline(t,y,t_interp);
-    t = t_interp; 
 end
 if nargin < 6
     baseline_wind = min(diff(stim_indices)); % only applies to mode 2
