@@ -2,11 +2,11 @@
 % Overlay single trials on same figure by running with different img_name
 % 1kHz recording, 2 x 2 binning (half res of number of pixels)
 data_fold = getDataFold();
-exp_date= '20220525';
+exp_date= '20220526';
 reporter = 'Archon_LGI1pHmScarlet';
-dish = 'dish4';
+dish = 'dish7';
 div = 15; 
-roiset_filename = 'RoiSet_pos5';
+roiset_filename = 'RoiSet_pos8';
 lgi1_exp_settings = ExperimentSettings(51,-1,50,'frames',2e3); % dummy frame rate                                 
 % Optional settings
 ps = plotTrialSettings;

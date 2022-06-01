@@ -1,8 +1,10 @@
 function lgi1_data = analyzeLGI1pHmScarletTrial(img_name,exp_settings,roiset_filename,...
                                     background_roiset_filename,varargin)
 
-in = plotTrialSettings('plot_func','none','show_diff_image',1); 
+in = plotTrialSettings('plot_func','none','show_diff_image',1,...
+                        'funcs',{'mean','median'});
 in = sl.in.processVarargin(in,varargin);
+in.load_processed_data = 0; 
 %
 lgi1_rois = plotTrial(img_name,exp_settings,roiset_filename,[],in);
 

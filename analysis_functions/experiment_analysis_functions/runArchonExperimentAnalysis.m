@@ -101,7 +101,7 @@ for k = 1:length(roi_func_modes)
     roi_func_modek = roi_func_modes{k};    
     plotTrialSettings_fieldsk = strcat(plotTrialSettings_fields,'_',roi_func_modek); % roi_func_mode specific settings    
     mod_fields_funck = intersect(plotTrialSettings_fieldsk,def_vars);
-    for i = 15:num_dishes
+    for i = 6:num_dishes
         % set starting options, then modify for ith dish and kth roi_func_mode
         psi = plot_settings_all{i}; 
         psi.roi_func_mode = roi_func_modek;
@@ -112,7 +112,8 @@ for k = 1:length(roi_func_modes)
         end
         if all(strcmp(stim_fields_all,stim_fields)) % stim parameters all defined
             exp_settingsi = updateExpSettingsStimVals(exp_settingsi,def.num_stim{i},...
-                                                      def.stim_freq{i},def.stim_delay{i});
+                                                      def.stim_freq{i},def.stim_delay{i},...
+                                                      def.num_trains{i},def.train_interval{i});
         end
         % update plot_settings with modifiers for this dish and roi_func_mode
         for n = 1:length(mod_fields_all)
@@ -185,7 +186,7 @@ for k = 1:length(roi_func_modes)
                                            'summary_fig_dir',summary_fig_diri) 
             end
         end
-
+        close all;
     end
 end
 
@@ -204,7 +205,8 @@ function path_to_rec = PathToRegistrationRec(registration_rec,ps)
     end
 end
 function exp_settings_out = updateExpSettingsStimVals(exp_settings_in,num_stim,...
-                                                      stim_freq,stim_delay)
+                                                      stim_freq,stim_delay,...
+                                                      num_trains,train_interval)
 if isempty(num_stim) || isempty(stim_freq) || isempty(stim_delay)
     exp_settings_out = exp_settings_in; 
 else
@@ -215,11 +217,23 @@ else
     end
     sampling_rate = exp_settings_in.sampling_rate; 
     stim_wind = exp_settings_in.stim_wind; 
-    baseline_wind = exp_settings_in.baseline_wind;     
-    stim_duration = str2double(num_stim)/str2double(stim_freq);
-    stim_vals = defineStimTrain(str2double(stim_delay),str2double(stim_freq),...
-                               stim_duration); % sec
-    exp_settings_out = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
-                                       units,sampling_rate);
+    baseline_wind = exp_settings_in.baseline_wind;  
+    stim_freq = str2double(strsplit(stim_freq)); % convert to vector if more than one freq    
+    num_freqs = length(stim_freq);
+    stim_delay = str2double(strsplit(stim_delay)); % convert to vector if more than one delay    
+    if length(stim_delay) == 1
+        stim_delay = repmat(stim_delay,1,num_freqs);
+    else
+        assert(length(stim_delay)==num_freqs,'Number of delays must match number of frequencies')
+    end
+    exp_settings_out(num_freqs,1) = ExperimentSettings;
+    for i = 1:num_freqs
+        stim_duration = str2double(num_stim)/stim_freq(i);
+        stim_vals = defineStimTrains(stim_delay(i),stim_freq(i),...
+                                   stim_duration,str2double(num_trains),...
+                                   str2double(train_interval)); % sec
+        exp_settings_out(i) = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
+                                           units,sampling_rate);
+    end
 end
 end

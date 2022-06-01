@@ -163,6 +163,7 @@ for k = 1:length(roi_func_modes)
         %% Run LGI1 analysis
         psi_lgi1 = psi;
         psi_lgi1.condition = in.lgi1_condition;
+        psi_lgi1.funcs = {'mean','median'};
         if ~isempty(psi_main.show_diff_image)
             psi_lgi1.show_diff_image = 1; % always show baseline
         else

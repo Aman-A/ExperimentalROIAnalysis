@@ -176,11 +176,16 @@ output.baseline_wind_inds = baseline_wind_inds;
 %% Function for applying function to image data within ROI masks
 function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)    
     output_new = output; 
-    if strcmp(func,'mean') % spatial mean across all rois within each frame   
+    if strcmp(func,'mean') % spatial mean across all ROI pixels for each frame   
         if ind == 1
             output_new.mean = zeros(size(img,3),num_masks); % initialize
         end
         output_new.mean(:,ind) = squeeze(mean(img.*mask,[1 2],'omitnan'));        
+    elseif strcmp(func,'median') % spatial median across all ROI pixels for each frame
+        if ind == 1
+            output_new.median = zeros(size(img,3),num_masks); % initialize
+        end
+        output_new.median(:,ind) = squeeze(median(img.*mask,[1 2],'omitnan'));        
     elseif strcmp(func,'std')% spatial std across all rois within each frame       
         if ind == 1
             output_new.std = zeros(size(img,3),num_masks); % initialize

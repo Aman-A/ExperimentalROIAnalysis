@@ -49,7 +49,8 @@ if isempty(in.summary_fig_dir)
                                             plot_settings.transform_type,...
                                             plot_settings.registration_rec);  
     summary_fig_dir = fullfile(data_fold,out.exp_date,out.reporter,out.dish,...
-                               ['figs_' roiset_filename_no_ext '_' plot_settings.roi_func_mode]);     
+                               ['figs_' plot_settings.reporter '_' ...
+                               roiset_filename_no_ext '_' plot_settings.roi_func_mode]);     
 else
     summary_fig_dir = in.summary_fig_dir;
 end
