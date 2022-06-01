@@ -101,7 +101,7 @@ for k = 1:length(roi_func_modes)
     roi_func_modek = roi_func_modes{k};    
     plotTrialSettings_fieldsk = strcat(plotTrialSettings_fields,'_',roi_func_modek); % roi_func_mode specific settings    
     mod_fields_funck = intersect(plotTrialSettings_fieldsk,def_vars);
-    for i = 6:num_dishes
+    for i = 1:num_dishes
         % set starting options, then modify for ith dish and kth roi_func_mode
         psi = plot_settings_all{i}; 
         psi.roi_func_mode = roi_func_modek;

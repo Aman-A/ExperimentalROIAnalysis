@@ -6,6 +6,7 @@ in = plotTrialSettings('plot_func','none','show_diff_image',1,...
 in = sl.in.processVarargin(in,varargin);
 in.load_processed_data = 0; 
 %
+in.rem_pbleach = 0; % incompatible with LGI1 trials
 lgi1_rois = plotTrial(img_name,exp_settings,roiset_filename,[],in);
 
 if isempty(background_roiset_filename)
