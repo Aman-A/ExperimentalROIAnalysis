@@ -109,7 +109,7 @@ for i = 1:num_trials
     end
 end
 if isempty(in.analysis_funcs)
-    if strcmp(in.reporter,'GluSnFR3')
+    if strcmp(in.reporter,'GluSnFR3') || strcmp(in.reporter,'GluSnFR3_SynmRuby')
         analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
     elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
         analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};

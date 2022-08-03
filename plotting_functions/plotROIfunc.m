@@ -22,6 +22,7 @@ in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(fu
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
+in.stim_marker_mode = 2; % 1 for points, 2 for vertical lines
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     fig = figure;
@@ -137,7 +138,7 @@ else
         
         lns = plot(ax,x,y+offset); % plot trace/s
         ax.YAxis.Visible = 'off';
-        sbar = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
+        sbar_hand = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
                     'k','LineWidth',2,'DisplayName',...
                     sprintf('Scale bar = %g%%',100*in.sbar_len)); 
     else
@@ -153,8 +154,14 @@ if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers
                                                % traces
     ind_stim_times = strcmp(roi_leg_names,'Stim times');
     if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
-        plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
-            'r.','MarkerSize',8,'DisplayName','Stim times'); 
+        if in.stim_marker_mode == 1
+            stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
+                'r.','MarkerSize',8,'DisplayName','Stim times'); 
+        else
+            stimpoints_hand = plot(ax,[stim_frames;stim_frames;nan(size(stim_frames))],...
+                    [ax.YLim'.*[1;0.99].*ones(2,length(stim_frames));nan(size(stim_frames))],...
+                'r--','LineWidth',0.5,'DisplayName','Stim times'); 
+        end
         roi_leg_names = {ax.Children.DisplayName};
         ind_stim_times = strcmp(roi_leg_names,'Stim times');
         all_inds = 1:length(ax.Children); 
@@ -184,9 +191,11 @@ end
 % legend(ax.Children(~ind_stim_times)); 
 if in.show_legend
     if strcmp(func_output.roi_func_mode,'combine')    
-        legend(ax,'Interpreter','none','Box','off');
+        legend(ax,[lns;stimpoints_hand(1);sbar_hand],'Interpreter','none',...
+            'Box','off','Location','Best');
     else
-        legend(ax,'Interpreter','none','Box','off','Location','EastOutside');
+        legend(ax,[lns;stimpoints_hand(1);sbar_hand],'Interpreter','none',...
+            'Box','off','Location','EastOutside');
     end
 end
 end

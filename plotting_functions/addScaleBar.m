@@ -8,7 +8,7 @@ in = sl.in.processVarargin(in,varargin);
 if strcmp(ax.YDir,'normal')
     y_factor = 0.9;
     vert_align = 'bottom';
-    text_y_factor = 0.9;
+    text_y_factor = 0.87;
 else
     y_factor = 0.1;
     vert_align = 'top';

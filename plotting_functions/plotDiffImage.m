@@ -94,10 +94,10 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
     elseif strcmp(cax_mode,'abs')
         caxis(ax,cax_lims); 
     end % if cax_mode 'auto', leave as is
+    ax.YDir = 'normal';
     if ~isempty(pixel_size)
         % get integer length (µm) and convert back to pixels
         addScaleBar(pixel_size,size(vals),ax,...
                   'Color',cb_settings{find(strcmp('Color',cb_settings))+1})
-    end
-    ax.YDir = 'normal';
+    end   
 end

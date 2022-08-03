@@ -35,7 +35,8 @@ for i = 1:num_files
     elseif strcmp(formati,'png')
         resi = in.resolutions{i};
         if exist('export_fig','file')
-            export_fig(fig_handle,fullfile(file_dir,[file_name '.png']),'-png',resi,'-cmyk');
+            export_fig(fig_handle,fullfile(file_dir,[file_name '.png']),...
+                    '-png',resi,'-cmyk');
         else
 %             print(fig_handle,fullfile(file_dir,[file_name '.png']),'-dpng',resi);
             resi = str2double(resi(3:end)); % '-r300' to 300

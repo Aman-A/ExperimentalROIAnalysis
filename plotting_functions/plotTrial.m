@@ -80,6 +80,10 @@ if exist(save_data_filename,'file') && in.load_processed_data
        save(save_data_filename,'-STRUCT','output_data'); 
        fprintf('Replaced old field names Recording/Settings/ROIs with recording/settings/rois and resaved\n');       
     end
+    if ~isequal(exp_settings,output_data.settings)
+        fprintf('WARNING: Input ExperimentSettings differs from saved Settings\n')
+    end
+    exp_settings = output_data.settings; % use saved settings, rather than input
     func_output = output_data.func_output;
     fprintf('Loaded processed data from %s\n',save_data_filename); 
     % Plot baseline, peak, diff images
@@ -87,7 +91,7 @@ if exist(save_data_filename,'file') && in.load_processed_data
                               output_data.diff_img,img.img_name,exp_settings,...
                               'include_plots',in.show_diff_image,...
                               'filt_width',in.filt_width,...
-                              'pixel_size',img.pixel_size);               
+                              'pixel_size',img.pixel_size*img.bin_size);               
     addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,img.img_name,...
                          in.close_img_after_save,in.show_roi_labels);
 else
