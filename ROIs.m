@@ -73,16 +73,24 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 % Process ROIs into easier to work with format
                 obj.processROIs(ROIarray);    
             else
-                if iscell(file_or_roi_array) % cell array of ROIs defined with row vectors
-                    % allows for ROI array with mixed shapes
-                    error('Cell array input not implemented yet'); 
-%                     obj.num_rois = length(file_or_roi_array);  
-%                     if isempty(in.names)
-%                        obj.names = arrayfun(@(x) sprintf('ROI%g',x),0:obj.num_rois-1,...
-%                                             'UniformOutput',0)';
-%                     end
-%                     obj.types = cell(obj.num_rois,1);
-%                     for i = 1:obj.num_rois
+                if iscell(file_or_roi_array) % cell array of polygon ROIs defined as [Npoints x 2] arrays
+                    % NOTE: REQUIRES ALL ROIS TO BE SAME FORMAT
+                    obj.num_rois = length(file_or_roi_array);  
+                    if isempty(in.names)
+                       obj.names = arrayfun(@(x) sprintf('ROI%g',x),0:obj.num_rois-1,...
+                                            'UniformOutput',0)';
+                    end
+                    obj.types = repmat({'Polygon'},obj.num_rois,1);
+                    obj.x0 = cell(obj.num_rois,1);
+                    obj.y0 = cell(obj.num_rois,1);
+                    obj.x = cell(obj.num_rois,1);
+                    obj.y = cell(obj.num_rois,1);
+                    for i = 1:obj.num_rois
+                        % format: [x,y] Npoints x 2 array of polygon boundary
+                        obj.x0{i} = file_or_roi_array{i}(:,1);
+                        obj.x{i} = file_or_roi_array{i}(:,1);
+                        obj.y0{i} = file_or_roi_array{i}(:,2);
+                        obj.y{i} = file_or_roi_array{i}(:,2);
 %                         if length(file_or_roi_array{i}) == 3 % Circle
 %                             % format: [center x, center y, radius]
 %                             obj.x0 = file_or_roi_array{i}(1);
@@ -97,7 +105,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                             obj.r = obj.r0;
 %                             obj.types{i} = 'Rectangle';
 %                         end
-%                     end
+                    end
                 else % ROIs of single type defined with array
                     obj.num_rois = size(file_or_roi_array,1);  
                     if isempty(in.names)

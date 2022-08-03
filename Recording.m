@@ -184,5 +184,17 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 fprintf('WARNING: Non-uniform pixel binning, currently not handled by other functions\n');
             end
         end
+        function plot(obj,frame)
+            if nargin < 2
+                frame = 1; % frame index to plot (3rd dimension/time)
+            end
+            if ~obj.loaded
+                obj.load(); 
+            end
+            imagesc(obj.vals(:,:,frame)); 
+            colorbar; 
+            axis equal; axis tight; axis off; 
+            set(gca,'YDir','normal')
+        end
     end    
 end
