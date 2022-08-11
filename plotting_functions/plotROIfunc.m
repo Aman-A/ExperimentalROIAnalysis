@@ -25,7 +25,7 @@ in.sort_traces = 0; % 1 for ascending, 2 for descending
 in.stim_marker_mode = 2; % 1 for points, 2 for vertical lines
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
-    fig = figure;
+    figure;
     ax = gca;
 else
     ax = in.ax; 
@@ -154,7 +154,7 @@ if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers
                                                % traces
     ind_stim_times = strcmp(roi_leg_names,'Stim times');
     if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
-        if in.stim_marker_mode == 1
+        if in.stim_marker_mode == 1 || length(stim_frames) > 500
             stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
                 'r.','MarkerSize',8,'DisplayName','Stim times'); 
         else

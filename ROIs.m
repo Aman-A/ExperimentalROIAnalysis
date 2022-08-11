@@ -133,6 +133,9 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         function processROIs(obj,ROIarray)
             % Process ImageJ ROI array output by ReadImageJROI.m function
             % to easier to work with format 
+            if obj.num_rois == 1
+                ROIarray = {ROIarray};
+            end
             roi_names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';      
             [obj.names,sorted_inds] = sort(roi_names); %#ok<TRSRT>
             ROIarray = ROIarray(sorted_inds); 
@@ -357,8 +360,16 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         function invert_y(obj,imsize)
         % Invert y coordinate of ROIs based on size of source image
         % imsize : vector containing [height, width, time_points]
-            obj.y0 = imsize(1) - obj.y0;
-            obj.y = imsize(1) - obj.y;
+            if strcmp(obj.types{1},'Polygon')
+                obj.y0 = cellfun(@(x) imsize(1) - x,obj.y0,'UniformOutput',0);
+                obj.y = cellfun(@(x) imsize(1) - x,obj.y,'UniformOutput',0);
+            elseif strcmp(obj.types{1},'Oval')
+                obj.y0 = imsize(1) - obj.y0;
+                obj.y = imsize(1) - obj.y;
+            elseif strcmp(obj.types{1},'Rectangle')
+                obj.r0(1:2) = imsize(1) - obj.r0(1:2);
+                obj.r(1:2) = imsize(1) - obj.r(1:2);
+            end
             fprintf('Flipping y coordinate of imported ROIs, check!!\n');
             obj.y_inverted = true;
         end
