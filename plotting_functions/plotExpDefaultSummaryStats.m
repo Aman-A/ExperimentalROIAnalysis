@@ -154,7 +154,7 @@ if any(in.plot_inds == 7)
 %         norm_fwhm = cellfun(@(x) x./out.mean_fwhm{1},out.mean_fwhm,'UniformOutput',0); 
          % nFWHM in ms
          norm_fwhm = cellfun(@(x) x*1e3,out.mean_fwhm,'UniformOutput',0); % convert to ms 
-         var_name = 'nFWHM'; var_units = 'ms';
+         var_name = 'FWHM'; var_units = 'ms';
     end
     plotSummaryStats(norm_fwhm,...
                      out.rel_times_cond_starts,out.conditions,...

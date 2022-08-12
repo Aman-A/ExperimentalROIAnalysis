@@ -133,7 +133,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         function processROIs(obj,ROIarray)
             % Process ImageJ ROI array output by ReadImageJROI.m function
             % to easier to work with format 
-            if obj.num_rois == 1
+            if isstruct(ROIarray)
                 ROIarray = {ROIarray};
             end
             roi_names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';      
@@ -367,8 +367,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.y0 = imsize(1) - obj.y0;
                 obj.y = imsize(1) - obj.y;
             elseif strcmp(obj.types{1},'Rectangle')
-                obj.r0(1:2) = imsize(1) - obj.r0(1:2);
-                obj.r(1:2) = imsize(1) - obj.r(1:2);
+                obj.r0(1:2) = imsize(1) - obj.r0([2 1]); % flip and re-order so min row is first
+                obj.r(1:2) = imsize(1) - obj.r([2 1]);
             end
             fprintf('Flipping y coordinate of imported ROIs, check!!\n');
             obj.y_inverted = true;
