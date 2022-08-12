@@ -49,29 +49,28 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                load_roi = false;
             end            
             
-            if load_roi
-                [path_to_roiset,roiset_name,ext] = fileparts(roiset_filename);
-                if isempty(path_to_roiset)
-                    obj.roiset_filedir = in.roiset_filedir;
-                else
-                    obj.roiset_filedir = path_to_roiset;
-                end
-                obj.roiset_filename = roiset_name;            
-                if isempty(ext)
-                   obj.format= '.zip'; % assume zip format 
-                else
-                    obj.format = ext; 
-                end                                
-                obj.roiset_filepath = fullfile(obj.roiset_filedir,...
-                                                [obj.roiset_filename obj.format]);
-                ROIarray = ReadImageJROI(obj.roiset_filepath); % load .zip ROI set
-                obj.num_rois = length(ROIarray);         
-                obj.loaded = true;
+            if load_roi                
+                obj.parseFileName(roiset_filename,in.roiset_filedir);  % saves file name properties to object                       
+                if strcmp(obj.format,'.zip')
+                    % load saved ImageJ ROI set from .zip 
+                    ROIarray = ReadImageJROI(obj.roiset_filepath); 
+                     obj.num_rois = length(ROIarray);
+                     % Process ROIs into easier to work with format
+                    obj.processROIs(ROIarray);   
+                elseif strcmp(obj.format,'.mat')
+                    % Load saved ROIs object from .mat
+                    data = load(obj.roiset_filepath);
+                    obj = data.rois; 
+                end                       
+                [obj.loaded] = deal(true);
                 if in.print_status > 0
-                    fprintf('Loaded %g ROIs from %s\n',obj.num_rois,obj.roiset_filepath); 
-                end
-                % Process ROIs into easier to work with format
-                obj.processROIs(ROIarray);    
+                    if length(obj) == 1
+                        fprintf('Loaded %g ROIs from %s\n',obj.num_rois,obj.roiset_filepath); 
+                    else
+                        fprintf('Loaded %g ROI arrays (%g ROIs in 1st) from %s\n',...
+                                length(obj),obj(1).num_rois,obj(1).roiset_filepath);
+                    end
+                end                 
             else
                 if iscell(file_or_roi_array) % cell array of polygon ROIs defined as [Npoints x 2] arrays
                     % NOTE: REQUIRES ALL ROIS TO BE SAME FORMAT
@@ -193,8 +192,16 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 [~,max_ind] = max(vals(mask_inds));
                 max_ind = mask_inds(max_ind);
                 [y_new(i),x_new(i)] = ind2sub(size(mask),max_ind);
-            end            
-            shift_dists = sqrt((x_new-obj.x).^2 + (y_new-obj.y).^2);
+            end           
+            if iscell(obj.x)
+                x_curr = cellfun(@(x) mean(x),obj.x,'UniformOutput',1);
+                y_curr = cellfun(@(x) mean(x),obj.y,'UniformOutput',1);
+            else
+                x_curr = obj.x; 
+                y_curr = obj.y; 
+            end
+            shift_vec = [x_new-x_curr,y_new-y_curr];
+            shift_dists = sqrt(shift_vec(:,1).^2 + shift_vec(:,2).^2);
             if print_status > 0
                 fprintf('ROI shift distances:\n');
                 for i = 1:obj.num_rois
@@ -202,8 +209,9 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                         shift_dists(i));
                 end
             end
-            obj.x = x_new;
-            obj.y = y_new;
+            obj.shift(shift_vec)
+%             obj.x = x_new;
+%             obj.y = y_new;
         end
         function shift_dists = recenterROIsLoop(obj,vals,mean_shift_threshold,print_status)
            if nargin < 4
@@ -417,6 +425,32 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 mask = getMask(obj,imsize(1:2),roi_inds(i));
                 num_pixels(i) = sum(mask == 1,'all'); % get number of pixels in this ROI
             end
+        end
+        function parseFileName(obj,roiset_filename,roiset_filedir)                        
+            [path_to_roiset,roiset_name,ext] = fileparts(roiset_filename);
+            if ~isempty(path_to_roiset)                
+                obj.roiset_filedir = path_to_roiset;
+            elseif nargin < 2 || isempty(roiset_filedir)
+                obj.roiset_filedir = pwd; 
+            end
+            obj.roiset_filename = roiset_name;
+            if isempty(ext)
+                obj.format= '.zip'; % assume zip format
+            else
+                obj.format = ext;
+            end
+            obj.roiset_filepath = fullfile(obj.roiset_filedir,[obj.roiset_filename obj.format]);
+        end
+        function save(obj,filepath)                       
+            if nargin > 1                
+                parseFileName(obj(1),filepath,[]); % reassign roiset_filepath with input                
+            end
+            filepath = obj.roiset_filepath; 
+             if ~strcmp(obj(1).format,'.mat')
+                 error('Can only save ROIs object as .mat')
+             end
+             data = struct('rois',obj);
+             save(filepath,'-STRUCT','data')           
         end
     end    
 end
