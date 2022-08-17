@@ -388,7 +388,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             if iscell(obj.x)
                 for i = 1:size(shift_vec,1)
                     obj.x{i} = obj.x{i} + shift_vec(i,1);
-                    obj.y{i} = obj.y{i} + shift_vec(i,1);
+                    obj.y{i} = obj.y{i} + shift_vec(i,2);
                 end
             else
                 obj.x = obj.x + shift_vec(:,1); 
@@ -450,7 +450,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                  error('Can only save ROIs object as .mat')
              end
              data = struct('rois',obj);
-             save(filepath,'-STRUCT','data')           
+             save(filepath,'-STRUCT','data') 
+             fprintf('Saved ROIs to %s\n',filepath)
         end
     end    
 end
