@@ -1,17 +1,17 @@
 %% Mini detection 
 % Analysis settings
 method = 1; % mini finding method
-threshold = 4; % x std (noise level)
-min_mini_width = 20e-3; % sec - min FWHM of minis
-apply_high_pass_filt = 0;    
-fc = 1/3; % Hz - filter cutoff
+threshold = 3; % x std (noise level) 12 if deconv on
+min_mini_width = 10e-3; % sec - min FWHM of minis
+fc = [0.5 30]; % Hz - bandpass filter cutoff frequences
 nframes_back = 10;  % number of frames behind each mini to extend window
-nframes_forward = 10; 
-roi_with_mini_index = 25; % index of ROI with known mini
+nframes_forward = 30; 
 % Path to data and ROIs
 exp_folder = fullfile(getDataFold(),'20220802/GluSnFR3_SynmRuby/dish3'); 
 img_folder = fullfile(exp_folder,'350mM_sucrose');
-roi_set_name = 'RoiSet_pc_pos0';
+% roi_set_name = 'RoiSet_pc_pos0';
+roi_set_name = 'RoiSet_auto_wash.mat';
+% roi_set_name = 'RoiSet_test.zip';
 % exp_folder = fullfile(getDataFold(),'../Sam_data/20210908 d5'); 
 % img_folder = fullfile(exp_folder,'the stack');
 % roi_set_name = 'RoiSet_analysis';
@@ -28,7 +28,9 @@ img_name = img_names{2};
 rec = Recording(fullfile(img_folder,img_name));  
 rec.load(); 
 rois = ROIs(fullfile(exp_folder,roi_set_name)); 
-rois.invert_y(rec.imsize); 
+if regexp(roi_set_name,'pc')
+    rois.invert_y(rec.imsize); 
+end
 %% Extract traces in ROIs
 func_output = calcROIfuncs(rec,rois,{'mean','deltaF_F0'},exp_settings,...
                             'separate');
@@ -38,16 +40,6 @@ t = exp_settings.getTimeVector(size(deltaF_F0,1));
 funcs = {'peaks','peak_times'};
 peaks_struct = analyzeTraces(func_output.deltaF_F0,exp_settings,'funcs',funcs);
 evoked_peaks = peaks_struct.peaks;
-%% High pass filter to remove photobleaching transient
-if apply_high_pass_filt
-    filt_order = 1; 
-    [b,a] = butter(filt_order,fc/(exp_settings.sampling_rate/2),'high');
-    deltaF_F0_filt = filtfilt(b,a,deltaF_F0); 
-    means_filt = filtfilt(b,a,means); 
-    fprintf('Applied %g order high pass filter with %g Hz cutoff\n',filt_order,fc); 
-else
-    fprintf('Skipped filtering step\n'); 
-end
 %% Plot traces in all
 fig = figure('Units','inches','Position',[0.4479    1.3021   19.0625    8.9583]); 
 ax = gca;
@@ -60,13 +52,13 @@ settings.nframes_back = nframes_back;
 settings.nframes_forward = nframes_forward; 
 settings.stim_frame = exp_settings.stim_vals;
 settings.blank_around_stim = [exp_settings.baseline_wind,exp_settings.stim_wind]; 
-settings.threshold = threshold;
+settings.threshold = 15; % 3 or 12 (deconv)
 settings.snr_thresh = 4;
-settings.roi_with_mini_index = roi_with_mini_index; 
-settings.min_mini_width = min_mini_width;
+settings.roi_with_mini_index = 19; 
+settings.min_mini_width = 10e-3;
 % To do: Add width criteria based on upstroke/downstroke of mini (FWHM?)
 mini_output = detect_minis(means,settings,method,'apply_filter',1,...
-                           'plot_figs',1,'deconv',1); 
+                           'plot_figs',1,'deconv',1,'fc',fc); 
 %% Example analyis
 num_minis_per_roi = cellfun(@length,mini_output.mini_frames,'UniformOutput',1);
 % rois_w_minis = num_minis_per_roi > 0; 

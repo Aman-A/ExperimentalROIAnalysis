@@ -82,5 +82,7 @@ if in.plot_fig
     figure; 
     recording.plot(); 
     rois.plot('g',gca,1,1); 
+    caxis(quantile(recording.vals(:),[0.6 0.999]))
+    colormap(inferno(1000));     
 end
 end

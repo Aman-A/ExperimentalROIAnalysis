@@ -16,115 +16,130 @@ in.fc = [0.5 30]; % 0.5 to 60 Hz high pass filter cutoff
 in.smooth_filt_type = 'med'; %'med' or 'sgolay'
 in.smooth_filt_width = 5; % 5 for med or 15 for sgolay
 in.plot_figs = 1;
+in.plot_filt_output = 1; 
 in.deconv = 0; 
 in.deconv_tau = 35e-3; % sec (~35 ms is mean decay time constant from my 
                        % evoked GluSnFR3 measurements)
+in.refilter_deconv = 1;     
+in.num_frames_skip_start_end = 100; % frames to remove from start/end due to filtering artifacts
 in = sl.in.processVarargin(in,varargin);
+num_rois = size(F,2); 
 sampling_rate = settings.sampling_rate;
+stim_frames = settings.stim_frame;        
+blank_around_stim = settings.blank_around_stim; 
+if length(blank_around_stim) == 1
+    blank_around_stim = [blank_around_stim,blank_around_stim];
+end
 if in.apply_filter
-    % High pass filter to slow fluctuations (x-y drift or photobleaching)
-    if in.filt_order > 0
-        if strcmp(in.filt_type,'butter')
-            if length(in.fc) == 1
-                [b,a] = butter(in.filt_order,in.fc/(sampling_rate/2),'high');    
-                fprintf('Applied %g order high pass butterworth filter with %g Hz cutoff\n',...
-                        in.filt_order,in.fc);
-            elseif length(in.fc) == 2 % bandpass
-                [b,a] = butter(in.filt_order,in.fc/(sampling_rate/2),'bandpass');    
-                fprintf('Applied %g order band pass butterworth filter with %g to %g Hz cutoffs\n',...
-                            in.filt_order,in.fc(1),in.fc(2));
-            end
-            F_filt1 = filtfilt(b,a,F);             
-        elseif strcmp(in.filt_type,'gauss')
-            if length(in.fc) == 1 % low pass
-                F_filt1 = gaussfilter(F,sampling_rate,in.fc);
-                fprintf('Applied low pass gaussian filter with %g Hz cutoffs\n',...
-                            in.fc);
-            elseif length(in.fc) == 2 % bandpass
-                F_filt1 = gaussfilter(F,sampling_rate,in.fc(2)); % low pass 
-                F_filt1 = F_filt1 - gaussfilter(F_filt1,sampling_rate,in.fc(1)); % hi pass
-                fprintf('Applied band pass gaussian filter with %g to %g Hz cutoffs\n',...
-                            in.fc(1),in.fc(2));
-            end                
-        else
-            error('%s filter type not implemented',in.filt_type);
-        end        
-    else
-        F_filt1 = F; % for next filter step
-    end
-    % median filter to remove high freq noise
-    if in.smooth_filt_width > 0
-        if strcmp(in.smooth_filt_type,'med')
-            F_filt = medfilt1(F_filt1,in.smooth_filt_width );
-            fprintf('Applied median filter with width %g\n',in.smooth_filt_width );
-        elseif strcmp(in.smooth_filt_type,'sgolay')
-            sgolay_order = 3; 
-            F_filt = sgolayfilt(F_filt1,sgolay_order,in.smooth_filt_width);
-            fprintf('Applied %g order Savinsky Golay filter with width %g\n',...
-                    sgolay_order, in.smooth_filt_width );
-        end
-    else
-        F_filt = F_filt1; 
-        fprintf('Skipping smoothing filter\n')
-    end
+    [F_filt2,F_filt1] = filterTracesForEventDetection(F,sampling_rate,in.fc,...
+                                                    in.filt_order,in.filt_type,...
+                                                    in.smooth_filt_width,...
+                                                    in.smooth_filt_type);
 else
-    F_filt = F;
+    F_filt1 = F;
+    F_filt2 = F;
     fprintf('Skipped filtering step\n'); 
 end
-% figure('Units','inches','Position',[29 5 14 6.5]); 
-% subplot(3,1,1); plot(F(:,1)); xlim([1000 2000]); title('Raw F'); box off; 
-% subplot(3,1,2); plot(F_filt1(:,1)); xlim([1000 2000]); title(sprintf('%s filter',in.filt_type)); box off; 
-% subplot(3,1,3); plot(F_filt(:,1)); xlim([1000 2000]); title(sprintf('%s + %s',in.filt_type,in.smooth_filt_type)); box off; 
 %% Deconvolution
 if in.deconv
-    taud = in.deconv_tau; % 35 ms, mean decay time constant from glusnfr3 measurements
+    taud = in.deconv_tau; % 35 ms, mean decay time constant from glusnfr3 measurements    
     td = (0:(1/sampling_rate):(size(F,1)-2)/sampling_rate)';
-    fu = [0;exp(-td/taud)];
-    fft_F = fft(F_filt); fft_fu = fft(fu);
-    F_deconv = ifft(fft_F./fft_fu)/1; 
-    F_deconv = F_deconv./max(F_deconv,[],1);
+    fu = [0;exp(-td/taud)];    
+%     td = (0:(1/sampling_rate):(size(F,1)-1)/sampling_rate)';
+%     time_to_peak = 20e-3; 
+%     fu = [linspace(0,1,sum(td<=time_to_peak))';exp(-(td(td>time_to_peak)-time_to_peak)/taud)];
+    fft_F = fft(F_filt2); fft_fu = fft(fu);
+    F_deconv = ifft(fft_F./fft_fu)/1; % deconvolve 
+    F_deconv = F_deconv./max(F_deconv(stim_frames(1):stim_frames(end),:),[],1,'omitnan'); % normalize to max
+    gauss_fit_params = zeros(3,num_rois); % 3 parameters
+    for i = 1:num_rois
+        gauss_fit_params(:,i) = fitHistSingleGaussian(F_deconv(:,i),10); % 10 bins per std    
+    end
+    F_deconv = F_deconv - gauss_fit_params(2,:); % adjusted deconvolved traces (on the value of the peak of gauss)
     % Filter deconvolved trace again
-    F_deconv = filtfilt(b,a,F_deconv);    
-    F_filt = F_deconv; 
+    if in.refilter_deconv
+        fprintf('Refiltering deconvolved trace...\n')
+        [F_filt,~] = filterTracesForEventDetection(F_deconv,sampling_rate,in.fc,...
+                                                    in.filt_order,in.filt_type,...
+                                                    0,...
+                                                    'none');
+        % refit histogram to gaussian
+        gauss_fit_params = zeros(3,num_rois); % 3 parameters
+        for i = 1:num_rois
+            gauss_fit_params(:,i) = fitHistSingleGaussian(F_filt(:,i),10); % 10 bins per std    
+        end
+    else
+        F_filt = F_deconv; 
+    end   
+    sigmas = gauss_fit_params(3,:);  % noise level in deconvolved trace    
+    [F_blanked,evoked_peaks,evoked_peaks_filt] = ...
+        blankStimAndExtractPeaks(F_filt,F,stim_frames,blank_around_stim);
+else
+    F_filt = F_filt2; 
+    F_deconv = F_filt2;    
+    % get sigmas below
+    [F_blanked,evoked_peaks,evoked_peaks_filt] = ...
+        blankStimAndExtractPeaks(F_filt,F,stim_frames,blank_around_stim);
+    sigmas = std(F_blanked,0,1,'omitnan');  % noise level in deconvolved trace (omit evoked responses)
 end
-
+if in.plot_filt_output
+    ii = settings.roi_with_mini_index; 
+%     x_lim = [2200 3800];    
+    x_lim = [1150 2600];    
+    % subplot(4,1,1); plot((F(:,1)-mean(F(:,1))/mean(F(:,1)))); xlim([1000 2000]); title('Raw F'); box off; 
+    % subplot(4,1,2); plot(F_filt1(:,1)); xlim([1000 2000]); title(sprintf('%s filter',in.filt_type)); box off; 
+    % subplot(4,1,3); plot(F_filt2(:,1)); xlim([1000 2000]); title(sprintf('%s + %s',in.filt_type,in.smooth_filt_type)); box off; 
+    % subplot(4,1,4); plot(F_filt(:,1)); xlim([1000 2000]); title(sprintf('Deconv with tau_{d} = %g ms',in.deconv_tau*1e3)); box off; 
+    figure('Units','inches','Position',[29 5 14 6.5]); 
+    ax = subplot(4,1,1); 
+    plot((F(:,ii)-mean(F(1:settings.stim_frame(1)-1,ii)))/mean(F(:,ii))); xlim(x_lim);
+    hold on; plot(settings.stim_frame,ax.YLim(2)*0.8,'ro');
+    title('deltaF/F'); box off; 
+    subplot(4,1,2); % 1st filter
+    plot((F_filt1(:,ii)-mean(F_filt1(:,ii))/mean(F_filt1(:,ii)))); xlim(x_lim);
+    title(sprintf('%s filter',in.filt_type)); box off; 
+    subplot(4,1,3); % 1st filter + smoothing filter
+    plot((F_filt2(:,ii)-mean(F_filt2(:,ii))/mean(F_filt2(:,ii)))); xlim(x_lim);
+    title(sprintf('%s + %s',in.filt_type,in.smooth_filt_type)); box off; 
+    subplot(4,1,4); % filters + deconv
+    if in.refilter_deconv
+        plot(F_deconv(:,ii)); hold on; plot(F_blanked(:,ii)); xlim(x_lim);
+        plot([0,size(F_filt,1)],settings.threshold*sigmas(ii)*[1 1])
+        legend('Deconvolved','Deconvolved + refiltered',...
+                'Threshold','Box','off','Location','northeast','Orientation','horizontal')
+    else
+        plot(F_deconv(:,ii)); xlim(x_lim); hold on;
+        plot([0,size(F_filt,1)],settings.threshold*sigmas(ii)*[1 1])
+    end    
+    title(sprintf('Deconv with tau_{d} = %g ms',in.deconv_tau*1e3)); box off; 
+    % subplot(4,1,4); plot((F_filt(:,ii)-mean(F_filt(:,ii))/mean(F_filt(:,ii)))); xlim([1000 2000]); title(sprintf('Deconv with tau_{d} = %g ms',in.deconv_tau*1e3)); box off; 
+end
 %% Peak detection
-num_rois = size(F,2); 
 switch method
     case 1 % Simple method using threshold based on noise level (std)        
         nframes_back = settings.nframes_back;
-        nframes_forward = settings.nframes_forward; 
-%         roi_with_mini_index = settings.roi_with_mini_index;
-        stim_frames = settings.stim_frame;
-        blank_around_stim = settings.blank_around_stim; 
-        if length(blank_around_stim) == 1
-            blank_around_stim = [blank_around_stim,blank_around_stim]; 
-        end
-        threshold = settings.threshold; 
-        min_mini_width = settings.min_mini_width;         
-        F_blanked = F_filt;
-        % Blank out frames after stimulus
-        evoked_peaks = zeros(length(stim_frames),num_rois);
-        evoked_peaks_filt = zeros(length(stim_frames),num_rois);
-        for i = 1:length(stim_frames)
-            stim_framei = stim_frames(i); 
-            stim_inds = (stim_framei-blank_around_stim(1)):(stim_framei+blank_around_stim(2));
-            F_blanked(stim_inds,:) = nan; % blank out frames around stimulus
-            evoked_peaks(i,:) = max(F(stim_inds,:),[],1);
-            evoked_peaks_filt(i,:) = max(F_filt(stim_inds,:),[],1);
-        end
+        nframes_forward = settings.nframes_forward;         
+        thresholds = settings.threshold*sigmas; 
+        min_mini_width = settings.min_mini_width;     
+                
         % get noise level
-        F_std = std(F_blanked,0,1,'omitnan'); % std of signal in each ROI
-        F_bl_z = (F_blanked - mean(F_blanked,1,'omitnan'))./F_std; % z score of blanked F traces        
+%         F_std = std(F_blanked,0,1,'omitnan'); % std of signal in each ROI
+%         F_bl_z = (F_blanked - mean(F_blanked,1,'omitnan'))./F_std; % z score of blanked F traces        
+%         F_pks = F_bl_z; 
+        F_findpks = F_blanked;
+        if in.num_frames_skip_start_end > 0
+            F_findpks(1:in.num_frames_skip_start_end,:) = nan;
+            F_findpks(end-in.num_frames_skip_start_end:end,:) = nan;
+        end
         % Exclusion criteria
         % Exclude ROIs with evoked SNR < threshold
-        snr_thresh = settings.snr_thresh; 
+%         snr_thresh = settings.snr_thresh; 
 %         mean_evoked_peaks = mean(evoked_peaks,1);        
-        mean_evoked_peaks_filt = mean(evoked_peaks_filt,1);        
+%         mean_evoked_peaks_filt = mean(evoked_peaks_filt,1);        
 %         mean_evoked_peaks_delFF0 = ...
 %             (mean_evoked_peaks - mean(F(1:stim_frames(1)-1,:),1))./mean(F(1:stim_frames(1)-1,:),1);
 %         std_Fbsline = std((F(1:stim_frames(1)-1,:) - mean(F(1:stim_frames(1)-1,:),1))./mean(F(1:stim_frames(1)-1,:),1));        
-        snr_rois = mean_evoked_peaks_filt./F_std; 
+%         snr_rois = mean_evoked_peaks_filt./F_std; 
 %         exclude_roi = snr_rois < snr_thresh; 
         exclude_roi = false(num_rois,1);
         % Find ROIs        
@@ -132,19 +147,19 @@ switch method
         mini_traces = cell(1,num_rois); 
         roi_inds = []; % ROI index for each mini
         for i = 1:num_rois
-            if any(F_bl_z(:,i) >= threshold) && ~exclude_roi(i)
-                [~,mini_framesi] = findpeaks(F_bl_z(:,i),...
-                                          'MinPeakHeight',threshold,...
-                                          'MinPeakWidth',min_mini_width*sampling_rate,...
-                                          'MinPeakDistance',2*min_mini_width*sampling_rate); %,...
-%                                           'WidthReference','halfheight'); 
+            if any(F_findpks(:,i) >= thresholds(i)) && ~exclude_roi(i)
+                [~,mini_framesi] = findpeaks(F_findpks(:,i),...
+                                          'MinPeakHeight',thresholds(i),...
+                                          'MinPeakDistance',2*min_mini_width*sampling_rate);
+%                                            'MinPeakWidth',min_mini_width*sampling_rate,...
+%                                           'WidthReference','halfheight',...
                 mini_frames{i} = mini_framesi; 
                 roi_inds = [roi_inds;i*ones(length(mini_framesi),1)];
                 mini_traces{i} = nan(nframes_back+nframes_forward+1,length(mini_framesi));
                 for j = 1:length(mini_framesi) % loop through minis in this ROI
                     mini_framesij = (mini_framesi(j)-nframes_back):(mini_framesi(j)+nframes_forward);
                     mini_framesij(mini_framesij<=0) = nan; % exclude frames outside of recording window
-                    mini_framesij(mini_framesij>size(F_bl_z,1)) = nan;
+                    mini_framesij(mini_framesij>size(F_findpks,1)) = nan;
                     include_inds = ~isnan(mini_framesij); % frames to include for this mini
                     % Get mini trace from unfiltered recording
                     mini_traces{i}(include_inds,j) = F(mini_framesij(include_inds),i);
@@ -169,7 +184,9 @@ for i = 1:num_rois
 end
 mini_peaks_deltaF_F_lin = mini_deltaF_F_traces(nframes_back+1,:);
 output = struct();
-output.F_filt = F_filt; 
+output.F_filt = F_filt; % Output of all filters (bandpass + smoothing + deconv)
+output.F_filt1 = F_filt1; % Output of 1st filter (bandpass)
+output.F_deconv = F_deconv; % Output of deconvolution
 output.mini_frames = mini_frames; % num_rois x 1 cell array of mini peak frames in each ROI
 output.mini_peaks_deltaF_F = mini_peaks_deltaF_F;% num_rois x 1 cell array of peak deltaF/F values in each ROI
 output.mini_frames_lin = mini_frames_lin; % num_minis x 1 vector of all mini_frames
@@ -187,25 +204,79 @@ output.mini_peaks_deltaF_F_lin = mini_peaks_deltaF_F_lin; % peak deltaF/F value 
 
 if in.plot_figs
    rois_w_minis = ~cellfun(@isempty ,mini_frames,'UniformOutput',1);
-%    F_rois_w_minis = (F_blanked - mean(F_blanked,1,'omitnan'))./mean(F_blanked,1,'omitnan'); 
-    F_rois_w_minis = F_blanked;
+   rois_w_minis_inds = find(rois_w_minis);
+%    F_rois_w_minis = (F_filt2 - mean(F_filt2,1,'omitnan'))./mean(F_filt2,1,'omitnan'); 
+%       offset = linspace(100*num_rois_w_mini*1.01,...
+%                                     0,size(num_rois_w_mini,2)); 
 %    F_rois_w_minis = F_bl_z(:,rois_w_minis);
-   offset = linspace(100*num_rois_w_mini*1.01,...
-                                    0,size(F_rois_w_minis,2)); 
+    if in.deconv
+        F_rois_w_minis = F_blanked(:,rois_w_minis);
+        offset = linspace(num_rois_w_mini*1.01,...
+                            0,num_rois_w_mini);
+    else
+       F_rois_w_minis = F_blanked(:,rois_w_minis);
+       offset = linspace(100*num_rois_w_mini*1.01,...
+                                        0,num_rois_w_mini); 
+    end
    t1 = 0:(1/sampling_rate):(size(F_rois_w_minis,1)/sampling_rate - (1/sampling_rate));
    fig1 = figure; 
    plot(t1,F_rois_w_minis + offset);
-   hold on;
+   hold on; box off; axis tight; 
    doffset = (offset(1)-offset(2)); 
    rois_w_minis_inds = find(rois_w_minis);
    for i = 1:num_rois_w_mini
        ii = rois_w_minis_inds(i);         
-       plot(t1(repmat(mini_frames{ii}',2,1)),...
-           [offset(i);offset(i)+doffset],'r-','LineWidth',2)        
+%        plot(t1(repmat(mini_frames{ii}',2,1)),...
+%            [offset(i);offset(i)+doffset],'r-','LineWidth',2)        
+        plot(t1(mini_frames{ii}),offset(i)+doffset*0.5,'r*','MarkerSize',12)
    end
+   if in.num_frames_skip_start_end > 0
+       xlim([t1(in.num_frames_skip_start_end),t1(end-in.num_frames_skip_start_end)]);
+   else
+       xlim([t1(1),t1(end)]);
+   end
+   ax = gca;
+   ax.YTick = fliplr(offset);  
+   ax.YTickLabel = flipud(rois_w_minis_inds);
+   % minis overlaid
    t = 0:(1/sampling_rate):(size(mini_deltaF_F_traces,1)-1)/sampling_rate;
-   fig2 = figure; 
-   plot(t*1e3,mini_deltaF_F_traces); 
-   xlabel('time (ms)'); ylabel('\Delta F/F_{0}'); 
+   fig2 = figure('Units','inches','Position',[4.9 4.2 18.7 8.9]); 
+   [Nrows,Ncols] = getSubplotDimensions(num_rois_w_mini);
+%    ls = plot(t*1e3,mini_deltaF_F_traces); 
+   roi_cols = jet(num_rois_w_mini);
+   for i = 1:num_rois_w_mini
+       ax = subplot(Nrows,Ncols,i);
+       ii = rois_w_minis_inds(i);  
+       plot(t*1e3,mini_deltaF_F_traces(:,roi_inds==ii)); hold on;
+       plot(t*1e3,mean(mini_deltaF_F_traces(:,roi_inds==ii),2),'k','LineWidth',2); 
+       title(sprintf('ROI %g',ii));
+%        plot(t*1e3,mini_deltaF_F_traces(:,roi_inds==ii),'Color',roi_cols(i,:)); hold on;
+%        [ls(roi_inds==ii).Color] = deal(roi_cols(ii,:)); 
+        if i >= ((Nrows-1)*Ncols)
+            xlabel(ax,'time (ms)');
+        end
+        if (mod(i,Ncols) == 1 || num_rois_w_mini == 1) 
+            ylabel('\Delta F/F_{0}');    
+        end
+        box(ax,'off');
+   end   
+%    xlabel('time (ms)');
+%    ylabel('\Delta F/F_{0}');    
+end
+end
+
+function [F_blanked,evoked_peaks,evoked_peaks_filt] = ...
+            blankStimAndExtractPeaks(F_filt,F,stim_frames,blank_around_stim)
+% Blank out frames after stimulus
+num_rois = size(F,2);
+evoked_peaks = zeros(length(stim_frames),num_rois);
+evoked_peaks_filt = zeros(length(stim_frames),num_rois);
+F_blanked = F_filt; % start with filtered traces
+for i = 1:length(stim_frames)
+    stim_framei = stim_frames(i);
+    stim_inds = (stim_framei-blank_around_stim(1)):(stim_framei+blank_around_stim(2));
+    F_blanked(stim_inds,:) = nan; % blank out frames around stimulus
+    evoked_peaks(i,:) = max(F(stim_inds,:),[],1);
+    evoked_peaks_filt(i,:) = max(F_filt(stim_inds,:),[],1);
 end
 end
