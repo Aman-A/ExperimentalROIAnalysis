@@ -16,11 +16,11 @@ roi_set_name = 'RoiSet_pc_pos0';
 % img_folder = fullfile(exp_folder,'the stack');
 % roi_set_name = 'RoiSet_analysis';
 % Experiment/imaging settings
-sampling_rate = 100; % 
-stim_vals = 100; 
-stim_wind = 10; 
-baseline_wind = 10; 
-units = 'frames';
+sampling_rate = 200; % 
+stim_vals = defineStimTrain(0,0.5,42); 
+stim_wind = 0.5; 
+baseline_wind = 0.15; 
+units = 'sec';
 exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,sampling_rate); 
 %% Load recording
 img_names = getImagesWithinDir(img_folder); 
@@ -59,13 +59,14 @@ settings.sampling_rate = exp_settings.sampling_rate;
 settings.nframes_back = nframes_back;
 settings.nframes_forward = nframes_forward; 
 settings.stim_frame = exp_settings.stim_vals;
-settings.blank_around_stim = exp_settings.stim_wind; 
+settings.blank_around_stim = [exp_settings.baseline_wind,exp_settings.stim_wind]; 
 settings.threshold = threshold;
-% settings.threshold = 3;
+settings.snr_thresh = 4;
 settings.roi_with_mini_index = roi_with_mini_index; 
 settings.min_mini_width = min_mini_width;
 % To do: Add width criteria based on upstroke/downstroke of mini (FWHM?)
-mini_output = detect_minis(means,settings,method,'apply_filter',0,'plot_figs',1); 
+mini_output = detect_minis(means,settings,method,'apply_filter',1,...
+                           'plot_figs',1,'deconv',1); 
 %% Example analyis
 num_minis_per_roi = cellfun(@length,mini_output.mini_frames,'UniformOutput',1);
 % rois_w_minis = num_minis_per_roi > 0; 
