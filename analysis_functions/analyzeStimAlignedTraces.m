@@ -158,7 +158,7 @@ if any(strcmp(in.funcs,'decay_fit'))
         start_points = [1,0.8,0.5,0.5];
         fprintf('Fitting decay to biexponential function\n')
     else
-        error('%g decay_fit_orer not implemented',decay_fit_order);
+        error('%g decay_fit_order not implemented',decay_fit_order);
     end
     parfor n = 1:n_traces        
 %         i = i_vec(n); j = j_vec(n); k = k_vec(n);        

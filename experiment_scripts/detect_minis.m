@@ -41,15 +41,9 @@ else
     fprintf('Skipped filtering step\n'); 
 end
 %% Deconvolution
-if in.deconv
-    taud = in.deconv_tau; % 35 ms, mean decay time constant from glusnfr3 measurements    
-    td = (0:(1/sampling_rate):(size(F,1)-2)/sampling_rate)';
-    fu = [0;exp(-td/taud)];    
-%     td = (0:(1/sampling_rate):(size(F,1)-1)/sampling_rate)';
-%     time_to_peak = 20e-3; 
-%     fu = [linspace(0,1,sum(td<=time_to_peak))';exp(-(td(td>time_to_peak)-time_to_peak)/taud)];
-    fft_F = fft(F_filt2); fft_fu = fft(fu);
-    F_deconv = ifft(fft_F./fft_fu)/1; % deconvolve 
+if in.deconv    
+    F_deconv = deconvSingleExp(F_filt2,sampling_rate,in.deconv_tau); 
+    % normalize
     F_deconv = F_deconv./max(F_deconv(stim_frames(1):stim_frames(end),:),[],1,'omitnan'); % normalize to max
     gauss_fit_params = zeros(3,num_rois); % 3 parameters
     for i = 1:num_rois
@@ -180,7 +174,8 @@ baselines = mean(aligned_minis(1:nframes_back,:),1);
 mini_deltaF_F_traces = (aligned_minis-abs(baselines))./abs(baselines); % subtract/divide each column by corresponding baseline
 mini_peaks_deltaF_F = cell(num_rois,1);
 for i = 1:num_rois
-    mini_peaks_deltaF_F{i} = mini_deltaF_F_traces(nframes_back+1,roi_inds == i);
+%     mini_peaks_deltaF_F{i} = mini_deltaF_F_traces(nframes_back+1,roi_inds == i);
+    mini_peaks_deltaF_F{i} = max(mini_deltaF_F_traces(nframes_back-1:end,roi_inds == i),[],1);
 end
 mini_peaks_deltaF_F_lin = mini_deltaF_F_traces(nframes_back+1,:);
 output = struct();
@@ -259,6 +254,7 @@ if in.plot_figs
             ylabel('\Delta F/F_{0}');    
         end
         box(ax,'off');
+        ylim([-0.05 1])
    end   
 %    xlabel('time (ms)');
 %    ylabel('\Delta F/F_{0}');    

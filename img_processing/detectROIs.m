@@ -1,7 +1,8 @@
 function rois = detectROIs(recording,intens_thresh,area_thresh,roi_radius,varargin)
-% Detect ROIs from image
+% Detect ROIs from image (intended for Synapsin-mRuby images)
 % default intens_thresh = 2.9e3, area_thresh = 4
 % if intens_thresh < 1, uses as quantile cutoff based on values in image
+% area_thresh = [min_area] or [min_area max_area]
 in.center_mode = 2; % 0 - off, 1 - cetner based on points, 2 - center based on peak value
 in.plot_fig = 1;
 in.min_distance = 3.2; % microns, set to 0 to skip (3.2 = 8 pixel diam ROI on ixon 897 with 40x)
@@ -20,15 +21,24 @@ else
 end
 
 recording.load(); 
-vals = recording.vals(:,:,1); 
+pixel_size = recording.pixel_size;
+vals = max(recording.vals,[],3); % max Z projection if recording is image stack 
 % Binarize using threshold
 if intens_thresh < 1
     intens_thresh = quantile(recording.vals(:),intens_thresh);
 end
 vals(recording.vals<intens_thresh) = 0; 
-vals(recording.vals>=intens_thresh) = 1; 
+vals(recording.vals>=intens_thresh) = 1;
+vals = logical(vals); 
 % Fill 
-vals_holes = bwareaopen(vals,area_thresh);
+% remove objects below area_thresh
+% vals_holes = bwareaopen(vals,area_thresh(1));
+area_thresh_px = area_thresh/pixel_size^2; % convert to pixels 
+if length(area_thresh_px) == 1 % input min cutoff only
+   % assign max possible for upper range
+    area_thresh_px = [area_thresh_px recording.imsize(1)*recording.imsize(2)];
+end
+vals_holes = bwareafilt(vals,area_thresh_px);
 vals_filled = imfill(vals_holes,'holes');
 % Get contours
 [B,L] = bwboundaries(vals_filled,'noholes');
@@ -45,7 +55,7 @@ elseif in.center_mode == 2 % make circular ROIs centered on peak intensity withi
 end
 %% Apply exclusion criteria
 % Exclude ROIs too close to other ROIs
-centers_um = centers*recording.pixel_size; % convert to um
+centers_um = centers*pixel_size; % convert to um
 if in.min_distance > 0
     center2center_dists = sqrt((centers_um(:,1) - centers_um(:,1)').^2 + (centers_um(:,2)-centers_um(:,2)').^2);
     diag_inds = 1:size(center2center_dists,1) + 1:numel(center2center_dists); % indices of diagonal elements
@@ -54,35 +64,58 @@ if in.min_distance > 0
     close_rois = min_neighbor_dist < in.min_distance; % rois with another roi < min_distance away
     centers_um = centers_um(~close_rois,:);
     centers = centers(~close_rois,:);
-    B2 = B2(~close_rois);
+    B3 = B2(~close_rois);
     fprintf('Excluded %g ROIs with adjacent neighbors < %.1f um away\n',...
             sum(close_rois),in.min_distance); 
+else
+    B3 = B2; 
 end
 % Exclude ROIs to close to edge
 if in.min_distance_to_edge > 0
     % left, right, bottom, top
-    imsize = recording.imsize(1:2)*recording.pixel_size;     
+    imsize = recording.imsize(1:2)*pixel_size;     
     edge_dists = [centers_um(:,1),imsize(2)-centers_um(:,1),centers_um(:,2),imsize(1)-centers_um(:,2)];
     edge_rois = any(edge_dists < in.min_distance_to_edge,2);
 %     centers_um = centers_um(~edge_rois,:);
     centers = centers(~edge_rois,:);
-    B2 = B2(~edge_rois);
+    B4 = B3(~edge_rois);
     if sum(edge_rois) > 0
         fprintf('Excluded %g ROIs with adjacent neighbors < %.1f um away\n',...
                 sum(edge_rois),in.min_distance); 
     end
+else
+    B4 = B3; 
 end
 %% Make ROIs
 if use_circ_rois
     rois = ROIs([centers,roi_radius*ones(size(centers,1),1)]); 
 else % polygons
-    rois = ROIs(B2); % use boundaries to make ROIs
+    rois = ROIs(B4); % use boundaries to make ROIs
 end
+fprintf('Detected %g ROIs!\n',rois.num_rois)
 if in.plot_fig
-    figure; 
-    recording.plot(); 
+    fig1 = figure('Units','inches');
+    imshowpair(vals,vals_holes,'falsecolor'); ax = gca;
+    fig1.Position = [0.42 6.4 20.5 5.2]; 
+    title(sprintf('Excluded regions with areas < %g and > %g \\mu m^2 (green) and neighbors < %g \\mu m apart (red)',...
+        area_thresh(1),area_thresh(2),in.min_distance))
+    axis equal; axis tight;
+    ax.Position = [0.05 0.05 0.9 0.9];
+    ax.YDir = 'normal';
+    % plot ROIs that were excluded due to proximity
+    rois_close = ROIs(B2(close_rois));
+    rois_close.plot('r')
+%     InSet = get(ax, 'TightInset');
+%     set(ax, 'Position', [InSet(1:2), 1-InSet(1)-InSet(3), 1-InSet(2)-InSet(4)])
+%     set(gca, 'LooseInset', get(gca,'TightInset'))
+%     fig1.Position(3:4) = [19.3 5];
+    fig2 = figure('Units','inches','Position',[0.1 1 20.5 5.2]); 
+    recording.plot(); ax = gca;
     rois.plot('g',gca,1,1); 
     caxis(quantile(recording.vals(:),[0.6 0.999]))
-    colormap(inferno(1000));     
+    colormap(inferno(1000));      
+    ax.Position = [0.05 0.05 0.9 0.9];
+%     InSet = get(ax, 'TightInset');
+%     set(ax, 'Position', [InSet(1:2), 1-InSet(1)-InSet(3), 1-InSet(2)-InSet(4)])
 end
 end
