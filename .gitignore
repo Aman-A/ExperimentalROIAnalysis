@@ -4,3 +4,4 @@ summary_data
 examples/
 !examples/example_analysis_script_single_trial.m
 !examples/example_analysis_script_multiple_trials.m
+experiment_scripts/test_data
