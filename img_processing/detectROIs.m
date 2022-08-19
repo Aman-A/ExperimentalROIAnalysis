@@ -41,7 +41,7 @@ end
 vals_holes = bwareafilt(vals,area_thresh_px);
 vals_filled = imfill(vals_holes,'holes');
 % Get contours
-[B,L] = bwboundaries(vals_filled,'noholes');
+[B,L] = bwboundaries(vals_filled,4,'noholes'); % draw boundaries on regions connected by edges (not just corners)
 B2 = cellfun(@(x) [x(:,2),x(:,1)],B,'UniformOutput',0); % rearrange [x y]
 %% Get centers
 if in.center_mode == 1 % make circular ROIs using center of boundary points
@@ -79,10 +79,8 @@ if in.min_distance_to_edge > 0
 %     centers_um = centers_um(~edge_rois,:);
     centers = centers(~edge_rois,:);
     B4 = B3(~edge_rois);
-    if sum(edge_rois) > 0
-        fprintf('Excluded %g ROIs with adjacent neighbors < %.1f um away\n',...
-                sum(edge_rois),in.min_distance); 
-    end
+    fprintf('Excluded %g ROIs < %.1f um away from image borders\n',...
+                sum(edge_rois),in.min_distance_to_edge); 
 else
     B4 = B3; 
 end

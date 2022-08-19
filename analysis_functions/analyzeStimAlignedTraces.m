@@ -165,8 +165,10 @@ if any(strcmp(in.funcs,'decay_fit'))
         t_fit = t(pk_inds(n):end) - t(pk_inds(n)); % start at peak (t=0)
         trace_w_bsline = traces(:,n); % include bsline for spike detection
         trace_fit = trace_w_bsline(pk_inds(n):end);        
-        successful_spike = spikePresent(trace_w_bsline,baseline_wind,...
-                                         spike_thresh,peaks(n)); % uses peaks computed within spike_window
+%         successful_spike = spikePresent(trace_w_bsline,baseline_wind,...
+%                                          spike_thresh,peaks(n)); 
+        successful_spike = spikePresentInWindow(trace_w_bsline,baseline_wind,...
+                                         spike_thresh,spike_window,peaks(n)); % uses peaks computed within spike_window
         successful_spikes(n) = successful_spike;
         % only include trial if more than 4 frames and includes spike
         include_trial = length(t_fit) > 4 && successful_spike; 
