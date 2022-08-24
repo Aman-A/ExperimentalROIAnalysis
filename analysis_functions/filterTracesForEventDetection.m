@@ -43,6 +43,14 @@ if filt_order > 0
 else
     F_filt1 = F; % for next filter step
 end
+
+%Need full recording to use this:
+% remove any variance in trace that can be predicted from the background PCs
+% for i = 1:size(F,2)
+%     [Ub,Sb,Vb] = svds(, 8); % 8 PCs cutoff
+%     b = regress(F(:,i), Vb);
+%     t = (t'-Vb*b); %initial trace
+% end
 % median filter to remove high freq noise
 if smooth_filt_width > 0
     if strcmp(smooth_filt_type,'med')

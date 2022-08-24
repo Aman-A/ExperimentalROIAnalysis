@@ -17,7 +17,7 @@ intens_thresh = 0.99; % quantile
 pixel_size = rec.pixel_size; 
 area_thresh = [4 25]*pixel_size^2; % 4x4 pixels to 8x8 pixels or 0.64 to 10.24 um^2 
 roi_radius = 3; 
-num_pixel_dist = 1;
+num_pixel_dist = 2;
 min_distance = ((roi_radius*2)+num_pixel_dist)*pixel_size; 
 rois = detectROIs(rec,intens_thresh,area_thresh,roi_radius,...
                 'min_distance',min_distance);

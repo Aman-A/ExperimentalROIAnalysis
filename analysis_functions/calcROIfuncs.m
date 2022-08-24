@@ -157,10 +157,14 @@ if any(strcmp(funcs,'mean'))
                                             in.align_use_train_baseline);
     output.mean_aligned = align_output.mean_aligned;
     output.deltaF_F0_aligned = align_output.deltaF_F0_aligned; 
+    ta = exp_settings.getTimeVector(size(align_output.deltaF_F0_aligned,1));
+    output.ta = ta - ta(exp_settings.baseline_wind + 1); % set t = 0 to first stim frame 
     print_str = 'Generated stimulus aligned means and deltaF/F0 traces\n';
     if isfield(align_output,'deltaF_F0_aligned2') % for num_trains > 1, 
         output.mean_aligned2 = align_output.mean_aligned2;
         output.deltaF_F0_aligned2 = align_output.deltaF_F0_aligned2; 
+        ta2 = exp_settings.getTimeVector(size(align_output.deltaF_F0_aligned2,1));
+        output.ta2 = ta2 - ta2(exp_settings.baseline_wind + 1); % set t = 0 to first stim frame 
         print_str = [print_str,...
                     sprintf(' Also aligned to individual spikes in train, use_train_baseline = %g\n',...
                     in.align_use_train_baseline)];        
@@ -175,6 +179,12 @@ output.img_name = recording.img_name;
 output.roi_func_mode = roi_func_mode; 
 output.roi_inds = roi_inds; 
 output.funcs = funcs; 
+trec = exp_settings.getTimeVector(recording.imsize(3)); % time vector for full recording
+if length(exp_settings.stim_vals) > 1
+    output.trec = trec - trec(exp_settings.stim_vals(1)); % set t = 0 to first stim
+else
+    output.trec = trec; 
+end
 output.baseline_wind_inds = baseline_wind_inds; 
 %% Function for applying function to image data within ROI masks
 function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)    

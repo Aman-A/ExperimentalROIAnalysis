@@ -1,5 +1,5 @@
 function F_deconv = deconvSingleExp(F,sampling_rate,taud)
-%DECONVSINGLEEXP ... 
+%DECONVSINGLEEXP Deconvolve signal with monoexponential decay function
 %  
 %   Inputs 
 %   ------ 
