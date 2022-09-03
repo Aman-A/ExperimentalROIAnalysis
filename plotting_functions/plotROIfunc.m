@@ -23,6 +23,7 @@ in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(fu
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
 in.stim_marker_mode = 2; % 1 for points, 2 for vertical lines
+in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     figure;
@@ -137,7 +138,13 @@ else
 %         y = func_output.(func_name);
         
         lns = plot(ax,x,y+offset); % plot trace/s
-        ax.YAxis.Visible = 'off';
+        if in.show_y_tick_labels
+            ax.YTick = fliplr(offset);
+            ax.YTickLabel = length(offset):-1:1; 
+            ax.YAxis.FontSize = 10;
+        else
+            ax.YAxis.Visible = 'off';
+        end
         sbar_hand = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
                     'k','LineWidth',2,'DisplayName',...
                     sprintf('Scale bar = %g%%',100*in.sbar_len)); 
