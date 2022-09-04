@@ -24,3 +24,7 @@ is_nd2 = cellfun(@(x) strcmp(x,'.nd2'),file_exts,'UniformOutput',1);
 is_czi = cellfun(@(x) strcmp(x,'.czi'),file_exts,'UniformOutput',1);
 is_not_hidden = cellfun(@(x) ~strcmp(x(1),'.'),file_names,'UniformOutput',1);
 img_names = file_names((is_fits | is_tif | is_tiff | is_nd2 | is_czi) & is_not_hidden);
+if isempty(img_names)
+    fprintf('No image files found in %s\n',filedir); 
+end
+end

@@ -171,17 +171,21 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         end
         function getFitsInfo(obj)
             info = fitsinfo(obj.filepath);
-            obj.exposure_time = ...
-                info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
-            obj.em_gain = ...
-                info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'GAIN'),2};
-            hbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'HBIN'),2};
-            vbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'VBIN'),2};
-            if hbin == vbin
-                obj.bin_size = hbin;
+            if any(strcmp('EXPOSURE',info.PrimaryData.Keywords(:,1)))
+                obj.exposure_time = ...
+                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
+                obj.em_gain = ...
+                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'GAIN'),2};
+                hbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'HBIN'),2};
+                vbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'VBIN'),2};
+                if hbin == vbin
+                    obj.bin_size = hbin;
+                else
+                    obj.bin_size = [hbin vbin]; % [horizontal bin size, vertical bin size]
+                    fprintf('WARNING: Non-uniform pixel binning, currently not handled by other functions\n');
+                end
             else
-                obj.bin_size = [hbin vbin]; % [horizontal bin size, vertical bin size]
-                fprintf('WARNING: Non-uniform pixel binning, currently not handled by other functions\n');
+                fprintf('WARNING: No fits metadata\n'); 
             end
         end
         function plot(obj,frame)
