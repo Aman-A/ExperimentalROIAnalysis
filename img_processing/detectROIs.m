@@ -55,19 +55,21 @@ elseif in.center_mode == 2 % make circular ROIs centered on peak intensity withi
 end
 %% Apply exclusion criteria
 % Exclude ROIs too close to other ROIs
-centers_um = centers*pixel_size; % convert to um
+centers_um0 = centers*pixel_size; % convert to um
 if in.min_distance > 0
-    center2center_dists = sqrt((centers_um(:,1) - centers_um(:,1)').^2 + (centers_um(:,2)-centers_um(:,2)').^2);
+    center2center_dists = sqrt((centers_um0(:,1) - centers_um0(:,1)').^2 + ... 
+                                (centers_um0(:,2)-centers_um0(:,2)').^2);
     diag_inds = 1:size(center2center_dists,1) + 1:numel(center2center_dists); % indices of diagonal elements
     center2center_dists(diag_inds) = nan; 
     min_neighbor_dist = min(center2center_dists,[],2,'omitnan');
     close_rois = min_neighbor_dist < in.min_distance; % rois with another roi < min_distance away
-    centers_um = centers_um(~close_rois,:);
+    centers_um = centers_um0(~close_rois,:);
     centers = centers(~close_rois,:);
     B3 = B2(~close_rois);
     fprintf('Excluded %g ROIs with adjacent neighbors < %.1f um away\n',...
             sum(close_rois),in.min_distance); 
 else
+    close_rois = false(length(B2),1);
     B3 = B2; 
 end
 % Exclude ROIs to close to edge
