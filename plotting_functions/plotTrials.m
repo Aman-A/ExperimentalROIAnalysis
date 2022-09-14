@@ -30,6 +30,7 @@ plot_trials = ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) ...
                 && ~isempty(in.plot_func); 
 if in.overlay_trials && plot_trials
     trace_fig = figure; 
+    trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [0.4 0.4]; 
     if strcmp(in.roi_func_mode,'combine')
         trace_axis = gca; 
     elseif strcmp(in.roi_func_mode,'separate') 

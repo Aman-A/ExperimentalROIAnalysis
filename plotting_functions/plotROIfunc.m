@@ -50,8 +50,10 @@ else
 %         x = x - stim_frames; 
 %         stim_frames = 0;     
 %     end
-    x = x - stim_frames(1); 
-    stim_frames = stim_frames - stim_frames(1); 
+    if ~isempty(stim_frames)
+        x = x - stim_frames(1); 
+        stim_frames = stim_frames - stim_frames(1); 
+    end    
     if regexp(func_name,'aligned','ONCE')
         x = x - x(size(func_output.baseline_wind_inds,1)+1); 
     end
@@ -83,7 +85,8 @@ if strcmp(func_output.roi_func_mode,'combine')
     lns = plot(ax,x,y); % plot trace/s
 %     lns = shadedErrorBar(x,y,std_y);
 else
-    display_names = roi_names;
+    display_names = arrayfun(@(x) sprintf('ROI%g',x),func_output.roi_inds,'UniformOutput',0);
+%     display_names = roi_names;
 %     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
 %                             func_output.rois.names,'UniformOutput',0);
     if isrow(display_names)

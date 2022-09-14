@@ -63,13 +63,17 @@ if strcmp(in.baseline_mode,'mean')
 elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
     bsline_img = max(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
 end
-peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+if exp_settings.num_stim > 0
+    peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+else
+    peak_stim_img = max(recording.vals,[],3); % peak across recording
+end
 if in.filt_width > 0
     bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
-if any(in.include_plots == 4)
+if any(in.include_plots == 4) && exp_settings.num_stim > 0
     diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
                             exp_settings.stim_wind);
 else

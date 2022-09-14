@@ -117,6 +117,8 @@ if in.rem_pbleach
     max_stim_interval = max(diff(stim_frames(:)));
     if length(stim_frames) == 1
         max_stim_interval = stim_frames(1); 
+    elseif length(stim_frames) == 0
+        max_stim_interval = round(size(output.mean,1)/10);
     end
     if in.rem_pbleach_method == 1 % method from Adam Cohen rem_pbleach code
         interp_interval = min(round(max_stim_interval*1.2),size(output.mean,1));
