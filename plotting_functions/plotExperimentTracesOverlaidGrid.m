@@ -19,7 +19,8 @@ else
     in.fig_size = [50 25];
 end
 in.fig_dir = './';
-in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
+% in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
+in.fig_name = '';
 in.x_lim = [];  % main axis limits
 in.y_lim = []; 
 in.x_sbar_len1 = []; % main axis scale bar length
@@ -55,9 +56,11 @@ end
 %% extract relevant columns (conditions)
 if ~isempty(in.cond_inds)
     meanF = meanF(in.cond_inds);
-    experiment_output.conditions = experiment_output.conditions(in.cond_inds);
-    in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
+    experiment_output.conditions = experiment_output.conditions(in.cond_inds);    
     in.colors = in.colors(in.cond_inds,:);
+end
+if isempty(in.fig_name)
+    in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
 end
 %% Normalize traces
 if regexp(plot_func,'aligned')

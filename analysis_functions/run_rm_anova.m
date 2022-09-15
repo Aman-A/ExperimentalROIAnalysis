@@ -16,7 +16,7 @@ conditions_table.Properties.VariableNames = {'Condition'};
 t = array2table(Y_tbl); 
 t.Properties.VariableNames = conditions_labels;
 % sprintf('cond%g-%g ~ response',1,num_conditions)
-rm = fitrm(t,'cond1-cond5 ~ 1','WithinDesign',conditions_table); 
+rm = fitrm(t,sprintf('cond1-cond%g ~ 1',num_conditions),'WithinDesign',conditions_table); 
 ranovatbl = ranova(rm); 
 
 if ranovatbl.pValue(1) < alpha

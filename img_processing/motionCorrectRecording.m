@@ -1,4 +1,4 @@
-function out = motionCorrectRecording(recording,ref_frames)
+function out = motionCorrectRecording(recording,ref_frames,print_status)
 %MOTIONCORRECTRECORDING ... 
 %  
 %   Inputs 
@@ -22,7 +22,9 @@ elseif isnumeric(recording)
     data = recording; % input recording as 3D array
     out_mode = 2; 
 elseif isa(recording,'Recording')
-    recording.load();
+    if ~recording.loaded
+        recording.load();
+    end
     data = recording.vals;     
     out_mode = 1; 
 end
@@ -32,13 +34,17 @@ if nargin < 2
 %     ref_frames = 1:ceil(N/10); % take first 5% of recording
     ref_frames = 1; % take first frame
 end
+
+if nargin < 3
+    print_status = 0; 
+end
 ref = mean(data(:,:,ref_frames),3); 
 refFFT = fft2(ref);
 drawnow;
 data2 = data; 
 % pobj = parpool;
 parfor f = 1:size(data,3)
-    if ~mod(f,400)
+    if ~mod(f,400) && print_status
         disp(['registering frame: ' int2str(f)])
     end
     %align data
