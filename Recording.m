@@ -105,6 +105,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     obj.time_start = datetime(Y,M,D,H,MI,S);
                     if strcmp(obj.format,'.fits')
                        getFitsInfo(obj);  
+                    elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif') 
+                       getTiffInfo(obj); 
                     end
                 else
                    error('%s does not exist\n',obj.filepath);  
@@ -134,12 +136,32 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
 %                     obj.vals = flipud(obj.vals); 
 %                     fprintf('Flipping y axis, check!!\n'); 
 %                 end                
-            elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')
-                tiff_info = imfinfo(obj.filepath);
-                obj.vals = zeros(tiff_info(1).Height,tiff_info(1).Width,length(tiff_info));
-                for i = 1:size(obj.vals,3)
-                    obj.vals(:,:,i) = imread(obj.filepath,'tiff',i);
-                end
+            elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')   
+                  obj.vals = double(tiffreadVolume(obj.filepath)); % 8.6 sec (ssd), 35.5 sec (hd)
+%                 tic
+%                 tiff_info = imfinfo(obj.filepath); % 12.92 sec
+%                 obj.vals = zeros(tiff_info(1).Height,tiff_info(1).Width,length(tiff_info));
+%                 for i = 1:size(obj.vals,3)
+%                     obj.vals(:,:,i) = imread(obj.filepath,'tiff',i,'info',tiff_info);
+%                 end
+%                 toc                                       
+%                   tic
+%                   tiff_stack = TIFFStack(obj.filepath);  % 10.335 sec                
+%                   obj.vals = tiff_stack(:,:,:); 
+%                   toc
+%                   
+%                 tic
+%                 tiff_obj = Tiff(obj.filepath,'r'); % 15 sec (hd), 13.95 (ssd)
+%                 [I,J] = size(tiff_obj.read());
+%                 K = length(imfinfo(obj.filepath));
+%                 obj.vals = zeros(I,J,K);
+%                 obj.vals(:,:,1) = tiff_obj.read(); 
+%                 for n = 2:K
+%                     tiff_obj.nextDirectory();
+%                     obj.vals(:,:,n) = tiff_obj.read();
+%                 end
+%                 close(tiff_obj);
+%                 toc
             else
                error('Other file formats not implemented yet');  
             end
@@ -173,9 +195,13 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             info = fitsinfo(obj.filepath);
             if any(strcmp('EXPOSURE',info.PrimaryData.Keywords(:,1)))
                 obj.exposure_time = ...
-                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
+                    obj.info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
+            end
+            if any(strcmp('GAIN',info.PrimaryData.Keywords(:,1)))
                 obj.em_gain = ...
                     info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'GAIN'),2};
+            end
+            if any(strcmp('HBIN',info.PrimaryData.Keywords(:,1)))
                 hbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'HBIN'),2};
                 vbin = info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'VBIN'),2};
                 if hbin == vbin
@@ -184,8 +210,15 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     obj.bin_size = [hbin vbin]; % [horizontal bin size, vertical bin size]
                     fprintf('WARNING: Non-uniform pixel binning, currently not handled by other functions\n');
                 end
-            else
-                fprintf('WARNING: No fits metadata\n'); 
+            end            
+        end
+        function getTiffInfo(obj)
+            info = imfinfo(obj.filepath);
+            img_desc = info.ImageDescription; 
+            [~,exp_ind] = regexp(img_desc,'Exposure1 = ','ONCE');
+            s_ind = regexp(img_desc(exp_ind:end),'s');
+            if ~isempty(exp_ind) % get exposure time for HCImage multi-page tiff 
+                obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
             end
         end
         function plot(obj,frame)
