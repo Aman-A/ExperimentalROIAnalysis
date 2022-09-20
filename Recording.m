@@ -195,7 +195,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             info = fitsinfo(obj.filepath);
             if any(strcmp('EXPOSURE',info.PrimaryData.Keywords(:,1)))
                 obj.exposure_time = ...
-                    obj.info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
+                    info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
             end
             if any(strcmp('GAIN',info.PrimaryData.Keywords(:,1)))
                 obj.em_gain = ...

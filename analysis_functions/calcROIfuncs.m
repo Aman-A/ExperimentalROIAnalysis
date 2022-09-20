@@ -194,8 +194,8 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
     if strcmp(func,'mean') % spatial mean across all ROI pixels for each frame   
         if ind == 1
             output_new.mean = zeros(size(img,3),num_masks); % initialize
-        end
-        output_new.mean(:,ind) = squeeze(mean(img.*mask,[1 2],'omitnan'));        
+        end                
+        output_new.mean(:,ind) = squeeze(sum(img.*mask,[1 2],'omitnan'))/sum(mask,'all','omitnan');                
     elseif strcmp(func,'median') % spatial median across all ROI pixels for each frame
         if ind == 1
             output_new.median = zeros(size(img,3),num_masks); % initialize
@@ -237,8 +237,8 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
         % if value was calculated for this index (ind)
         if isfield(output,'baseline') && ~isnan(output.baseline(ind,1)) 
             baseline = output.baseline(ind,1);
-        else
-            baseline = mean(img(:,:,baseline_wind_inds(:,1)).*mask,'all','omitnan');    
+        else            
+            baseline = mean(img(:,:,baseline_wind_inds(:,1)).*mask,'all','omitnan');                            
         end
         if ind == 1
             output_new.deltaF = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
@@ -248,7 +248,7 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
         if isfield(output,'mean')
             output_mean = output.mean(:,ind);
         else
-            output_mean = squeeze(mean(img.*mask,[1 2],'omitnan'));  
+            output_mean = squeeze(sum(img.*mask,[1 2],'omitnan'))/sum(mask,'all','omitnan');  
         end
         % use baseline of first stim for global deltaF/F0 peak, check 
         % if value was calculated for this index (ind)
