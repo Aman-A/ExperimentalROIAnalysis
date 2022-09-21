@@ -34,10 +34,18 @@ end
 y = func_output.(func_name);
 if regexp(func_name,'aligned','ONCE') 
 %     std_y = std(y,0,ndims(y));
-    if strcmp(func_output.roi_func_mode,'combine')
-        y = squeeze(mean(y,3,'omitnan')); % mean across trains or stimuli
+    if strcmp(func_name,'deltaF_F0_aligned')
+        if strcmp(func_output.roi_func_mode,'combine')
+            y = squeeze(mean(y,3,'omitnan')); % mean across trains or stimuli
+        else
+            y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+        end
     else
-        y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+        if strcmp(func_output.roi_func_mode,'combine')
+            y = squeeze(mean(y,[2 4],'omitnan')); % mean within trains
+        else
+            y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+        end
     end
 end
 if nargin < 4
@@ -164,12 +172,12 @@ if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers
                                                % traces
     ind_stim_times = strcmp(roi_leg_names,'Stim times');
     if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
-        if in.stim_marker_mode == 1 || length(stim_frames) > 500
+        if in.stim_marker_mode == 1 || length(stim_frames(:)) > 100
             stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
                 'r.','MarkerSize',8,'DisplayName','Stim times'); 
         else
-            stimpoints_hand = plot(ax,[stim_frames;stim_frames;nan(size(stim_frames))],...
-                    [ax.YLim'.*[1;0.99].*ones(2,length(stim_frames));nan(size(stim_frames))],...
+            stimpoints_hand = plot(ax,[stim_frames(:)';stim_frames(:)';nan(size(stim_frames(:)'))],...
+                    [ax.YLim'.*[1;0.99].*ones(2,length(stim_frames(:)'));nan(size(stim_frames(:)'))],...
                 'r--','LineWidth',0.5,'DisplayName','Stim times'); 
         end
         roi_leg_names = {ax.Children.DisplayName};

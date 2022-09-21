@@ -40,7 +40,7 @@ F = experiment_output.(func_field);
 if isfield(experiment_output,mean_func_field)
     meanF = experiment_output.(mean_func_field); % mean across trials within condition/ROI
 else
-    meanF = cellfun(@(x) mean(x,2),F,'UniformOutput',0); % mean across trials within condition/ROI
+    meanF = cellfun(@(x) mean(x,[2 4]),F,'UniformOutput',0); % mean across trials within condition/ROI
 end    
 exp_settings = experiment_output.exp_settings(1);
 %% Pad ending of shorter traces with nans

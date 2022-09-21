@@ -82,9 +82,13 @@ if any(strcmp(in.funcs,'peaks'))
         % [num_rois x num_trains x num_stim x num_trials]
         peaks = zeros([trace_dims(2),num_trains,num_stim,trace_dims(4)]);
         pk_inds = zeros([trace_dims(2),num_trains,num_stim,trace_dims(4)]);
+        isi_stims = diff(exp_settings.stim_vals(1,:)); % assume identical ISIs between trains
         for i = 1:num_stim
             if i > 1
-                stim_framei = stim_frame + cumsum(diff(exp_settings.stim_vals(1,1:i)))*(i-1);
+%                 stim_framei = stim_frame + cumsum(diff(exp_settings.stim_vals(1,1:i)))*(i-1);                                
+                stim_framei = stim_frame + sum(isi_stims(1:(i-1))); % handle non-uniform ISI 
+                                                                    % by summing stim intervals 
+                                                                    % up to this stim to get frame within train                                                                    
             else
                 stim_framei = stim_frame; 
             end

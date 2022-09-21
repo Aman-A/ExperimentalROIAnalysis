@@ -171,7 +171,7 @@ else
     end   
     %% Calculate deltaF/F0 
     func_output = calcROIfuncs(rec,rois,in.funcs,exp_settings,in.roi_func_mode,...
-                               'rem_pbleach',in.rem_pbleach);
+                               'rem_pbleach',in.rem_pbleach,'align_use_train_baseline',0);
     %% Generate output data structure
     output_data = struct();
     output_data.recording = rec.unload(); % save with data unloaded, reduce HD usage
