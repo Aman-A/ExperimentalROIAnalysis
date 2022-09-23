@@ -42,6 +42,7 @@ in.cmap = 'inferno';
 in.include_plots = [4]; % (1 - Baseline, 2 - Peak, 3 - Difference)
 in.baseline_mode = 'mean'; % 'mean' or 'max' - metric to calculate on 
                            % baseline frames for bsline_img
+in.peak_mode = 'max'; % 'max' or 'mean' for peak_stim_img and meanDiffImage                           
 in.filt_width = 0;
 in.formats = {'png'};
 in.resolutions = {'-r300'};
@@ -64,7 +65,11 @@ elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
     bsline_img = max(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
 end
 if exp_settings.num_stim > 0
-    peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+    if strcmp(in.peak_mode,'max')
+        peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+    else
+        peak_stim_img = mean(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),3);
+    end
 else
     peak_stim_img = max(recording.vals,[],3); % peak across recording
 end
@@ -75,7 +80,7 @@ end
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 if any(in.include_plots == 4) && exp_settings.num_stim > 0
     diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
-                            exp_settings.stim_wind);
+                            exp_settings.stim_wind,in.peak_mode);
 else
     diff_img = peak_stim_img-bsline_img;
 end

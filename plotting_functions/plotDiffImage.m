@@ -18,6 +18,7 @@ in.title_settings = {'Interpreter','none','Color','w'};
 in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
 in.pixel_size = []; % pixel size in µm, if not empty, adds scale bar
+in.peak_mode = 'max'; % 'max' or 'mean' for peak_stim_img and meanDiffImage                           
 in = sl.in.processVarargin(in,varargin); 
 if in.filt_width > 0
     filt_str = sprintf('filter window %g',in.filt_width);
@@ -89,8 +90,7 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
                   cax_lims,pixel_size)
     imagesc(vals)
     ax = gca; 
-    axis(ax,'equal','off'); hold(ax,'on'); 
-    colormap(ax,cmap); 
+    axis(ax,'equal','off'); hold(ax,'on');        
     colorbar(ax, cb_settings{:});
     axis(ax,[0 size(vals,2) 0 size(vals,1)]);
     title(ax,title_str,title_settings{:}); 
@@ -99,6 +99,7 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
     elseif strcmp(cax_mode,'abs')
         caxis(ax,cax_lims); 
     end % if cax_mode 'auto', leave as is
+    colormap(ax,cmap); 
     ax.YDir = 'normal';
     if ~isempty(pixel_size)
         % get integer length (µm) and convert back to pixels

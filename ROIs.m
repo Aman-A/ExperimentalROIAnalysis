@@ -144,9 +144,10 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 if strcmp(obj.types{1},'Oval') % assume circle
                     obj.radius = cellfun(@(x) (x.vnRectBounds(4) - x.vnRectBounds(2))/2,...
                                         ROIarray,'UniformOutput',1)';
-                    obj.x0 = cellfun(@(x,r) floor(x.vnRectBounds(2) + r + 1),...
+                    % matlab pixel index is center of pixel, imagej is edge
+                    obj.x0 = cellfun(@(x,r) x.vnRectBounds(2) + r + 1 - 0.5,...
                                         ROIarray,num2cell(obj.radius)','UniformOutput',1)'; % get middle pixel row and column
-                    obj.y0 = cellfun(@(x,r) floor(x.vnRectBounds(3) - r + 1),...
+                    obj.y0 = cellfun(@(x,r) x.vnRectBounds(3) - r + 1 - 0.5,...
                                         ROIarray,num2cell(obj.radius)','UniformOutput',1)'; % imagej is 0 indexed, add 1                                        
                     obj.x = obj.x0; % current is same as original initially
                     obj.y = obj.y0; % current is same as original initially                    
@@ -372,8 +373,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.y0 = cellfun(@(x) imsize(1) - x,obj.y0,'UniformOutput',0);
                 obj.y = cellfun(@(x) imsize(1) - x,obj.y,'UniformOutput',0);
             elseif strcmp(obj.types{1},'Oval')
-                obj.y0 = imsize(1) - obj.y0;
-                obj.y = imsize(1) - obj.y;
+                obj.y0 = imsize(1) - obj.y0 + 1;
+                obj.y = imsize(1) - obj.y + 1;
             elseif strcmp(obj.types{1},'Rectangle')
                 obj.r0(1:2) = imsize(1) - obj.r0([2 1]); % flip and re-order so min row is first
                 obj.r(1:2) = imsize(1) - obj.r([2 1]);
