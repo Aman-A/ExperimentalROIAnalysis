@@ -42,11 +42,12 @@ in.print_level = 1;
 in.rem_pbleach = 0;
 in.rem_pbleach_method = 1; % 1 - Cohen method, smooths based on min value every interp_interval
 in.align_use_train_baseline = 1; % if num_trains > 1, in addition to 
-                                 % aligning traces to trains, also aligns
-                                 % to individual stimuli. Set to 1 to
-                                 % generate deltaF_F0 with baseline of
-                                 % first stim in train, 0 to use baseline
-                                 % before individual stim responses
+                                 % aligning traces to trains, calcROIfuncs 
+                                 % also aligns to individual stimuli. 
+                                 % Set to 1 to generate deltaF_F0 with 
+                                 % baseline of first stim in train, 0 to 
+                                 % use baseline before individual stim
+                                 % responses                                 
 in = sl.in.processVarargin(in,varargin); 
 if nargin < 4
    exp_settings = ExperimentSettings([],[],20,'frames',100); 

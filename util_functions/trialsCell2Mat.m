@@ -6,9 +6,10 @@ num_cols = cellfun(@(x) size(x,2),traces_cell_array);
 num_trials = length(traces_cell_array);
 if all(num_rows == num_rows(1)) % all same number of frames    
     if all(num_cols == num_cols(1))% all same number of ROIs       
-        % [num_frames x num_rois x num_stim x num_trials] 4D matrix
+        % [num_frames x num_rois x num_stim/num_trains x num_trials] 4D matrix
+        % or [num_frames x num_rois x num_trains x num_stim x num_trials]
         % if num_rois == 1, gives [num_frames x 1 x num_stim x num_trials]
-        traces_mat = cell2mat(reshape(traces_cell_array,1,1,1,num_trials)); 
+        traces_mat = squeeze(cell2mat(reshape(traces_cell_array,1,1,1,1,num_trials))); 
     else
         error('Number of columns (ROIs) not consistent between trials'); 
     end

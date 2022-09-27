@@ -103,7 +103,7 @@ for i = 1:Nax
     if (mod(i,Ncols) == 1 || Nax == 1) && isempty(in.x_sbar_len1)
         if strcmp(in.plot_func,'deltaF_F0')
             ylabel(ax,'\Delta F/F_{0}')
-        elseif strcmp(in.plot_func,'deltaF_F0_aligned')
+        elseif regexp(in.plot_func,'deltaF_F0_aligned')
             ylabel(ax,'Mean \Delta F/F_{0}')
         else
             ylabel(ax,in.plot_func);

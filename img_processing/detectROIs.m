@@ -4,7 +4,8 @@ function rois = detectROIs(recording,intens_thresh,area_thresh,roi_radius,vararg
 % if intens_thresh < 1, uses as quantile cutoff based on values in image
 % area_thresh = [min_area] or [min_area max_area]
 in.center_mode = 2; % 0 - off, 1 - cetner based on points, 2 - center based on peak value
-in.plot_fig = 1;
+in.plot_figs = 1;
+in.save_figs = 0;
 in.min_distance = 3.2; % microns, set to 0 to skip (3.2 = 8 pixel diam ROI on ixon 897 with 40x)
 in.min_distance_to_edge = 3.2; % microns
 in = sl.in.processVarargin(in,varargin);
@@ -93,7 +94,7 @@ else % polygons
     rois = ROIs(B4); % use boundaries to make ROIs
 end
 fprintf('Detected %g ROIs!\n',rois.num_rois)
-if in.plot_fig
+if in.plot_figs
     fig1 = figure('Units','inches');
     imshowpair(vals,vals_holes,'falsecolor'); ax = gca;
     fig1.Position = [0.42 6.4 20.5 5.2]; 
@@ -117,5 +118,10 @@ if in.plot_fig
     ax.Position = [0.05 0.05 0.9 0.9];
 %     InSet = get(ax, 'TightInset');
 %     set(ax, 'Position', [InSet(1:2), 1-InSet(1)-InSet(3), 1-InSet(2)-InSet(4)])
+    if in.save_figs        
+        fig_dir = recording.filedir; 
+        printFig(fig1,fig_dir,'DetectedRoiSet_thresh')
+        printFig(fig2,fig_dir,'DetectedRoiSet_final')
+    end
 end
 end

@@ -44,7 +44,20 @@ if regexp(func_name,'aligned','ONCE')
         if strcmp(func_output.roi_func_mode,'combine')
             y = squeeze(mean(y,[2 4],'omitnan')); % mean within trains
         else
-            y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+%             y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+            y = mean(y,4,'omitnan'); 
+            % concatenate average response to each 
+            % train, plot as single trace in each ROI
+            if size(stim_frames,1) > 1
+                y_all = zeros(size(y,1)*size(stim_frames,1),size(y,2));
+                starti = 1; endi = size(y,1);
+                for i = 1:size(stim_frames,1)
+                    y_all(starti:endi,:) = y(:,:,i);
+                    starti = endi + 1; 
+                    endi = endi + size(y,1);
+                end
+            end
+            y = y_all; 
         end
     end
 end
