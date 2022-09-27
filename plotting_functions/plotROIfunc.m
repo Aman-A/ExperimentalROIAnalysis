@@ -176,32 +176,12 @@ else
         lns = plot(ax,x,y); % plot trace/s
     end
 end
-
 set(lns,{'DisplayName'},display_names); % set legend names
-% shadedErrorBar(x,mean(func_output.(func_name),2),std(func_output.(func_name),0,2),{'-k'}); hold on;
-roi_leg_names = {ax.Children.DisplayName};
+
 if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers 
                                                % if plotting stim aligned 
                                                % traces
-    ind_stim_times = strcmp(roi_leg_names,'Stim times');
-    if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis    
-        if in.stim_marker_mode == 1 || length(stim_frames(:)) > 100
-            stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
-                'r.','MarkerSize',8,'DisplayName','Stim times'); 
-        else
-            stimpoints_hand = plot(ax,[stim_frames(:)';stim_frames(:)';nan(size(stim_frames(:)'))],...
-                    [ax.YLim'.*[1;0.99].*ones(2,length(stim_frames(:)'));nan(size(stim_frames(:)'))],...
-                'r--','LineWidth',0.5,'DisplayName','Stim times'); 
-        end
-        roi_leg_names = {ax.Children.DisplayName};
-        ind_stim_times = strcmp(roi_leg_names,'Stim times');
-        all_inds = 1:length(ax.Children); 
-        ax.Children = ax.Children([all_inds(~ind_stim_times),find(ind_stim_times)]); 
-    else    
-    %     global_peak = max([ax.Children(~ind_stim_times).YData],[],'all'); 
-    %     ax.Children(ind_stim_times).YData = global_peak*1.05; 
-        ax.Children(ind_stim_times).YData = ax.YLim(2)*0.99*ones(1,length(stim_frames)); 
-    end
+    stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax);
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 if strcmp(func_name,'deltaF_F0')

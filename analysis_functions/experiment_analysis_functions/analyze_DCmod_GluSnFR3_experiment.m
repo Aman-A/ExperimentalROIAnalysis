@@ -1,6 +1,8 @@
 function analyze_DCmod_GluSnFR3_experiment(exp_date,reporter,dish,roiset_filename,...
                     conditions,cond_names,sort_amp_ind,save_analysis_figs,varargin)
 %% Analyze responses to train during DC stimulation at different amplitudes
+% Assumes experimental paradigm in which single DC amplitude is applied
+% within trial
 if nargin == 0
     exp_date = '20220907';
     reporter = 'GluSnFR3_SynmRuby';
