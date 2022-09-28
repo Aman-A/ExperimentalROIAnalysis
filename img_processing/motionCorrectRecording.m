@@ -36,7 +36,7 @@ if nargin < 2
 end
 
 if nargin < 3
-    print_status = 0; 
+    print_status = 1; 
 end
 ref = mean(data(:,:,ref_frames),3); 
 refFFT = fft2(ref);

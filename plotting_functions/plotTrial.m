@@ -196,6 +196,7 @@ else
 end
 %% Plot data
 % only plot if plot_func is not 0, empty, or 'none'
+
 if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0) 
     if isempty(trace_axis)                       
         fig = figure; 

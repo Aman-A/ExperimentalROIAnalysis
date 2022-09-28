@@ -5,10 +5,10 @@ if nargin < 2
 end
 num_conditions = size(Y,1);
 num_dishes = size(Y,2);
-dish_names = arrayfun(@(x) sprintf('dish%g',x),1:num_dishes,'UniformOutput',0)';
+dish_names = numericVec2chars(1:num_dishes,'dish%g');
 % Y_lin = Y(:); % [dish1_cond1;dish1_cond2;dish1_cond3;...]
 Y_tbl = Y'; %[num_dishes x num_conditions]
-conditions_labels = arrayfun(@(x) sprintf('cond%g',x),1:num_conditions,'UniformOutput',0);
+conditions_labels = numericVec2chars(1:num_conditions,'cond%g');
 conditions_table = cell2table(conditions_labels');
 conditions_table.Properties.VariableNames = {'Condition'}; 
 

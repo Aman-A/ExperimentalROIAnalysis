@@ -84,7 +84,7 @@ else
 end
 if isempty(in.rois)
     num_rois = length(func_output.roi_inds);
-    roi_names = arrayfun(@(x) sprintf('ROI%g',x),func_output.roi_inds,'UniformOutput',0);
+    roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');    
 else
     num_rois = in.rois.num_rois; 
     roi_names = in.rois.names; 
@@ -108,8 +108,7 @@ if strcmp(func_output.roi_func_mode,'combine')
     lns = plot(ax,x,y); % plot trace/s
 %     lns = shadedErrorBar(x,y,std_y);
 else
-    display_names = arrayfun(@(x) sprintf('ROI%g',x),func_output.roi_inds,'UniformOutput',0);
-%     display_names = roi_names;
+    display_names = roi_names;
 %     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
 %                             func_output.rois.names,'UniformOutput',0);
     if isrow(display_names)

@@ -76,8 +76,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     % NOTE: REQUIRES ALL ROIS TO BE SAME FORMAT
                     obj.num_rois = length(file_or_roi_array);  
                     if isempty(in.names)
-                       obj.names = arrayfun(@(x) sprintf('ROI%g',x),0:obj.num_rois-1,...
-                                            'UniformOutput',0)';
+                        obj.names = numericVec2chars(0:obj.num_rois-1,'ROI%g');                       
                     end
                     obj.types = repmat({'Polygon'},obj.num_rois,1);
                     obj.x0 = cell(obj.num_rois,1);
@@ -108,8 +107,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 else % ROIs of single type defined with array
                     obj.num_rois = size(file_or_roi_array,1);  
                     if isempty(in.names)
-                       obj.names = arrayfun(@(x) sprintf('ROI%g',x),0:obj.num_rois-1,...
-                                            'UniformOutput',0)';
+                        obj.names = numericVec2chars(0:obj.num_rois-1,'ROI%g');
                     end
                     if size(file_or_roi_array,2) == 3 % Circle
                         % format: [center x, center y, radius]
