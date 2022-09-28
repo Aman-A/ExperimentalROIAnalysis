@@ -33,6 +33,10 @@ in.funcs = {'peaks','peak_times','poststim_ints','decay_fit','fwhm','mean_fwhm'}
 in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
+in.train_peak_baseline_mode = 1; % for num_trains > 1:
+                                  % 1 - use same baseline for full train
+                                  % 2 - get individual baseline for each
+                                  % stim (assume deltaF_F0_aligned2 input)
 in.train_spike_width_mode = 1; % 1 - Cho 2020 method for nFWHM, use half 
                                % amp of 1st AP in train for rest of APs in train
 in.frac_amp = 0.5; 
@@ -51,7 +55,7 @@ spike_window = exp_settings.convert2Frames(in.spike_window);
 if spike_window > stim_wind
    spike_window = stim_wind; 
 end
-trace_dims = size(traces,1:4);
+trace_dims = size(traces,1:5);
 num_stim = exp_settings.num_stim; % num stim within train
 num_trains = exp_settings.num_trains;
 if num_trains > 1 
@@ -76,9 +80,10 @@ fwhm_spline_interp = in.fwhm_spline_interp; % avoid broadcasting below
 output = struct();
 if isempty(in.funcs); return; end
 %% Analyze traces
+% Calculate post-stimulus peaks
 if any(strcmp(in.funcs,'peaks'))
     % get peaks within spike_window 
-    if num_trains > 1
+    if num_trains > 1 && in.train_peak_baseline_mode == 1       
         % [num_rois x num_trains x num_stim x num_trials]
         peaks = zeros([trace_dims(2),num_trains,num_stim,trace_dims(4)]);
         pk_inds = zeros([trace_dims(2),num_trains,num_stim,trace_dims(4)]);
@@ -100,7 +105,7 @@ if any(strcmp(in.funcs,'peaks'))
         peak_times = exp_settings.convert2Time(pk_inds-stim_frame); % referenced to first stim in train
         
     else
-        [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:),[],1);    
+        [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:,:),[],1);    
         pk_inds = pk_inds + stim_frame; % reference to full time vector
         peaks = squeeze(peaks);
         pk_inds = squeeze(pk_inds);
@@ -113,20 +118,23 @@ if any(strcmp(in.funcs,'peaks'))
     % standard error treating last dimension as n
     output.sem_peak = output.std_peak/sqrt(numel(peaks)); 
 end
+%% Calculate post-stim peak times
 if any(strcmp(in.funcs,'peak_times'))
     if ~any(strcmp(in.funcs,'peaks'))
-        [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:),[],1);    
+        [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:,:),[],1);    
         pk_inds = pk_inds + stim_frame; % reference to full time vector    
         pk_inds = squeeze(pk_inds);    
         peak_times = exp_settings.convert2Time(pk_inds-stim_frame);
     end
     output.peak_times = peak_times; 
 end
+%% Calculate post-stim integral
 if any(strcmp(in.funcs,'poststim_ints'))
     % integrate in time, allow up to 4D traces
-    poststim_ints = (1/sampling_rate)*trapz(traces(stim_frame:end,:,:,:),1);    
+    poststim_ints = (1/sampling_rate)*trapz(traces(stim_frame:end,:,:,:,:),1);    
     output.poststim_ints = squeeze(poststim_ints); 
 end
+%% Fit post-stim decay to mono or bi-exponential function
 if any(strcmp(in.funcs,'decay_fit'))
     t = exp_settings.getTimeVector(size(traces,1));           
     % Recover time constants from transient                  
@@ -235,8 +243,8 @@ if any(strcmp(in.funcs,'decay_fit'))
     output.successful_spikes = successful_spikes;
     output.spike_thresh = in.spike_thresh;  
     output.spike_window = spike_window;
-    Pr = sum(successful_spikes,2)/size(successful_spikes,2);    
-    fprintf('Mean Pr = %.3f +/- %.3f\n',mean(Pr,[1 3]),std(Pr,0,[1 3]));
+    Pr = sum(successful_spikes,2)./size(successful_spikes,2);    
+    fprintf('Mean Pr = %.3f +/- %.3f (WARNING: may be inaccurate)\n',mean(Pr,[1 3]),std(Pr,0,[1 3]));
 end
 %% FWHM of individual responses
 if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces   

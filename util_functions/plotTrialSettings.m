@@ -50,6 +50,7 @@ settings.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIf
 settings.roi_func_sbar_len = 1; 
 settings.registration_rec_settings = []; % if necessary, separate ExperimentSettings for registration recording
 settings.analysis_funcs = {}; % for plotTrials
+settings.analyze_traces = 'deltaF_F0_aligned'; % choose which to analyze: 'deltaF_F0_aligned' or 'deltaF_F0_aligned2'
 settings.rem_pbleach = 0; % 1 to remove photobleaching in calcROIfuncs
 settings.fwhm_spline_interp = 0; % 1 to use cubic spline interpolation for FWHM calculation
 settings.motion_correct = 0; % 1 to use motionCorrectRecording (uses dftregistration FFT-based algorithm)

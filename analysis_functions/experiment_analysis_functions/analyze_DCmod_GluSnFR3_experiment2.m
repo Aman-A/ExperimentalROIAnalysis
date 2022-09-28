@@ -8,8 +8,8 @@ if nargin == 0
     reporter = 'GluSnFR3_SynmRuby';
     dish = 'dish3';
     roiset_filename = 'RoiSet_auto_control_3';    
-%     cond_inds = []; 
-    cond_inds = [1:4,8,7,6,5];
+    cond_inds = []; 
+%     cond_inds = [1:4,8,7,6,5];
     amps = [-2, -1, -0.5, -0.1, 0.1, 0.5, 1, 2];
     cond_names = arrayfun(@(x) sprintf('%g mA',x),amps,'UniformOutput',0);
     % conditions = {'control_30mAB_0mAY','control_30mAB_1mAY','control_30mAB_2mAY',...
@@ -18,27 +18,47 @@ if nargin == 0
     % conditions = {'control_30mAB_0mAY','control_30mAB_-1mAY','control_30mAB_2mAY',...
     %                 'control_30mAB_-3mAY'}; 
     % cond_names = {'0mA','-1mA','-2mA','-3mA'};
-    sort_amp_ind = 5; % amplitude to sort ROIs by
+    sort_amp_ind = 4; % amplitude to sort ROIs by
     save_figs = 1;
 end
-in.plot_figs = [1]; % Select analysis figures to plot
-                      % 1 - mean across ROIs
-                      % 2 - mean within ROIs
-                      % 3 - plot responses within specific ROI in single figure                      
+in.plot_figs = [6]; % Select analysis figures to plot
+                      % 1 - Plot mean trace averaged across ROIs
+                      % 2 - Plot mean traces averaged within ROIs
+                      % 3 - Plot responses within specific ROI in single figure                      
+                      % 4 - Plot distribution of peaks within ROI at each 
+                      %     DC intensity
+                      % 5 - Plot peaks and change in peaks within ROI at
+                      %     each intensity 
+                      % 6 - Bar plot of fraction of ROIs modulated at each
+                      %     intensity
 in.plot_roi_ind = 6; % for 3 - index of ROI to plot
 in.stim_cols = {'k','r'}; % 'Off','On'
+in.dc_conds = {'DC off','DC on'};  
 in.norm_to_cont = 1; % normalize responses to control (DC off) within trial/ROI
-in.dc_stim_del = 10.5; % sec
-in.dc_stim_dur = 10; % sec
 in.data_file_suffix = 'train';
 in.roi_func_mode = 'separate';
-in.cols = lines(length(cond_names));
+% in.cols = lines(length(cond_inds));
+% in.cols = flipud([215,48,39
+%             244,109,67
+%             253,174,97
+%             254,224,144
+%             224,243,248
+%             171,217,233
+%             116,173,209
+%             69,117,180]*1/256);
+in.cols = flipud([ 0.6445         0    0.1484
+                0.8398    0.1875    0.1523
+                0.9531    0.4258    0.2617
+                0.9883    0.6797    0.3789
+                0.6680    0.8477    0.9102
+                0.4531    0.6758    0.8164
+                0.2695    0.4570    0.7031
+                0.1914    0.2109    0.5820]);
 % plot settings
 in.fig_size = [0.97 0.88]; % in 'normalized' units
 in = sl.in.processVarargin(in,varargin);
 
 data_fold = getDataFold();
-cont_ind = strcmp(cond_names,'0mA');
 cols = in.cols; 
 %% Load data
 exp_fold = fullfile(data_fold,exp_date,reporter,dish);
@@ -57,6 +77,8 @@ else
     conditions = out.conditions; 
     cond_inds = 1:length(conditions);
 end
+cond_names = cond_names(cond_inds);
+num_conditions = length(cond_inds);
 exp_settings = out.exp_settings(1); 
 num_trains = exp_settings.num_trains; 
 num_stim = exp_settings.num_stim;
@@ -105,7 +127,7 @@ end
 if any(in.plot_figs == 1)
     fig = figure('Units','normalized');
     fig.Position = [0.047 0.05 in.fig_size]; 
-    for roi_i = 1:length(conditions)
+    for roi_i = 1:num_conditions
         ax = subplot(2,4,roi_i);        
         if in.norm_to_cont
             tracesi = mean_dF_F0_norm0{roi_i};
@@ -131,8 +153,8 @@ if any(in.plot_figs == 1)
         title(strrep(conditions{roi_i},'_',' '));
         xlim([-baseline_wind_sec,ta(end)]);
         ax.YLim(1) = -0.05; 
-        if roi_i == length(conditions)
-            legend('DC off','DC on','Box','off');
+        if roi_i == num_conditions
+            legend(in.dc_conds,'Box','off');
         end
     end
     sgtitle('Mean response across ROIs with and without DC stimulus (+/- SEM)')
@@ -145,7 +167,7 @@ end
 if any(in.plot_figs == 2)
     Nax = num_rois; 
     [Nrows,Ncols] = getSubplotDimensions(Nax); 
-    for condj = 1:length(cond_inds) % loop over conditions (stim amps)
+    for condj = 1:num_conditions % loop over conditions (stim amps)
         fig = figure('Units','normalized');
         fig.Position = [0.001 0.03 in.fig_size];        
         for roi_i = 1:Nax % loop over ROIs for each subplot
@@ -178,7 +200,7 @@ if any(in.plot_figs == 2)
         sgtitle(strrep(out.conditions{condj},'_',' '));
         drawnow; 
         if save_figs
-            fig_name = sprintf('meanF_ROIs_%gmA_DCamp_norm%g',amps(condj),in.norm_to_cont);
+            fig_name = sprintf('meanF_ROIs_%s_DCamp_norm%g',cond_names(condj),in.norm_to_cont);
             printFig(fig,analysis_fig_fold,fig_name);
         end
     end
@@ -186,13 +208,13 @@ end
 %% Plot traces of specific ROI in all conditions
 if any(in.plot_figs == 3)    
     if in.norm_to_cont
-        yax_lims = [];
+        yax_lims = [-0.5 5];
     else
         yax_lims = [-0.1 1];                 
     end
     stim_cols2 = {[0 0 0 0.2];[1 0 0 0.1]};    
     fig = figure('Units','normalized');
-    fig.Position = [0.001 0.03 0.97 0.88];    
+    fig.Position = [0.001 0.03 in.fig_size];
     for i = 1:length(cond_inds)         
         % plot mean trace
         mean_tracesi = squeeze(mean_dF_F0_rois{i}(:,in.plot_roi_ind,:)); % [ off, on]
@@ -222,8 +244,8 @@ if any(in.plot_figs == 3)
         if i == 1 || i == 5
             ylabel(trace_ylabel_str)
         end
-        if i == length(cond_inds)
-            legend(p2,'DC off','DC on','Box','off');
+        if i == num_conditions
+            legend(p2,in.dc_conds,'Box','off');
         end
         if ~isempty(yax_lims)
             ax.YLim = yax_lims;
@@ -237,126 +259,201 @@ if any(in.plot_figs == 3)
         printFig(fig,analysis_fig_fold,fig_name);
     end
 end
-%% Analyze ROI specific modulation
+%% Plot distribution of peaks within ROI
+% plot_violin = 0; 
 if any(in.plot_figs == 4)
-    
+    cond_xvec_all = -num_conditions:2:num_conditions;
+    cond_xvec = cond_xvec_all; cond_xvec(round(length(cond_xvec)/2)) = []; % remove 0
+    xoffset = [-0.5 0.5]; 
+    fig = figure('Units','normalized');
+    fig.Position = [0.001 0.03 in.fig_size];
+    for i=  1:num_conditions
+        xi = cond_xvec(i); 
+        yi = squeeze(peaks{i}(:,in.plot_roi_ind,:,:));
+        if in.norm_to_cont
+            % normalize individual peaks with mean of control peaks
+            yij = yi(2,:,:)/mean(yi(1,:,:),'all','omitnan');
+            yij = yij(:);
+%             if plot_violin
+%                 violin(yij,'x',xi,'edgecolor',stim_cols{2},'facecolor',stim_cols3{2},...
+%                     'medc',stim_cols{2},'mc',[]);
+%             else
+                boxplot(yij,'Positions',xi);
+%             end
+            hold on;
+        else
+            for j = 1:2
+                yij = yi(j,:,:); yij = yij(:);
+%                 violin(yij,'x',xi+xoffset(j),'edgecolor',stim_cols{j},'facecolor',stim_cols3{j},...
+%                     'medc',stim_cols{j},'mc',[]);
+                hold on;
+            end
+        end
+    end
+    ax = gca;
+    plot([cond_xvec_all;cond_xvec_all]+1,ax.YLim,'k');
+    ax.XTick = cond_xvec;
+    ax.XTickLabel = cond_names;
+    ax.YGrid = 'on';
+    ax.TickLength = [0.005 0];
+    box off;
+    if in.norm_to_cont
+        ylabel('Peak \Delta F/F_{0} (norm. to mean at 0 mA within trial)')
+        plot(ax.XLim,[1 1],'--k');
+    else
+        ylabel('Peak \Delta F/F_{0}');
+    end
+    xlabel('DC current intensity')
+    title(sprintf('Distribution of peak responses in ROI %g',in.plot_roi_ind))
+%     if ~in.norm_to_cont
+%         legend(ax.Children(9:10),'DC off','DC on','Box','off');
+%     end
+    if save_figs
+        fig_name = sprintf('peakF_dists_all_DCamp_norm%g_roi%g',in.norm_to_cont,in.plot_roi_ind);
+        printFig(fig,analysis_fig_fold,fig_name);
+    end
 end
+%% Peaks analysis
+% mean across stim/trials within ROI
+mean_peaks_rois = cellfun(@(x) squeeze(mean(x,[3 4]))',peaks,...
+                            'UniformOutput',0); % [ num_rois x num_trains ] 
 
-% [num_rois x num_conds]
-mean_peaks_rois = cell2mat(cellfun(@(x) squeeze(mean(x,[1 3]))',peaks,...
-                                'UniformOutput',0));
-% std across stimuli
-std_peaks_rois = cell2mat(cellfun(@(x) squeeze(std(x,0,[1 3]))',peaks,...
-                                'UniformOutput',0));
-nstim = cell2mat(cellfun(@(x) prod(size(x,[1 3])),peaks,'UniformOutput',0));
-sem_peaks_rois = std_peaks_rois./sqrt(nstim);
+mean_peaks_rois = trialsCell2Mat(mean_peaks_rois); % [num_rois x num_trains x num_conditions]
+% std across stim/trials within ROI
+std_peaks_rois = cellfun(@(x) squeeze(std(x,0,[3 4]))',peaks,...
+                            'UniformOutput',0);
+sem_peaks_rois = cellfun(@(x,y) x/sqrt(prod(size(y,3:4))),std_peaks_rois,peaks,...
+                    'UniformOutput',0); % n = num_stim * num_trials
+std_peaks_rois = trialsCell2Mat(std_peaks_rois); % [num_rois x num_trains x num_conditions]
+sem_peaks_rois = trialsCell2Mat(sem_peaks_rois);
+
+num_trials = cellfun(@(x) size(x,4),peaks,'UniformOutput', 1);
+if all(num_trials == num_trials(1)); num_trials = num_trials(1); end
 % modulation
-per_change_rois = 100*(mean_peaks_rois(:,~cont_ind)-mean_peaks_rois(:,cont_ind))./mean_peaks_rois(:,cont_ind);
-per_change_std_rois = 100*(std_peaks_rois(:,~cont_ind)-std_peaks_rois(:,cont_ind))./std_peaks_rois(:,cont_ind);
-per_change_sem_rois = per_change_std_rois./sqrt(nstim(~cont_ind));
+[peaks_per_change_rois,peaks_per_change_std_rois] = calcPerErrWithVariance(mean_peaks_rois(:,2:end,:),...
+                                                               mean_peaks_rois(:,1,:),...
+                                                               std_peaks_rois(:,2:end,:),...
+                                                               std_peaks_rois(:,1,:));
+peaks_per_change_rois = squeeze(peaks_per_change_rois);
+peaks_per_change_std_rois = squeeze(peaks_per_change_std_rois);    
+peaks_per_change_sem_rois = peaks_per_change_std_rois./sqrt(num_stim*num_trials);
 % normalized
-mean_peaks_rois_norm = mean_peaks_rois./mean_peaks_rois(:,cont_ind);
-sem_peaks_rois_norm = sem_peaks_rois./mean_peaks_rois(:,cont_ind);
-% sort 
-% [~,sort_inds] = sort(mean_peaks_rois(:,end));
-[~,sort_inds] = sort(per_change_rois(:,sort_amp_ind),'descend');
-roi_inds = 1:num_rois; 
-roi_inds1 = roi_inds(sort_inds);
-mean_peaks_rois = mean_peaks_rois(sort_inds,:);
-std_peaks_rois = std_peaks_rois(sort_inds,:);
-sem_peaks_rois = sem_peaks_rois(sort_inds,:);
-per_change_rois = per_change_rois(sort_inds,:);
-per_change_std_rois = per_change_std_rois(sort_inds,:);
-per_change_sem_rois = per_change_sem_rois(sort_inds,:);
-mean_peaks_rois_norm = mean_peaks_rois_norm(sort_inds,:);
-sem_peaks_rois_norm = sem_peaks_rois_norm(sort_inds,:);
-% Plot peaks
-fig = figure('Position',[680 680 1140 370]);
-e = errorbar(mean_peaks_rois,sem_peaks_rois,'o');
-for roi_i = 1:length(e)
-    e(roi_i).Color = cols(length(e)+1-roi_i,:);
+mean_peaks_rois_norm = mean_peaks_rois./mean_peaks_rois(:,1,:);
+sem_peaks_rois_norm = sem_peaks_rois./mean_peaks_rois(:,1,:);
+% sort arrays by ROIs with highest percent modulation 
+[~,sort_rois] = sort(abs(peaks_per_change_rois(:,sort_amp_ind)),'descend');
+roi_inds = 1:num_rois;
+roi_inds1 = roi_inds(sort_rois);
+mean_peaks_rois = mean_peaks_rois(sort_rois,:,:);
+std_peaks_rois = std_peaks_rois(sort_rois,:,:);
+sem_peaks_rois = sem_peaks_rois(sort_rois,:,:);
+% per change of mean peak between stim and control within trial
+peaks_per_change_rois = peaks_per_change_rois(sort_rois,:);
+peaks_per_change_std_rois = peaks_per_change_std_rois(sort_rois,:);
+peaks_per_change_sem_rois = peaks_per_change_sem_rois(sort_rois,:);
+% normalized peaks to mean control
+mean_peaks_rois_norm = mean_peaks_rois_norm(sort_rois,:,:);
+sem_peaks_rois_norm = sem_peaks_rois_norm(sort_rois,:,:);
+%% Analyze ROI specific modulation
+% peaks : [num_trains x num_rois x num_stim x num_trials]
+if any(in.plot_figs == 5)            
+    % Plot peaks
+    fig = figure('Units','normalized');
+    fig.Position = [0.001 0.03 in.fig_size];
+    for i = 1:num_rois
+        xi = [i-0.3,i+0.3];
+        for j = 1:num_conditions
+            errorbar(xi,squeeze(mean_peaks_rois(i,:,j)),...
+                    squeeze(sem_peaks_rois(i,:,j)),'-','Color',cols(j,:));
+            hold on;
+        end        
+    end    
+    ax = gca;    
+    xlabel('ROI index');
+    ylabel('Mean peak \Delta F/F_{0} ')
+    box off; grid on;
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
+    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change)',...
+            mode(num_stim*num_trials)));    
+    ax.XTick = 1:num_rois;
+    ax.XTickLabel = roi_inds1;
+    if save_figs
+        printFig(fig,analysis_fig_fold,'mean_peaks_rois');
+    end
+    % Plot norm peaks
+    fig = figure('Units','normalized');
+    fig.Position = [0.001 0.03 in.fig_size];           
+    for j = 1:num_conditions
+        errorbar(squeeze(mean_peaks_rois_norm(:,2,j)),...
+                squeeze(sem_peaks_rois_norm(:,2,j)),'o','Color',cols(j,:),...
+                'MarkerFaceColor',cols(j,:));
+        hold on;
+    end        
+    ax = gca;    
+    xlabel('ROI index');
+    ylabel('Mean peak \Delta F/F_{0} (norm. to 0 mA)')
+    box off; grid on;
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
+    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change)',...
+            mode(num_stim*num_trials)));    
+    ax.XTick = 1:num_rois;
+    ax.XTickLabel = roi_inds1;
+    ax.YLim
+    if save_figs
+        printFig(fig,analysis_fig_fold,'mean_peaks_rois_norm');
+    end
+    % Plot percent modulation    
+    fig = figure('Units','normalized');
+    fig.Position = [0.001 0.03 in.fig_size];           
+    for j = 1:num_conditions
+        xpos = (1:num_rois) + rand(1,num_rois)*0.4;
+        errorbar(xpos,squeeze(peaks_per_change_rois(:,j)),...
+                squeeze(peaks_per_change_sem_rois(:,j)),'o','Color',cols(j,:),...
+                'MarkerFaceColor',cols(j,:));
+        hold on;
+    end        
+    ax = gca;    
+    xlabel('ROI index');
+    ylabel('Change in mean peak \Delta F/F_{0} (%)')
+    box off; grid on;
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
+    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change)',...
+            mode(num_stim*num_trials)));    
+    ax.XTick = 1:num_rois;
+    ax.XTickLabel = roi_inds1;
+    ax.YLim = [-200 200];
+    if save_figs
+        printFig(fig,analysis_fig_fold,'mean_peaks_rois_per_change');
+    end  
 end
-xlabel('ROI index');
-ylabel('Mean peak \Delta F/F_{0} ')
-box off; grid on;
-legend(cond_names,'Box','off')
-title('Mean +/- SEM (60 stimuli per ROI, sorted by % change)')
-ax = gca;
-ax.XTick = 1:num_rois;
-ax.XTickLabel = roi_inds1; 
-if save_figs
-    printFig(fig,analysis_fig_fold,'mean_peaks_rois');
-end
-% Plot norm peaks
-fig = figure('Position',[680 680 1140 370]);
-e = errorbar(mean_peaks_rois_norm,sem_peaks_rois_norm,'o');
-for roi_i = 1:length(e)
-    e(roi_i).Color = cols(length(e)+1-roi_i,:);
-end
-xlabel('ROI index');
-ylabel('Mean peak \Delta F/F_{0} (norm.)')
-box off; grid on;
-legend(cond_names,'Box','off')
-title('Mean +/- SEM (60 stimuli per ROI, sorted by % change)')
-ax = gca;
-ax.XTick = 1:num_rois;
-ax.XTickLabel = roi_inds1; 
-if save_figs
-    printFig(fig,analysis_fig_fold,'mean_peaks_rois_norm');
-end
-% Plot modulation
-fig = figure('Position',[680 680 1140 370]);
-% plot(per_change,'o');
-e = errorbar(per_change_rois,per_change_sem_rois,'o');
-ylim([-100 250]);
-xlabel('ROI index');
-ylabel('Mean % change in peak vs. 0 mA');
-box off; 
-ax = gca;
-ax.XTick = 1:num_rois;
-ax.XTickLabel = roi_inds1; 
-legend(cond_names(~cont_ind),'Box','off')
-grid on;
-cols_not_cont = cols(~cont_ind,:); %not control colors
-for roi_i = 1:length(e)
-    e(roi_i).Color = cols_not_cont(length(e)+1-roi_i,:);
-end
-if save_figs
-    printFig(fig,analysis_fig_fold,'mean_peaks_per_change');
-end
-%% Plot box plot of mean peaks normalized within ROIs to 0 mA 
-mean_peaks_rois_norm_cell = mat2cell(mean_peaks_rois_norm,size(mean_peaks_rois_norm,1),ones(1,size(mean_peaks_rois_norm,2)));
-plotSummaryStats(mean_peaks_rois_norm_cell,[],cond_names,'Mean peak \Delta F/F_{0}','norm.',...
-                 'exp_date',exp_date,'reporter',reporter,'dish',dish,...
-                 'save_fig',save_figs,'fig_dir',analysis_fig_fold);
-
 %% Bar plot of frac. modulation
-% peak_inc_rois = mean_peaks_rois_norm(:,2:end) > 1 + sem_peaks_rois_norm(:,1);
-% peak_dec_rois = mean_peaks_rois_norm(:,2:end) < 1 - sem_peaks_rois_norm(:,1);
-bar_mode = 2;
-peak_inc_rois = mean_peaks_rois_norm(:,~cont_ind) - sem_peaks_rois_norm(:,~cont_ind) > 1 + sem_peaks_rois_norm(:,cont_ind);
-peak_dec_rois = mean_peaks_rois_norm(:,~cont_ind) + sem_peaks_rois_norm(:,~cont_ind) < 1 - sem_peaks_rois_norm(:,cont_ind);
-per_inc_rois = 100*sum(peak_inc_rois)/num_rois;
-per_dec_rois = 100*sum(peak_dec_rois)/num_rois; 
-per_nochange_rois = 100 - per_inc_rois - per_dec_rois; 
-fig = figure; 
-if bar_mode == 1
-    b = bar([per_nochange_rois;per_dec_rois;per_inc_rois]','stacked');
-else
-    b = bar([per_nochange_rois;per_dec_rois;per_inc_rois]');
+if any(in.plot_figs == 6)
+    % peak_inc_rois = mean_peaks_rois_norm(:,2:end) > 1 + sem_peaks_rois_norm(:,1);
+    % peak_dec_rois = mean_peaks_rois_norm(:,2:end) < 1 - sem_peaks_rois_norm(:,1);
+    bar_mode = 2;
+    peak_inc_rois = mean_peaks_rois_norm(:,2,:) - sem_peaks_rois_norm(:,2,:) > 1 + sem_peaks_rois_norm(:,1,:);
+    peak_dec_rois = mean_peaks_rois_norm(:,2,:) + sem_peaks_rois_norm(:,2,:) < 1 - sem_peaks_rois_norm(:,1,:);
+    per_inc_rois = squeeze(100*sum(peak_inc_rois)/num_rois);
+    per_dec_rois = squeeze(100*sum(peak_dec_rois)/num_rois);
+    per_nochange_rois = 100 - per_inc_rois - per_dec_rois;
+    fig = figure('Units','normalized');
+    fig.Position = [0.001 0.03 in.fig_size];        
+    if bar_mode == 1 % stacked bars
+        b = bar([per_nochange_rois,per_dec_rois,per_inc_rois],'stacked');
+    else
+        b = bar([per_nochange_rois,per_dec_rois,per_inc_rois]);
+    end
+    ax = gca;
+    ax.XTick = 1:length(cond_names);
+    ax.XTickLabel = cond_names;
+    legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');    
+    ylabel('% ROIs');
+    box off;
+    title(sprintf('Proportion of %g ROIs modulated by DC',num_rois))
+    if save_figs
+        printFig(fig,analysis_fig_fold,['per_change_rois_bar' num2str(bar_mode)]);
+    end
+
 end
-% b(1).FaceColor = cols(2,:);
-% b(2).FaceColor = cols(3,:);
-ax = gca;
-ax.XTick = 1:length(cond_names(~cont_ind));
-ax.XTickLabel = cond_names(~cont_ind); 
-legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
-% ax.XTick = 1:3; 
-% ax.XTickLabel = {'No change','Decrease','Increase'};
-% legend('1 mA','3 mA');
-ylabel('% ROIs');
-box off; 
-if save_figs
-    printFig(fig,analysis_fig_fold,['per_change_rois_bar' num2str(bar_mode)]);
-end
+
 end

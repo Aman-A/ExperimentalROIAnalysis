@@ -125,18 +125,32 @@ end
 if ~exist('filedir','var')
     filedir = datai.recording.filedir;
 end
+% Analyze traces
+if isfield(datai.func_output,'deltaF_F0_aligned')        
+    deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
+    mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3 4],'omitnan'); % average across stimuli and trials
+end
+if isfield(datai.func_output,'deltaF_F0_aligned2')
+    deltaF_F0_aligned2 = trialsCell2Mat(deltaF_F0_aligned2);
+end
+if strcmp(in.analyze_traces,'deltaF_F0_aligned')
+    analyze_aligned_traces = deltaF_F0_aligned; 
+    train_peak_baseline_mode = 1; 
+elseif strcmp(in.analyze_traces,'deltaF_F0_aligned2')
+    analyze_aligned_traces = deltaF_F0_aligned2; 
+    train_peak_baseline_mode = 2; 
+end
 if strcmp(in.roi_func_mode,'combine')    
     deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
     bslines = cell2mat(bslines); % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2,'omitnan'); % average across trials    
-    if isfield(datai.func_output,'deltaF_F0_aligned')        
-        deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
-        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings(1),...
+    if regexp(in.analyze_traces,'aligned')                
+        analysis = analyzeStimAlignedTraces(analyze_aligned_traces,exp_settings(1),...
                                             'funcs',analysis_funcs,...
                                             'load',in.load_processed_data,...
                                             'save_dir',filedir,...
-                                            'fwhm_spline_interp',in.fwhm_spline_interp);  
-        mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3 4],'omitnan'); % average across stimuli and trials
+                                            'fwhm_spline_interp',in.fwhm_spline_interp,...
+                                            'train_peak_baseline_mode',train_peak_baseline_mode);          
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else
@@ -150,14 +164,13 @@ if strcmp(in.roi_func_mode,'combine')
             exp_settings(1).baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
 elseif strcmp(in.roi_func_mode,'separate') 
     % [num_frames x num_rois x num_stim x num_trials]    
-    if isfield(datai.func_output,'deltaF_F0_aligned')
-        deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned);
-        analysis = analyzeStimAlignedTraces(deltaF_F0_aligned,exp_settings(1),...
+    if regexp(in.analyze_traces,'aligned')     
+        analysis = analyzeStimAlignedTraces(analyze_aligned_traces,exp_settings(1),...
                                             'funcs',analysis_funcs,...
-                                            'load',in.load_processed_data,...
+                                            'load',0,... % in.load_processed_data
                                             'save_dir',filedir,...
-                                            'fwhm_spline_interp',in.fwhm_spline_interp);  
-        mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[3 4],'omitnan'); % average across stimuli and trials
+                                            'fwhm_spline_interp',in.fwhm_spline_interp,...
+                                            'train_peak_baseline_mode',train_peak_baseline_mode);
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else
@@ -184,7 +197,7 @@ if isfield(datai.func_output,'deltaF_F0_aligned')
     trials_data.mean_deltaF_F0_aligned = mean_deltaF_F0_aligned;
 end
 if isfield(datai.func_output,'deltaF_F0_aligned2')
-    trials_data.deltaF_F0_aligned2 = trialsCell2Mat(deltaF_F0_aligned2);    
+    trials_data.deltaF_F0_aligned2 = deltaF_F0_aligned2;    
 end
 if any(strcmp('mean',in.funcs))
     means = trialsCell2Mat(means);
