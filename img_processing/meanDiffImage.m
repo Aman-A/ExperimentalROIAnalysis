@@ -26,8 +26,8 @@ if any(remove_stim_inds)
 end
 num_trains = size(stim_frames,1);
 num_stim = size(stim_frames,2);
-switch peak_mode
-    case 'max'
+if ischar(peak_mode)    
+    if strcmp(peak_mode,'max')
         for i = 1:num_trains
             mean_diffi = zeros(img_size); % mean image of ith pulse train
             for j = 1:num_stim
@@ -40,7 +40,7 @@ switch peak_mode
             mean_diff = mean_diff + mean_diffi;
         end
         mean_diff = mean_diff/num_trains; % average across trains
-    case 'mean'
+    elseif strcmp(peak_mode,'mean')
         for i = 1:num_trains
             mean_diffi = zeros(img_size); % mean image of ith pulse train
             for j = 1:num_stim
@@ -52,6 +52,25 @@ switch peak_mode
             mean_diffi = mean_diffi/num_stim; % average across stimuli within train
             mean_diff = mean_diff + mean_diffi;
         end
-        mean_diff = mean_diff/num_trains; % average across trains
+        mean_diff = mean_diff/num_trains; % average across trains    
+    end
+elseif isvector(peak_mode)
+    % peak_mode is 1 x 2 vector of start and end post-stim frames to average
+    if peak_mode(2) > stim_wind
+        peak_mode(2) = stim_wind; 
+        fprintf('WARNING: Entered window for averaging in meandiffImage > stim_wind, set to stim_wind\n')
+    end
+    for i = 1:num_trains
+        mean_diffi = zeros(img_size); % mean image of ith pulse train
+        for j = 1:num_stim
+            peakj = mean(vals(:,:,(stim_frames(i,j)+peak_mode(1)):(stim_frames(i,j)+peak_mode(2))),3); % max at each pixel for stim j within train
+            bslinej = mean(vals(:,:,(stim_frames(i,j)-baseline_wind):(stim_frames(i,j)-1)),3); % mean at each pixel
+            mean_diffi = mean_diffi + peakj - bslinej;
+            %     mean_diff = mean_diff + (peaki - bslinei)./bslinei;
+        end
+        mean_diffi = mean_diffi/num_stim; % average across stimuli within train
+        mean_diff = mean_diff + mean_diffi;
+    end
+    mean_diff = mean_diff/num_trains; % average across trains
 end
 end

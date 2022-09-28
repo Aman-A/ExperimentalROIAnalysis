@@ -23,7 +23,9 @@ settings.show_diff_image = [3]; % for diffImage, specify which plots to include,
                          %  any order (1 - Baseline, 2 - Peak, 3 - Difference)
 settings.filt_width = 0; % gaussian filter width, used on peak deltaF to refine 
                % ROI positions
-settings.peak_mode = 'max'; % for diffImage
+settings.peak_mode = 'max'; % 'max', 'mean', or 1x2 vector [start frame, end frame] 
+                            % within which to take mean for diffImage
+settings.diff_image_cmap = 'inferno'; % colormap for diffImage
 settings.funcs = {'mean','baseline','deltaF_F0'}; % functions to compute
 settings.plot_func = 'deltaF_F0'; % function to plot in ROI (plotROIfunc)
 settings.roi_func_mode = 'combine';

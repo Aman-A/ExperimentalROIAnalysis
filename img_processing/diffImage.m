@@ -73,14 +73,17 @@ if exp_settings.num_stim > 0
 else
     peak_stim_img = max(recording.vals,[],3); % peak across recording
 end
+% diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 if in.filt_width > 0
     bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);
     peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);    
 end
-% diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 if any(in.include_plots == 4) && exp_settings.num_stim > 0
     diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
                             exp_settings.stim_wind,in.peak_mode);
+    if in.filt_width > 0
+        diff_img = imgaussfilt(diff_img,in.filt_width); %,'FilterSize',filt_wind);    
+    end
 else
     diff_img = peak_stim_img-bsline_img;
 end

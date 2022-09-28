@@ -11,6 +11,10 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                                       % stim_wind, and baseline_wind, 
                                       % either 'frames' or 'sec'
         sampling_rate {mustBeNumeric} % sampling rate in frames/sec
+        stim_pulse_dur {mustBeNumeric} % Stimulus pulse duration/s, scalar 
+                                       % for uniform duration, or array same
+                                       % size as stim_vals with duration of
+                                       % each stimulus                                
         stim_wind_inds = []; % stimulus windows as either single column vector 
                        % (1 stimulus) or stim_wind x N stimuli x
                        % M trains array
@@ -30,8 +34,9 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
     methods
         function obj = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,...
                                 sampling_rate,varargin)
-%             in.print_level = 0;                 
-%             in = sl.in.processVarargin(in,varargin); 
+%             in.print_level = 0;        
+              in.stim_pulse_dur = [];
+              in = sl.in.processVarargin(in,varargin); 
             if nargin > 0
                 obj.stim_vals = stim_vals;
                 obj.stim_wind = stim_wind;
@@ -40,6 +45,7 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                 obj.sampling_rate = sampling_rate;                        
                 obj.num_trains = size(obj.stim_vals,1);
                 obj.num_stim = size(obj.stim_vals,2);
+                obj.stim_pulse_dur = in.stim_pulse_dur; 
             end            
             convert2Frames(obj);  
             getWindInds(obj);            
@@ -50,6 +56,9 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                     obj.stim_vals = round(obj.stim_vals*obj.sampling_rate); % round to nearest frame
                     obj.stim_wind = round(obj.stim_wind*obj.sampling_rate);
                     obj.baseline_wind = round(obj.baseline_wind*obj.sampling_rate);
+                    if ~isempty(obj.stim_pulse_dur)
+                        obj.stim_pulse_dur = max(round(obj.stim_pulse_dur*obj.sampling_rate),1); % if <1 frame, set to 1
+                    end
                     obj.units = 'frames';                    
                 end            
             else
@@ -64,6 +73,7 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                    obj.stim_vals = obj.stim_vals/obj.sampling_rate; 
                    obj.stim_wind = obj.stim_wind/obj.sampling_rate; 
                    obj.baseline_wind = obj.baseline_wind/obj.sampling_rate;                
+                   obj.stim_pulse_dur = obj.stim_pulse_dur/obj.sampling_rate; 
                    obj.units = 'sec';                   
                 end           
             elseif nargin == 2 % just convert input value/s
@@ -101,9 +111,9 @@ classdef ExperimentSettings < handle % Stimulus, recording, and analysis setting
                 end            
             end
         end
-        function t = getTimeVector(obj,num_frames)
+        function t = getTimeVector(obj,num_frames)            
             x = (1:num_frames)';
-            t = convert2Time(obj,x);
+            t = convert2Time(obj,x);            
 %             if length(obj.stim_vals) == 1
 %                 if strcmp(obj.units,'frames')
 %                     stim_time = convert2Time(obj,obj.stim_vals);

@@ -22,7 +22,8 @@ in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(fu
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
-in.stim_marker_mode = 2; % 1 for points, 2 for vertical lines
+in.stim_marker_mode = []; % 1 for points, 2 for vertical lines, 3 for horz (needs stim_pulse_dur)
+in.stim_pulse_dur = []; % duration of stimulus pulses, default ignore
 in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
@@ -32,6 +33,7 @@ else
     ax = in.ax; 
 end
 y = func_output.(func_name);
+baseline_wind = size(func_output.baseline_wind_inds,1);
 if regexp(func_name,'aligned','ONCE') 
 %     std_y = std(y,0,ndims(y));
     if strcmp(func_name,'deltaF_F0_aligned')
@@ -76,7 +78,7 @@ else
         stim_frames = stim_frames - stim_frames(1); 
     end    
     if regexp(func_name,'aligned','ONCE')
-        x = x - x(size(func_output.baseline_wind_inds,1)+1); 
+        x = x - x(baseline_wind+1); 
     end
     unit_str = 'sec'; 
 end
@@ -181,7 +183,11 @@ set(lns,{'DisplayName'},display_names); % set legend names
 if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers 
                                                % if plotting stim aligned 
                                                % traces
-    stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax);
+    stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax,...
+                                         'stim_pulse_dur',in.stim_pulse_dur);
+else
+    stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
+                                            ax,'stim_pulse_dur',in.stim_pulse_dur);
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 if strcmp(func_name,'deltaF_F0')
