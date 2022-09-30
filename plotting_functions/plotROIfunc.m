@@ -87,9 +87,11 @@ if isempty(in.rois)
     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');    
 else
     num_rois = in.rois.num_rois; 
-    roi_names = in.rois.names; 
+%     roi_names = in.rois.names; 
+    roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');     
 end
 hold(ax,'on'); 
+sbar_hand = [];
 if strcmp(func_output.roi_func_mode,'combine')    
     if length(func_output.roi_inds) < num_rois
         roi_str = sprintf('%g/%g ROIs',length(func_output.roi_inds),...
@@ -106,7 +108,7 @@ if strcmp(func_output.roi_func_mode,'combine')
 %     title_str = [title_str sprintf(' (%s combined)',roi_str)];
     % Plot on single axis
     lns = plot(ax,x,y); % plot trace/s
-%     lns = shadedErrorBar(x,y,std_y);
+%     lns = shadedErrorBar(x,y,std_y);   
 else
     display_names = roi_names;
 %     display_names = cellfun(@(x) sprintf('%s: %s',func_output.img_name,x),...
