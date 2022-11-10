@@ -9,7 +9,10 @@ if all(num_rows == num_rows(1)) % all same number of frames
         % [num_frames x num_rois x num_stim/num_trains x num_trials] 4D matrix
         % or [num_frames x num_rois x num_trains x num_stim x num_trials]
         % if num_rois == 1, gives [num_frames x 1 x num_stim x num_trials]
-        traces_mat = squeeze(cell2mat(reshape(traces_cell_array,1,1,1,1,num_trials))); 
+%         traces_mat = squeeze(cell2mat(reshape(traces_cell_array,1,1,1,1,num_trials))); 
+        num_dims = ndims(traces_cell_array{1});
+        dims_cell = num2cell(ones(1,num_dims));
+        traces_mat = cell2mat(reshape(traces_cell_array,dims_cell{:},num_trials)); 
     else
         error('Number of columns (ROIs) not consistent between trials'); 
     end

@@ -29,7 +29,6 @@ end
 plot_trials = ~strcmp(in.plot_func,'none') && all(in.plot_func~=0) ...
                 && ~isempty(in.plot_func); 
 if in.overlay_trials && plot_trials
-    trace_fig = figure; 
     trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [0.4 0.4]; 
     if strcmp(in.roi_func_mode,'combine')
         trace_axis = gca; 
@@ -128,7 +127,6 @@ end
 % Analyze traces
 if isfield(datai.func_output,'deltaF_F0_aligned')        
     deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
-    mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3 4],'omitnan'); % average across stimuli and trials
 end
 if isfield(datai.func_output,'deltaF_F0_aligned2')
     deltaF_F0_aligned2 = trialsCell2Mat(deltaF_F0_aligned2);
@@ -144,6 +142,7 @@ if strcmp(in.roi_func_mode,'combine')
     deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
     bslines = cell2mat(bslines); % num_stim x num_trials 
     mean_deltaF_F0 = mean(deltaF_F0,2,'omitnan'); % average across trials    
+    mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[2 3 4],'omitnan'); % average across stimuli and trials
     if regexp(in.analyze_traces,'aligned')                
         analysis = analyzeStimAlignedTraces(analyze_aligned_traces,exp_settings(1),...
                                             'funcs',analysis_funcs,...
@@ -163,7 +162,8 @@ if strcmp(in.roi_func_mode,'combine')
     fprintf('  Mean baseline (%g frames, 1st stim) across trials = %.3f +/- %.3f\n',...
             exp_settings(1).baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
 elseif strcmp(in.roi_func_mode,'separate') 
-    % [num_frames x num_rois x num_stim x num_trials]    
+    % [num_frames x num_rois x num_stim x num_trials] 
+    mean_deltaF_F0_aligned = mean(deltaF_F0_aligned,[3 4],'omitnan'); % average across stimuli and trials
     if regexp(in.analyze_traces,'aligned')     
         analysis = analyzeStimAlignedTraces(analyze_aligned_traces,exp_settings(1),...
                                             'funcs',analysis_funcs,...

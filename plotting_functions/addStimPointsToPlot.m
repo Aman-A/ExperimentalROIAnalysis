@@ -68,7 +68,10 @@ if ~any(ind_stim_times) % only plot if stim times don't already exist on this ax
 else
     %     global_peak = max([ax.Children(~ind_stim_times).YData],[],'all');
     %     ax.Children(ind_stim_times).YData = global_peak*1.05;
-    ax.Children(ind_stim_times).YData = ax.YLim(2)*0.99*ones(1,length(stim_frames));
+    stimpoints_hand = ax.Children(ind_stim_times);
+    if stim_marker_mode == 1
+        stimpoints_hand.YData = ax.YLim(2)*0.99*ones(1,length(stim_frames));
+    end
 end
 
 end
