@@ -68,7 +68,7 @@ if in.save_sep_images
        mkdir(sep_images_dir); 
        fprintf('Made %s to save stack as separate image fils\n',sep_images_dir); 
     end
-    fitswrite(img_stack(:,:,1),fullfile(sep_images_dir,[img_name1 '.fits']))
+    fitswrite(img_stack(:,:,1),fullfile(sep_images_dir,['1_' img_name1 '.fits']))
 end
 
 for i = 1:length(trial_folders)    
@@ -93,7 +93,7 @@ for i = 1:length(trial_folders)
             img_stack(:,:,trial_ind) = bsline_img;
         end
         if in.save_sep_images
-            path_to_img = fullfile(sep_images_dir,[img_namesi{j} '.fits']); 
+            path_to_img = fullfile(sep_images_dir,[num2str(i),'_',img_namesi{j} '.fits']); 
             fitswrite(img_stack(:,:,trial_ind),path_to_img)
         end
         trial_ind = trial_ind + 1; 

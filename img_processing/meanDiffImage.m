@@ -19,7 +19,7 @@ img_size = size(vals,[1 2]);
 mean_diff = zeros(img_size);
 remove_stim_inds = stim_frames + stim_wind > size(vals,3);
 if any(remove_stim_inds)
-   fprintf('Warning: %g stim frames excluded due to stim_wind exceeding recording length\n',...
+   fprintf('Warning: %g stim frames excluded due to stim_wind exceeding recording length (meanDiffImage)\n',...
            sum(remove_stim_inds));  
    stim_frames(remove_stim_inds) = []; % remove stimuli at frames where window 
                                        % goes beyond 

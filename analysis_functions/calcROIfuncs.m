@@ -79,7 +79,16 @@ end
 baseline_wind_inds = exp_settings.baseline_wind_inds; 
 exp_settings.convert2Frames(); 
 stim_frames = exp_settings.stim_vals; % stimulus frames 
+stim_wind = exp_settings.stim_wind; % post-stim window in frames
 if recording.loaded == 0; recording.load(); end
+% Truncate stim_frames based on length of recording
+remove_stim_inds = stim_frames + stim_wind > size(recording.vals,3);
+if any(remove_stim_inds)
+   stim_frames(remove_stim_inds) = []; 
+   baseline_wind_inds(:,remove_stim_inds) = []; 
+   fprintf('Warning: %g stim frames excluded due to stim_wind exceeding recording length (calcROIfuncs)\n',...
+           sum(remove_stim_inds));  
+end
 % Compute functions in ROIs
 tic; 
 switch roi_func_mode    
@@ -115,11 +124,12 @@ end
 %% Apply photobleaching correction
 if in.rem_pbleach
     assert(any(strcmp(funcs,'mean')),'Need to compute mean for photobleach correction')    
-    max_stim_interval = max(diff(stim_frames(:)));
-    if length(stim_frames) == 1
-        max_stim_interval = stim_frames(1); 
-    elseif length(stim_frames) == 0
+    if isempty(stim_frames)
         max_stim_interval = round(size(output.mean,1)/10);
+    elseif length(stim_frames) == 1
+        max_stim_interval = stim_frames(1); 
+    else
+        max_stim_interval = max(diff(stim_frames(:)));
     end
     if in.rem_pbleach_method == 1 % method from Adam Cohen rem_pbleach code
         interp_interval = min(round(max_stim_interval*1.2),size(output.mean,1));
@@ -153,7 +163,6 @@ end
 %% Generate stim-aligned traces using means
 if any(strcmp(funcs,'mean'))
     baseline_wind = exp_settings.baseline_wind;
-    stim_wind = exp_settings.stim_wind;
     align_output = calcStimAlignedResponses(output.mean,stim_frames,...
                                             baseline_wind,stim_wind,...
                                             'use_train_baseline',...
@@ -189,6 +198,7 @@ else
     output.trec = trec; 
 end
 output.baseline_wind_inds = baseline_wind_inds; 
+output.stim_frames = stim_frames; 
 %% Function for applying function to image data within ROI masks
 function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)    
     output_new = output; 

@@ -107,6 +107,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                        getFitsInfo(obj);  
                     elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif') 
                        getTiffInfo(obj); 
+                    else
+                        error('''%s'' file format currently not supported',obj.format)
                     end
                 else
                    error('%s does not exist\n',obj.filepath);  
@@ -131,45 +133,13 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                         obj.filepath = filepath_loc; 
                     end  
                     obj.vals = fitsread(obj.filepath); % now try loading again
-                end
-%                 if ispc
-%                     obj.vals = flipud(obj.vals); 
-%                     fprintf('Flipping y axis, check!!\n'); 
-%                 end                
+                end             
             elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')   
-                  obj.vals = double(tiffreadVolume(obj.filepath)); % 8.6 sec (ssd), 35.5 sec (hd)
-%                 tic
-%                 tiff_info = imfinfo(obj.filepath); % 12.92 sec
-%                 obj.vals = zeros(tiff_info(1).Height,tiff_info(1).Width,length(tiff_info));
-%                 for i = 1:size(obj.vals,3)
-%                     obj.vals(:,:,i) = imread(obj.filepath,'tiff',i,'info',tiff_info);
-%                 end
-%                 toc                                       
-%                   tic
-%                   tiff_stack = TIFFStack(obj.filepath);  % 10.335 sec                
-%                   obj.vals = tiff_stack(:,:,:); 
-%                   toc
-%                   
-%                 tic
-%                 tiff_obj = Tiff(obj.filepath,'r'); % 15 sec (hd), 13.95 (ssd)
-%                 [I,J] = size(tiff_obj.read());
-%                 K = length(imfinfo(obj.filepath));
-%                 obj.vals = zeros(I,J,K);
-%                 obj.vals(:,:,1) = tiff_obj.read(); 
-%                 for n = 2:K
-%                     tiff_obj.nextDirectory();
-%                     obj.vals(:,:,n) = tiff_obj.read();
-%                 end
-%                 close(tiff_obj);
-%                 toc
+                  obj.vals = single(tiffreadVolume(obj.filepath)); % 8.6 sec (ssd), 35.5 sec (hd)
             else
                error('Other file formats not implemented yet');  
             end
             obj.loaded = true; 
-            obj.imsize = size(obj.vals);            
-            if length(obj.imsize) == 2
-               obj.imsize = [obj.imsize 1];  
-            end
             if print_status > 0                
                 fprintf('Loaded %g x %g x %g image stack from %s\n',...
                          obj.imsize,obj.filepath); 
@@ -191,8 +161,9 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 fprintf('Unloaded image stack\n'); 
             end
         end
-        function getFitsInfo(obj)
+        function info = getFitsInfo(obj)
             info = fitsinfo(obj.filepath);
+            obj.imsize = info.PrimaryData.Size; 
             if any(strcmp('EXPOSURE',info.PrimaryData.Keywords(:,1)))
                 obj.exposure_time = ...
                     info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};
@@ -212,7 +183,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 end
             end            
         end
-        function getTiffInfo(obj)
+        function info = getTiffInfo(obj)
             info = imfinfo(obj.filepath);
             img_desc = info.ImageDescription; 
             [~,exp_ind] = regexp(img_desc,'Exposure1 = ','ONCE');
@@ -220,6 +191,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             if ~isempty(exp_ind) % get exposure time for HCImage multi-page tiff 
                 obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
             end
+            obj.imsize = [info(1).Height,info(1).Width,length(info)];
         end
         function plot(obj,frame)
             if nargin < 2

@@ -41,22 +41,22 @@ if in.method == 1
 %     pbleach = filter(b,a,pbleach)
     Fc = F./pbleach;
 elseif in.method == 2
-    error('Not implemented yet')
-%     meanF = mean(F,2,'omitnan');
-%     meanF = smooth(meanF,in.interp_interval); % smooth with moving average
-%     fit_eqn = 'a*exp(-x/b)';    
-%     upper_bounds = [max(meanF),10]; % max photobleaching time constant 10 sec
-%     lower_bounds = [0,0];
-%     start_points = [max(meanF)/2,0.05];
-%     s = fitoptions('Method','NonlinearLeastSquares',...
-%                            'Lower',lower_bounds,...
-%                            'Upper',upper_bounds,...
-%                            'Startpoint',start_points);
-%     f = fittype(fit_eqn,'options',s); 
-%     t_fit = (1:size(meanF,1))'-1;
-%     [fitobj,gof,~] = fit(t_fit,meanF,f);
-%     pbleach = fitobj(t_fit);
-%     Fc = F./pbleach; 
+%     error('Not implemented yet')
+    meanF = mean(F,2,'omitnan');
+    meanF = smooth(meanF,in.interp_interval); % smooth with moving average
+    fit_eqn = 'a*exp(-x/b)';    
+    upper_bounds = [max(meanF),length(meanF)]; % max photobleaching time constant 10 sec
+    lower_bounds = [0,0];
+    start_points = [max(meanF)*0.8,length(meanF)/2];
+    s = fitoptions('Method','NonlinearLeastSquares',...
+                           'Lower',lower_bounds,...
+                           'Upper',upper_bounds,...
+                           'Startpoint',start_points);
+    f = fittype(fit_eqn,'options',s); 
+    t_fit = (1:size(meanF,1))'-1;
+    [fitobj,gof,~] = fit(t_fit,meanF,f);
+    pbleach = fitobj(t_fit);
+    Fc = F - pbleach; 
 end
 
 end

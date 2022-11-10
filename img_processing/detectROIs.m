@@ -8,6 +8,7 @@ in.plot_figs = 1;
 in.save_figs = 0;
 in.min_distance = 3.2; % microns, set to 0 to skip (3.2 = 8 pixel diam ROI on ixon 897 with 40x)
 in.min_distance_to_edge = 3.2; % microns
+in.filt_width = 0; % gaussian filter window (pixels), set to 0 for no filter
 in = sl.in.processVarargin(in,varargin);
 
 if ischar(recording) % path to recording file
@@ -24,13 +25,17 @@ end
 recording.load(); 
 pixel_size = recording.pixel_size;
 vals = max(recording.vals,[],3); % max Z projection if recording is image stack 
+if in.filt_width > 0
+    vals = imgaussfilt(vals,in.filt_width); 
+    fprintf('Applied gaussian filter with width = %g pixels\n',in.filt_width); 
+end
 % Binarize using threshold
 if intens_thresh < 1
-    intens_thresh = quantile(recording.vals(:),intens_thresh);
+    intens_thresh = quantile(vals(:),intens_thresh);
 end
-vals(recording.vals<intens_thresh) = 0; 
-vals(recording.vals>=intens_thresh) = 1;
-vals = logical(vals); 
+vals_bin = zeros(size(vals)); 
+vals_bin(vals>=intens_thresh) = 1;
+vals_bin = logical(vals_bin); 
 % Fill 
 % remove objects below area_thresh
 % vals_holes = bwareaopen(vals,area_thresh(1));
@@ -39,7 +44,7 @@ if length(area_thresh_px) == 1 % input min cutoff only
    % assign max possible for upper range
     area_thresh_px = [area_thresh_px recording.imsize(1)*recording.imsize(2)];
 end
-vals_holes = bwareafilt(vals,area_thresh_px);
+vals_holes = bwareafilt(vals_bin,area_thresh_px);
 vals_filled = imfill(vals_holes,'holes');
 % Get contours
 [B,L] = bwboundaries(vals_filled,4,'noholes'); % draw boundaries on regions connected by edges (not just corners)
@@ -96,7 +101,7 @@ end
 fprintf('Detected %g ROIs!\n',rois.num_rois)
 if in.plot_figs
     fig1 = figure('Units','inches');
-    imshowpair(vals,vals_holes,'falsecolor'); ax = gca;
+    imshowpair(vals_bin,vals_holes,'falsecolor'); ax = gca;
     fig1.Position = [0.42 6.4 20.5 5.2]; 
     title(sprintf('Excluded regions with areas < %g and > %g \\mu m^2 (green) and neighbors < %g \\mu m apart (red)',...
         area_thresh(1),area_thresh(2),in.min_distance))
