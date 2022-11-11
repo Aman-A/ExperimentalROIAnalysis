@@ -151,7 +151,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     spike_thresh = in.spike_thresh;         
     decay_fit_order = in.decay_fit_order;
     if length(exp_settings.stim_vals) > 1
-        ISI = exp_settings.convert2Time(max(diff(exp_settings.stim_vals))); % max inter-spike interval in sec
+        ISI = exp_settings.convert2Time(max(diff(exp_settings.stim_vals(:)))); % max inter-spike interval in sec
     else
         ISI = (t(end) - t(baseline_wind+1))*2; % recording time post stim
     end
