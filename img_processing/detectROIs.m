@@ -9,6 +9,7 @@ in.save_figs = 0;
 in.min_distance = 3.2; % microns, set to 0 to skip (3.2 = 8 pixel diam ROI on ixon 897 with 40x)
 in.min_distance_to_edge = 3.2; % microns
 in.filt_width = 0; % gaussian filter window (pixels), set to 0 for no filter
+in.filt_type = 'gaussian'; % 'gaussian' or 'log' (inputs to fspecial.mat)
 in = sl.in.processVarargin(in,varargin);
 
 if ischar(recording) % path to recording file
@@ -26,8 +27,12 @@ recording.load();
 pixel_size = recording.pixel_size;
 vals = max(recording.vals,[],3); % max Z projection if recording is image stack 
 if in.filt_width > 0
-    vals = imgaussfilt(vals,in.filt_width); 
-    fprintf('Applied gaussian filter with width = %g pixels\n',in.filt_width); 
+%     vals = imgaussfilt(vals,in.filt_width); 
+%     fprintf('Applied gaussian filter with width = %g pixels\n',in.filt_width); 
+    hsize = 2*ceil(2*in.filt_width)+1;  % default imgaussfilt def of filter size
+    h = fspecial(in.filt_type,hsize,in.filt_width);
+    vals = imfilter(vals,h,'replicate');
+    fprintf('Applied %s filter with width %g pixels\n',in.filt_type,in.filt_width)
 end
 % Binarize using threshold
 if intens_thresh < 1
