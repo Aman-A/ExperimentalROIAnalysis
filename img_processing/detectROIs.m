@@ -7,7 +7,7 @@ in.center_mode = 2; % 0 - off, 1 - cetner based on points, 2 - center based on p
 in.plot_figs = 1;
 in.save_figs = 0;
 in.min_distance = 3.2; % microns, set to 0 to skip (3.2 = 8 pixel diam ROI on ixon 897 with 40x)
-in.min_distance_to_edge = 3.2; % microns
+in.min_distance_to_edge = 2; % microns
 in.filt_width = 0; % gaussian filter window (pixels), set to 0 for no filter
 in.filt_type = 'gaussian'; % 'gaussian' or 'log' (inputs to fspecial.mat)
 in = sl.in.processVarargin(in,varargin);
