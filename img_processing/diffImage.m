@@ -88,7 +88,12 @@ else
     diff_img = peak_stim_img-bsline_img;
 end
 if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
-    fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,recording.img_name,...
+    if ~isempty(recording.condition)
+        img_name = [recording.condition '/' recording.img_name];
+    else
+        img_name = recording.img_name; 
+    end
+    fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,img_name,...
                    exp_settings,in);
 else
     fig_hands = {}; 
