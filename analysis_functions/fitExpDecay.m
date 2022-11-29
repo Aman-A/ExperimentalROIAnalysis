@@ -1,4 +1,4 @@
-function fitExpDecay(t,Y,decay_fit_order,varargin)
+function decay_fit = fitExpDecay(t,Y,decay_fit_order,varargin)
 %FITEXPDECAY Fit traces to monoexponential decay
 %  Assumes single response in traces (columns of array)
 %   Inputs 
@@ -47,21 +47,37 @@ for i = 1:Ntraces
             'Upper',upper_bounds,...
             'Startpoint',start_points);
     f = fittype(fit_eqn,'options',s);
-    [fitobj,gof,~] = fit(t_fit,F_fit,f);
+    [fitobj,gof,~] = fit(t_fit,y_fit,f);
+    fitobjs{i} = fitobj;
+    if gof.rsquare < 0.5
+        fprintf('Warning: R^2 of decay fit = %.3f for trace %g\n',...
+            gof.rsquare,i);
+    end
+    gofs{i} = gof;
+    rsquare(i) = gof.rsquare;
+    A(i) = fitobj.a;
     if decay_fit_order == 1
-        taud1(n) = fitobj.b;
+        taud1(i) = fitobj.b;
     elseif decay_fit_order == 2
         if fitobj.c < fitobj.d
-            taud1(n) = fitobj.c;
-            taud2(n) = fitobj.d;
-            p(n) = fitobj.b;
+            taud1(i) = fitobj.c;
+            taud2(i) = fitobj.d;
+            p(i) = fitobj.b;
         else
-            taud1(n) = fitobj.d;
-            taud2(n) = fitobj.c;
-            p(n) = 1 - fitobj.b;
+            taud1(i) = fitobj.d;
+            taud2(i) = fitobj.c;
+            p(i) = 1 - fitobj.b;
         end
     end
 end
+decay_fit = struct();    
+decay_fit.A = A;
+decay_fit.taud1 = taud1;
+if decay_fit_order == 2
+    decay_fit.taud2 = taud2;
+    decay_fit.p = p;
+end
+decay_fit.rsquare = rsquare;
+decay_fit.fitobjs = fitobjs;
+decay_fit.gofs = gofs;
 
-% plot(t_fit,F_fit,'r');
-% fit

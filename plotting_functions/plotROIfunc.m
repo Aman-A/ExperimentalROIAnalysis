@@ -181,9 +181,7 @@ else
 end
 set(lns,{'DisplayName'},display_names); % set legend names
 
-if isempty(regexp(func_name,'aligned','ONCE')) % don't add stim markers 
-                                               % if plotting stim aligned 
-                                               % traces
+if isempty(regexp(func_name,'aligned','ONCE'))
     stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax,...
                                          'stim_pulse_dur',in.stim_pulse_dur);
 else

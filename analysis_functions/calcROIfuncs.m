@@ -170,7 +170,7 @@ if any(strcmp(funcs,'mean'))
     output.mean_aligned = align_output.mean_aligned;
     output.deltaF_F0_aligned = align_output.deltaF_F0_aligned; 
     ta = exp_settings.getTimeVector(size(align_output.deltaF_F0_aligned,1));
-    output.ta = ta - ta(exp_settings.baseline_wind + 1); % set t = 0 to first stim frame 
+    output.ta = ta - ta(min(exp_settings.baseline_wind + 1,length(ta))); % set t = 0 to first stim frame 
     print_str = 'Generated stimulus aligned means and deltaF/F0 traces\n';
     if isfield(align_output,'deltaF_F0_aligned2') % for num_trains > 1, 
         output.mean_aligned2 = align_output.mean_aligned2;

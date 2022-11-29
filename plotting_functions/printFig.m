@@ -1,5 +1,5 @@
 function printFig(fig_handle,file_dir,file_name,varargin)
-%PRINTFIG ... 
+%PRINTFIG printFig(fig_handle,file_dir,file_name,varargin) 
 %  
 %   Inputs 
 %   ------ 
