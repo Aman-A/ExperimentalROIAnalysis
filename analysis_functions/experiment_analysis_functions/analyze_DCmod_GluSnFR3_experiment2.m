@@ -34,20 +34,20 @@ in.plot_figs = [1:7]; % Select analysis figures to plot
                       % 7 - Plot spatial distribution of percent modulation of 
                       % peak at each intensity
 in.plot_roi_ind = 6; % for 3 - index of ROI to plot
-in.stim_cols = {'k','r'}; % 'Off','On'
-in.dc_conds = {'DC off','DC on'};  
+in.stim_cols = {'k','r','b'}; % 'Off','On','Off'
+in.dc_conds = {'Before','DC on','After'};  
 in.norm_to_cont = 1; % normalize responses to control (DC off) within trial/ROI
 in.data_file_suffix = 'train';
 in.roi_func_mode = 'separate';
 % plot settings
 in.cols = lines(length(cond_inds));
 in.fig_size = [0.97 0.88]; % in 'normalized' units
+in.data_fold = getDataFold();
 in = sl.in.processVarargin(in,varargin);
 
-data_fold = getDataFold();
 cols = in.cols; 
 %% Load data
-exp_fold = fullfile(data_fold,exp_date,reporter,dish);
+exp_fold = fullfile(in.data_fold,exp_date,reporter,dish);
 data_file = sprintf('%s_%s_%s_%s_%s',exp_date,reporter,dish,in.roi_func_mode,...
                                     roiset_filename);
 if ~isempty(in.data_file_suffix)
@@ -195,7 +195,7 @@ if any(in.plot_figs == 2)
         sgtitle(strrep(out.conditions{condj},'_',' '));
         drawnow; 
         if save_figs
-            fig_name = sprintf('meanF_ROIs_%s_DCamp_norm%g',cond_names(condj),in.norm_to_cont);
+            fig_name = sprintf('meanF_ROIs_%s_DCamp_norm%g',cond_names{condj},in.norm_to_cont);
             printFig(fig,analysis_fig_fold,fig_name);
         end
     end
@@ -325,9 +325,9 @@ sem_peaks_rois = trialsCell2Mat(sem_peaks_rois);
 num_trials = cellfun(@(x) size(x,4),peaks,'UniformOutput', 1);
 if all(num_trials == num_trials(1)); num_trials = num_trials(1); end
 % modulation
-[peaks_per_change_rois,peaks_per_change_std_rois] = calcPerErrWithVariance(mean_peaks_rois(:,2:end,:),...
+[peaks_per_change_rois,peaks_per_change_std_rois] = calcPerErrWithVariance(mean_peaks_rois(:,2,:),...
                                                                mean_peaks_rois(:,1,:),...
-                                                               std_peaks_rois(:,2:end,:),...
+                                                               std_peaks_rois(:,2,:),...
                                                                std_peaks_rois(:,1,:));
 peaks_per_change_rois = squeeze(peaks_per_change_rois);
 peaks_per_change_std_rois = squeeze(peaks_per_change_std_rois);    
@@ -358,8 +358,8 @@ if any(in.plot_figs == 5)
     for i = 1:num_rois
         xi = [i-0.3,i+0.3];
         for j = 1:num_conditions
-            errorbar(xi,squeeze(mean_peaks_rois(i,:,j)),...
-                    squeeze(sem_peaks_rois(i,:,j)),'-','Color',cols(j,:));
+            errorbar(xi,squeeze(mean_peaks_rois(i,1:2,j)),...
+                    squeeze(sem_peaks_rois(i,1:2,j)),'-','Color',cols(j,:));
             hold on;
         end        
     end    
@@ -393,7 +393,7 @@ if any(in.plot_figs == 5)
             mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
-    ax.YLim
+%     ax.YLim
     if save_figs
         printFig(fig,analysis_fig_fold,sprintf('mean_peaks_rois_norm_sort%g',sort_amp_ind));
     end
