@@ -21,10 +21,12 @@ A = zeros(1,Ntraces); % amplitude (a.u./%)
 rsquare = zeros(1,Ntraces); % amplitude (a.u./%)
 fitobjs = cell(1,Ntraces);
 gofs = cell(1,Ntraces);
+t_fits = cell(1,Ntraces);
 for i = 1:Ntraces
     [peak_y,ind] = max(Y(:,i));
     y_fit = Y(ind:end,i);
     t_fit = t(ind:end); t_fit = t_fit - t_fit(1); 
+    t_fits{i} = t_fit; 
     if decay_fit_order == 1 % monoexponential decay
         % y = A*exp(-t/taud1)
         fit_eqn = 'a*exp(-x/b)';
@@ -80,4 +82,4 @@ end
 decay_fit.rsquare = rsquare;
 decay_fit.fitobjs = fitobjs;
 decay_fit.gofs = gofs;
-
+decay_fit.t_fits = t_fits; 

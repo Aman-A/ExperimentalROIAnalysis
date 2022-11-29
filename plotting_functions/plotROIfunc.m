@@ -33,6 +33,12 @@ else
     ax = in.ax; 
 end
 y = func_output.(func_name);
+if strcmp(func_name,'mean')
+    y = y - y(1,:); % start all traces at 0 for plot
+    sbar_str = sprintf('Scale bar = %g a.u.',in.sbar_len);
+else
+    sbar_str = sprintf('Scale bar = %g%%',100*in.sbar_len);
+end
 baseline_wind = size(func_output.baseline_wind_inds,1);
 if regexp(func_name,'aligned','ONCE') 
 %     std_y = std(y,0,ndims(y));
@@ -87,8 +93,8 @@ if isempty(in.rois)
     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');    
 else
     num_rois = in.rois.num_rois; 
-%     roi_names = in.rois.names; 
-    roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');     
+    roi_names = in.rois.names; 
+%     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');     
 end
 hold(ax,'on'); 
 sbar_hand = [];
@@ -173,8 +179,7 @@ else
             ax.YAxis.Visible = 'off';
         end
         sbar_hand = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
-                    'k','LineWidth',2,'DisplayName',...
-                    sprintf('Scale bar = %g%%',100*in.sbar_len)); 
+                    'k','LineWidth',3,'DisplayName',sbar_str); 
     else
         lns = plot(ax,x,y); % plot trace/s
     end
@@ -206,11 +211,16 @@ if in.title_on
 end
 % legend(ax.Children(~ind_stim_times)); 
 if in.show_legend
+    if isempty(stimpoints_hand)
+        leg_objs = [lns;sbar_hand];
+    else
+        leg_objs = [lns;stimpoints_hand(1);sbar_hand];
+    end
     if strcmp(func_output.roi_func_mode,'combine')    
-        legend(ax,[lns;stimpoints_hand(1);sbar_hand],'Interpreter','none',...
+        legend(ax,leg_objs,'Interpreter','none',...
             'Box','off','Location','Best');
     else
-        legend(ax,[lns;stimpoints_hand(1);sbar_hand],'Interpreter','none',...
+        legend(ax,leg_objs,'Interpreter','none',...
             'Box','off','Location','EastOutside');
     end
 end

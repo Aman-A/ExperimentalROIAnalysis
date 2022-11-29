@@ -452,5 +452,23 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
              save(filepath,'-STRUCT','data') 
              fprintf('Saved ROIs to %s\n',filepath)
         end
+        function sliced_rois = slice(obj,roi_inds) % assumes all same type
+            sliced_rois = obj.copy(); 
+            if strcmp(obj.types{1},'Oval') || strcmp(obj.types{1},'Polygon')
+                sliced_rois.x0 = sliced_rois.x0(roi_inds);
+                sliced_rois.y0 = sliced_rois.y0(roi_inds);
+                sliced_rois.x = sliced_rois.x(roi_inds);
+                sliced_rois.y = sliced_rois.y(roi_inds);                
+                if strcmp(obj.types{1},'Oval') 
+                    sliced_rois.radius = sliced_rois.radius(roi_inds);
+                end
+            elseif strcmp(obj.types{1},'Rectangle')
+                sliced_rois.r0 = sliced_rois.r0(roi_inds);
+                sliced_rois.r = sliced_rois.r(roi_inds);
+            end
+            sliced_rois.names = sliced_rois.names(roi_inds);
+            sliced_rois.types = sliced_rois.types(roi_inds);
+            sliced_rois.num_rois = length(sliced_rois.names);
+        end
     end    
 end

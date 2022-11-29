@@ -9,6 +9,7 @@ function output = detect_minis(F,settings,method,varargin)
 %       nframes_forward
 %       roi_with_mini_index
 %       blank_around_stim
+% To do: Add width criteria based on upstroke/downstroke of mini (FWHM?)
 in.apply_filter = 0;
 in.filt_type = 'gauss'; % 'butter' or 'gauss'
 in.filt_order = 3; % order of butterworth filter
@@ -22,6 +23,7 @@ in.deconv_tau = 35e-3; % sec (~35 ms is mean decay time constant from my
                        % evoked GluSnFR3 measurements)
 in.refilter_deconv = 1;     
 in.num_frames_skip_start_end = 100; % frames to remove from start/end due to filtering artifacts
+in.offset_factor = 1.01; 
 in = sl.in.processVarargin(in,varargin);
 num_rois = size(F,2); 
 sampling_rate = settings.sampling_rate;
@@ -43,8 +45,12 @@ end
 %% Deconvolution
 if in.deconv    
     F_deconv = deconvSingleExp(F_filt2,sampling_rate,in.deconv_tau); 
-    % normalize
-    F_deconv = F_deconv./max(F_deconv(stim_frames(1):stim_frames(end),:),[],1,'omitnan'); % normalize to max
+    % normalize to max
+    if isempty(stim_frames)
+        F_deconv = F_deconv ./max(F_deconv(in.num_frames_skip_start_end:end-in.num_frames_skip_start_end,:),[],1,'omitnan');
+    else
+        F_deconv = F_deconv./max(F_deconv(stim_frames(1):stim_frames(end),:),[],1,'omitnan'); 
+    end
     gauss_fit_params = zeros(3,num_rois); % 3 parameters
     for i = 1:num_rois
         gauss_fit_params(:,i) = fitHistSingleGaussian(F_deconv(:,i),10); % 10 bins per std    
@@ -79,16 +85,24 @@ end
 if in.plot_filt_output
     ii = settings.roi_with_mini_index; 
 %     x_lim = [2200 3800];    
-    x_lim = [1150 2600];    
+%     x_lim = [1150 2600];    
+    x_lim = [340 540];
     % subplot(4,1,1); plot((F(:,1)-mean(F(:,1))/mean(F(:,1)))); xlim([1000 2000]); title('Raw F'); box off; 
     % subplot(4,1,2); plot(F_filt1(:,1)); xlim([1000 2000]); title(sprintf('%s filter',in.filt_type)); box off; 
     % subplot(4,1,3); plot(F_filt2(:,1)); xlim([1000 2000]); title(sprintf('%s + %s',in.filt_type,in.smooth_filt_type)); box off; 
     % subplot(4,1,4); plot(F_filt(:,1)); xlim([1000 2000]); title(sprintf('Deconv with tau_{d} = %g ms',in.deconv_tau*1e3)); box off; 
     figure('Units','inches','Position',[29 5 14 6.5]); 
     ax = subplot(4,1,1); 
-    plot((F(:,ii)-mean(F(1:settings.stim_frame(1)-1,ii)))/mean(F(:,ii))); xlim(x_lim);
-    hold on; plot(settings.stim_frame,ax.YLim(2)*0.8,'ro');
-    title('deltaF/F'); box off; 
+    if isempty(settings.stim_frame)
+       plot(F(:,ii)-mean(F(1:10,ii))); 
+       title('Mean'); 
+    else
+        plot((F(:,ii)-mean(F(1:settings.stim_frame(1)-1,ii)))/mean(F(:,ii))); 
+        hold on; plot(settings.stim_frame,ax.YLim(2)*0.8,'ro');
+        title('deltaF/F'); 
+    end      
+    xlim(x_lim); 
+    box off; 
     subplot(4,1,2); % 1st filter
     plot((F_filt1(:,ii)-mean(F_filt1(:,ii))/mean(F_filt1(:,ii)))); xlim(x_lim);
     title(sprintf('%s filter',in.filt_type)); box off; 
@@ -181,7 +195,7 @@ mini_peaks_deltaF_F_lin = mini_deltaF_F_traces(nframes_back+1,:);
 output = struct();
 output.F_filt = F_filt; % Output of all filters (bandpass + smoothing + deconv)
 output.F_filt1 = F_filt1; % Output of 1st filter (bandpass)
-output.F_deconv = F_deconv; % Output of deconvolution
+output.F_deconv = F_deconv; % Output of deconvolution (before refiltering)
 output.mini_frames = mini_frames; % num_rois x 1 cell array of mini peak frames in each ROI
 output.mini_peaks_deltaF_F = mini_peaks_deltaF_F;% num_rois x 1 cell array of peak deltaF/F values in each ROI
 output.mini_frames_lin = mini_frames_lin; % num_minis x 1 vector of all mini_frames
@@ -206,29 +220,37 @@ if in.plot_figs
 %    F_rois_w_minis = F_bl_z(:,rois_w_minis);
     if in.deconv
         F_rois_w_minis = F_blanked(:,rois_w_minis);
-        offset = linspace(num_rois_w_mini*1.01,...
+        offset = linspace(num_rois_w_mini*in.offset_factor,...
                             0,num_rois_w_mini);
     else
        F_rois_w_minis = F_blanked(:,rois_w_minis);
-       offset = linspace(100*num_rois_w_mini*1.01,...
+       offset = linspace(100*num_rois_w_mini*in.offset_factor,...
                                         0,num_rois_w_mini); 
     end
    t1 = 0:(1/sampling_rate):(size(F_rois_w_minis,1)/sampling_rate - (1/sampling_rate));
    fig1 = figure; 
-   plot(t1,F_rois_w_minis + offset);
+%    plot(t1,F_rois_w_minis + offset);
+   plot(1:length(t1),F_rois_w_minis + offset);
    hold on; box off; axis tight; 
-   doffset = (offset(1)-offset(2)); 
+   if num_rois_w_mini > 1
+       doffset = (offset(1)-offset(2));
+   else
+       doffset = 0;
+   end
    rois_w_minis_inds = find(rois_w_minis);
    for i = 1:num_rois_w_mini
        ii = rois_w_minis_inds(i);         
 %        plot(t1(repmat(mini_frames{ii}',2,1)),...
 %            [offset(i);offset(i)+doffset],'r-','LineWidth',2)        
-        plot(t1(mini_frames{ii}),offset(i)+doffset*0.5,'r*','MarkerSize',12)
+%         plot(t1(mini_frames{ii}),offset(i)+doffset*0.5,'r*','MarkerSize',12)
+        plot(mini_frames{ii},offset(i)+doffset*0.5,'r*','MarkerSize',12)
    end
    if in.num_frames_skip_start_end > 0
-       xlim([t1(in.num_frames_skip_start_end),t1(end-in.num_frames_skip_start_end)]);
+%        xlim([t1(in.num_frames_skip_start_end),t1(end-in.num_frames_skip_start_end)]);
+        xlim([in.num_frames_skip_start_end,length(t1)-in.num_frames_skip_start_end]);
    else
-       xlim([t1(1),t1(end)]);
+%        xlim([t1(1),t1(end)]);
+        xlim([1,length(t1)]);
    end
    ax = gca;
    ax.YTick = fliplr(offset);  
@@ -244,7 +266,7 @@ if in.plot_figs
        ii = rois_w_minis_inds(i);  
        plot(t*1e3,mini_deltaF_F_traces(:,roi_inds==ii)); hold on;
        plot(t*1e3,mean(mini_deltaF_F_traces(:,roi_inds==ii),2),'k','LineWidth',2); 
-       title(sprintf('ROI %g',ii));
+       title(sprintf('ROI %g (%g minis)',ii,length(output.mini_frames{ii})));
 %        plot(t*1e3,mini_deltaF_F_traces(:,roi_inds==ii),'Color',roi_cols(i,:)); hold on;
 %        [ls(roi_inds==ii).Color] = deal(roi_cols(ii,:)); 
         if i >= ((Nrows-1)*Ncols)
@@ -254,7 +276,7 @@ if in.plot_figs
             ylabel('\Delta F/F_{0}');    
         end
         box(ax,'off');
-        ylim([-0.05 1])
+        ylim([-0.2 0.4])
    end   
 %    xlabel('time (ms)');
 %    ylabel('\Delta F/F_{0}');    

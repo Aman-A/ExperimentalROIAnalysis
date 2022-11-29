@@ -98,7 +98,7 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
             [~,baseline_wind_inds] = obj.getWindInds();
         end
         function t = getTimeVector(obj,num_frames)            
-            x = (1:num_frames)';
+            x = (0:num_frames-1)';
             t = convert2Time(obj,x);            
 %             if length(obj.stim_vals) == 1
 %                 if strcmp(obj.units,'frames')
