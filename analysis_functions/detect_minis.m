@@ -25,6 +25,7 @@ in.refilter_deconv = 1;
 in.num_frames_skip_start_end = 100; % frames to remove from start/end due to filtering artifacts
 in.offset_factor = 1.01; 
 in.use_asls_baseline = 1; % set to 1 to use asymmetric least squares baseline detection
+in.find_pk_frame = 3; % number of frames around original peak to search in unfiltered traces (or 0 to use peak frame from filtered traces)
 in = sl.in.processVarargin(in,varargin);
 num_rois = size(F,2); 
 sampling_rate = settings.sampling_rate;
@@ -85,8 +86,9 @@ else
 end
 if in.plot_filt_output
     ii = settings.roi_with_mini_index; 
-    x_lim = [400 550]; % roi 1
+%     x_lim = [400 550]; % roi 1
 %     x_lim = [50 300]; % roi 3
+    x_lim = [490 530]; % roi 4
 %     x_lim = [540 740]; % roi 5
     % subplot(4,1,1); plot((F(:,1)-mean(F(:,1))/mean(F(:,1)))); xlim([1000 2000]); title('Raw F'); box off; 
     % subplot(4,1,2); plot(F_filt1(:,1)); xlim([1000 2000]); title(sprintf('%s filter',in.filt_type)); box off; 
@@ -153,8 +155,10 @@ switch method
         exclude_roi = false(num_rois,1);
         % Find ROIs        
         mini_frames = cell(num_rois,1); 
+        mini_frames_filt = cell(num_rois,1); % frames based on filtered trace
         mini_traces = cell(1,num_rois); 
         mini_baselines = cell(1,num_rois);
+        mini_snr = cell(1,num_rois);
         roi_inds = []; % ROI index for each mini
         for i = 1:num_rois
             if any(F_findpks(:,i) >= thresholds(i)) && ~exclude_roi(i)
@@ -164,27 +168,42 @@ switch method
                                            'MinPeakWidth',min_mini_width*sampling_rate,... 
                                           'WidthReference','halfprom',... % halfheight or halfprom
                                           'Annotate','extents');                                                 
+                mini_framesi_filt = mini_framesi; 
                 mini_tracesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
                 baselinesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
+                peaksi = zeros(1,length(mini_framesi));
                 for j = 1:length(mini_framesi) % loop through minis in this ROI
-                    mini_framesij = (mini_framesi(j)-nframes_back):(mini_framesi(j)+nframes_forward);
+                    mini_frame0ij = mini_framesi(j);
+                    if in.find_pk_frame > 0
+                        % find actual peak frame using unfiltered trace
+                        % within find_pk_frame frames of peak detected in
+                        % filtered trace above
+                        [peaksi(j),loc] = max(F(mini_frame0ij-in.find_pk_frame:mini_frame0ij+in.find_pk_frame,i));
+                        mini_frame0ij = mini_frame0ij + (loc - in.find_pk_frame - 1);
+                        mini_framesi(j) = mini_frame0ij; % update to new frame
+                    end
+                    mini_framesij = (mini_frame0ij-nframes_back):(mini_frame0ij+nframes_forward);
                     mini_framesij(mini_framesij<=0) = nan; % exclude frames outside of recording window
                     mini_framesij(mini_framesij>size(F_findpks,1)) = nan;
                     include_inds = ~isnan(mini_framesij); % frames to include for this mini
                     % Get mini trace from unfiltered recording
                     mini_tracesi(include_inds,j) = F(mini_framesij(include_inds),i);
                     if in.use_asls_baseline
-                        baselinesi(include_inds,j) = asLS_baseline(mini_tracesi(include_inds,j),10,0.1);
+                        baselinesi(include_inds,j) = asLS_baseline(mini_tracesi(include_inds,j),5,0.1);
                     end
                 end    
                 if in.use_asls_baseline
-                    baselinesi = mean(baselinesi,1,'omitnan');
+%                     std_baselinesi = std(mini_tracesi(1:nframes_back,:),0,1,'omitnan'); 
+                    std_baselinesi = std(baselinesi(1:nframes_back,:),0,1,'omitnan');  % use smoothed baseline trace
+                    mean_baselinesi = mean(baselinesi,1,'omitnan');                    
                 else
-                    baselinesi = mean(mini_tracesi(1:nframes_back,:),1,'omitnan');
-                end                                 
-                std_baselinesi = std(mini_tracesi(1:nframes_back,:),0,1,'omitnan'); 
-                peaksi = max(mini_tracesi,[],1,'omitnan');
-                snri = (peaksi-baselinesi)./std_baselinesi;
+                    std_baselinesi = std(mini_tracesi(1:nframes_back,:),0,1,'omitnan'); 
+                    mean_baselinesi = mean(mini_tracesi(1:nframes_back,:),1,'omitnan');
+                end                                                 
+                if in.find_pk_frame == 0
+                    [peaksi] = max(mini_tracesi(nframes_back-3:nframes_back+3,:),[],1,'omitnan');  % check a few frames before after expected peak (differs from filtered trace)
+                end
+                snri = (peaksi-mean_baselinesi)./std_baselinesi;
                 if snr_thresh > 0
                     keep_minis = snri > snr_thresh; 
                     fprintf('Excluded %g minis in ROI %g with SNR < %.1f\n',...
@@ -192,10 +211,13 @@ switch method
                 else
                     keep_minis = true(1,length(mini_framesi));
                 end
+                mini_framesi_filt = mini_framesi_filt(keep_minis);
                 mini_framesi = mini_framesi(keep_minis);
                 mini_traces{i} = mini_tracesi(:,keep_minis);
                 mini_frames{i} = mini_framesi; 
-                mini_baselines{i} = baselinesi(keep_minis); 
+                mini_frames_filt{i} = mini_framesi_filt; 
+                mini_baselines{i} = mean_baselinesi(keep_minis); 
+                mini_snr{i} = snri(keep_minis);
                 roi_inds = [roi_inds;i*ones(length(mini_framesi),1)];
             else
                mini_frames{i} = [];  
@@ -226,10 +248,10 @@ output = struct();
 output.F_filt = F_filt; % Output of all filters (bandpass + smoothing + deconv)
 output.F_filt1 = F_filt1; % Output of 1st filter (bandpass)
 output.F_deconv = F_deconv; % Output of deconvolution (before refiltering)
-output.mini_frames = mini_frames; % num_rois x 1 cell array of mini peak frames in each ROI
+output.mini_frames = mini_frames; % num_rois x 1 cell array of mini peak frames in each ROI - based on raw trace (if in.find_pk_frame > 1)
+output.mini_frames_filt = mini_frames_filt; % num_rois x 1 cell array of mini peak frames in each ROI - based on filtered trace
 output.mini_baselines = mini_baselines; % 1 x num_rois cell array of mini baselines in each ROI
 output.mini_baselines_lin = mini_baselines_lin; % 1 x num_minis vector of baselines of ech mini
-output.mini_peaks_deltaF_F = mini_peaks_deltaF_F;% num_rois x 1 cell array of peak deltaF/F values in each ROI
 output.mini_frames_lin = mini_frames_lin; % num_minis x 1 vector of all mini_frames
 output.mini_roi_inds = roi_inds; % num_minis x 1 vector of ROI index 
                                  % corresponding to minis in mini_frames_lin
@@ -242,10 +264,13 @@ output.mini_deltaF_F_traces = mini_deltaF_F_traces; % num_timepoints x num_minis
                                                     % each mini aligned to
                                                     % peak
 output.mini_deltaF_F_traces_roi = mini_deltaF_F_traces_roi; % deltaF/F traces aligned to peak organized by roi in cell array
+output.mini_peaks_deltaF_F = mini_peaks_deltaF_F;% num_rois x 1 cell array of peak deltaF/F values in each ROI
 output.mini_peaks_deltaF_F_lin = mini_peaks_deltaF_F_lin; % peak deltaF/F value of 
-                                                  % each mini                                                    
+                                                  % each mini       
+output.mini_snr = mini_snr;
+output.mini_snr_lin = cell2mat(mini_snr); 
 if in.plot_figs
-   rois_w_minis = ~cellfun(@isempty ,mini_frames,'UniformOutput',1);
+   rois_w_minis = ~cellfun(@isempty ,mini_frames_filt,'UniformOutput',1);
    rois_w_minis_inds = find(rois_w_minis);
 %    F_rois_w_minis = (F_filt2 - mean(F_filt2,1,'omitnan'))./mean(F_filt2,1,'omitnan'); 
 %       offset = linspace(100*num_rois_w_mini*1.01,...
@@ -276,7 +301,7 @@ if in.plot_figs
 %        plot(t1(repmat(mini_frames{ii}',2,1)),...
 %            [offset(i);offset(i)+doffset],'r-','LineWidth',2)        
 %         plot(t1(mini_frames{ii}),offset(i)+doffset*0.5,'r*','MarkerSize',12)
-        plot(mini_frames{ii},offset(i)+doffset*0.5,'r*','MarkerSize',12)
+        plot(mini_frames_filt{ii},offset(i)+doffset*0.5,'r*','MarkerSize',12)
    end
    if in.num_frames_skip_start_end > 0
 %        xlim([t1(in.num_frames_skip_start_end),t1(end-in.num_frames_skip_start_end)]);
