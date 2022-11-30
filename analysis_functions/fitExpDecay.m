@@ -12,6 +12,7 @@ function decay_fit = fitExpDecay(t,Y,decay_fit_order,varargin)
 
 % AUTHOR    : Aman Aberra 
 in.max_taud = 1; % sec
+in.align_traces = 1; 
 in = sl.in.processVarargin(in,varargin);
 Ntraces = size(Y,2);
 taud1 = zeros(1,Ntraces); % sec - fast time constant
@@ -22,16 +23,22 @@ rsquare = zeros(1,Ntraces); % amplitude (a.u./%)
 fitobjs = cell(1,Ntraces);
 gofs = cell(1,Ntraces);
 t_fits = cell(1,Ntraces);
-for i = 1:Ntraces
-    [peak_y,ind] = max(Y(:,i));
-    y_fit = Y(ind:end,i);
-    t_fit = t(ind:end); t_fit = t_fit - t_fit(1); 
+for i = 1:Ntraces    
+    if in.align_traces        
+        [peak_y,ind] = max(Y(:,i));
+        y_fit = Y(ind:end,i);
+        t_fit = t(ind:end); t_fit = t_fit - t_fit(1); 
+    else       
+        t_fit = t; 
+        y_fit = Y(:,i);
+        peak_y = y_fit(1); % avoid spurious peaks in trace, assume peak aligned
+    end
     t_fits{i} = t_fit; 
     if decay_fit_order == 1 % monoexponential decay
         % y = A*exp(-t/taud1)
         fit_eqn = 'a*exp(-x/b)';
         upper_bounds = [peak_y,in.max_taud]; % replace first element in loop
-        lower_bounds = [0,0];
+        lower_bounds = [min(y_fit),0];
         start_points = [peak_y*0.8,0.5];
         fprintf('Fitting decay to monoexponential function\n')
     elseif decay_fit_order == 2 % biexponential decay

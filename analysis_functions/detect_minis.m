@@ -24,6 +24,7 @@ in.deconv_tau = 35e-3; % sec (~35 ms is mean decay time constant from my
 in.refilter_deconv = 1;     
 in.num_frames_skip_start_end = 100; % frames to remove from start/end due to filtering artifacts
 in.offset_factor = 1.01; 
+in.use_asls_baseline = 1; % set to 1 to use asymmetric least squares baseline detection
 in = sl.in.processVarargin(in,varargin);
 num_rois = size(F,2); 
 sampling_rate = settings.sampling_rate;
@@ -84,9 +85,9 @@ else
 end
 if in.plot_filt_output
     ii = settings.roi_with_mini_index; 
-%     x_lim = [2200 3800];    
-%     x_lim = [1150 2600];    
-    x_lim = [340 540];
+    x_lim = [400 550]; % roi 1
+%     x_lim = [50 300]; % roi 3
+%     x_lim = [540 740]; % roi 5
     % subplot(4,1,1); plot((F(:,1)-mean(F(:,1))/mean(F(:,1)))); xlim([1000 2000]); title('Raw F'); box off; 
     % subplot(4,1,2); plot(F_filt1(:,1)); xlim([1000 2000]); title(sprintf('%s filter',in.filt_type)); box off; 
     % subplot(4,1,3); plot(F_filt2(:,1)); xlim([1000 2000]); title(sprintf('%s + %s',in.filt_type,in.smooth_filt_type)); box off; 
@@ -141,7 +142,7 @@ switch method
         end
         % Exclusion criteria
         % Exclude ROIs with evoked SNR < threshold
-%         snr_thresh = settings.snr_thresh; 
+        snr_thresh = settings.snr_thresh; 
 %         mean_evoked_peaks = mean(evoked_peaks,1);        
 %         mean_evoked_peaks_filt = mean(evoked_peaks_filt,1);        
 %         mean_evoked_peaks_delFF0 = ...
@@ -153,25 +154,49 @@ switch method
         % Find ROIs        
         mini_frames = cell(num_rois,1); 
         mini_traces = cell(1,num_rois); 
+        mini_baselines = cell(1,num_rois);
         roi_inds = []; % ROI index for each mini
         for i = 1:num_rois
             if any(F_findpks(:,i) >= thresholds(i)) && ~exclude_roi(i)
-                [~,mini_framesi] = findpeaks(F_findpks(:,i),...
+                [~,mini_framesi,widthsi] = findpeaks(F_findpks(:,i),...
                                           'MinPeakHeight',thresholds(i),...
-                                          'MinPeakDistance',min_mini_width*sampling_rate);
-%                                            'MinPeakWidth',min_mini_width*sampling_rate,...
-%                                           'WidthReference','halfheight',...
-                mini_frames{i} = mini_framesi; 
-                roi_inds = [roi_inds;i*ones(length(mini_framesi),1)];
-                mini_traces{i} = nan(nframes_back+nframes_forward+1,length(mini_framesi));
+                                          'MinPeakDistance',3*min_mini_width*sampling_rate,...
+                                           'MinPeakWidth',min_mini_width*sampling_rate,... 
+                                          'WidthReference','halfprom',... % halfheight or halfprom
+                                          'Annotate','extents');                                                 
+                mini_tracesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
+                baselinesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
                 for j = 1:length(mini_framesi) % loop through minis in this ROI
                     mini_framesij = (mini_framesi(j)-nframes_back):(mini_framesi(j)+nframes_forward);
                     mini_framesij(mini_framesij<=0) = nan; % exclude frames outside of recording window
                     mini_framesij(mini_framesij>size(F_findpks,1)) = nan;
                     include_inds = ~isnan(mini_framesij); % frames to include for this mini
                     % Get mini trace from unfiltered recording
-                    mini_traces{i}(include_inds,j) = F(mini_framesij(include_inds),i);
-                end        
+                    mini_tracesi(include_inds,j) = F(mini_framesij(include_inds),i);
+                    if in.use_asls_baseline
+                        baselinesi(include_inds,j) = asLS_baseline(mini_tracesi(include_inds,j),10,0.1);
+                    end
+                end    
+                if in.use_asls_baseline
+                    baselinesi = mean(baselinesi,1,'omitnan');
+                else
+                    baselinesi = mean(mini_tracesi(1:nframes_back,:),1,'omitnan');
+                end                                 
+                std_baselinesi = std(mini_tracesi(1:nframes_back,:),0,1,'omitnan'); 
+                peaksi = max(mini_tracesi,[],1,'omitnan');
+                snri = (peaksi-baselinesi)./std_baselinesi;
+                if snr_thresh > 0
+                    keep_minis = snri > snr_thresh; 
+                    fprintf('Excluded %g minis in ROI %g with SNR < %.1f\n',...
+                            sum(~keep_minis),i,snr_thresh)
+                else
+                    keep_minis = true(1,length(mini_framesi));
+                end
+                mini_framesi = mini_framesi(keep_minis);
+                mini_traces{i} = mini_tracesi(:,keep_minis);
+                mini_frames{i} = mini_framesi; 
+                mini_baselines{i} = baselinesi(keep_minis); 
+                roi_inds = [roi_inds;i*ones(length(mini_framesi),1)];
             else
                mini_frames{i} = [];  
             end
@@ -184,12 +209,17 @@ end
 aligned_minis = cell2mat(mini_traces(~cellfun(@isempty,mini_traces)));
 mini_frames_lin = cell2mat(mini_frames); % convert to vector
 % Convert to deltaF/F0
-baselines = mean(aligned_minis(1:nframes_back,:),1);
-mini_deltaF_F_traces = (aligned_minis-abs(baselines))./abs(baselines); % subtract/divide each column by corresponding baseline
+mini_baselines_lin = cell2mat(mini_baselines);
+% baselines = mean(aligned_minis(1:nframes_back,:),1);
+mini_deltaF_F_traces = (aligned_minis-abs(mini_baselines_lin))./abs(mini_baselines_lin); % subtract/divide each column by corresponding baseline
 mini_peaks_deltaF_F = cell(num_rois,1);
+mini_F_traces_roi = cell(num_rois,1);
+mini_deltaF_F_traces_roi = cell(num_rois,1);
 for i = 1:num_rois
 %     mini_peaks_deltaF_F{i} = mini_deltaF_F_traces(nframes_back+1,roi_inds == i);
     mini_peaks_deltaF_F{i} = max(mini_deltaF_F_traces(nframes_back-1:end,roi_inds == i),[],1);
+    mini_F_traces_roi{i} = aligned_minis(:,roi_inds == i);
+    mini_deltaF_F_traces_roi{i} = mini_deltaF_F_traces(:,roi_inds == i);
 end
 mini_peaks_deltaF_F_lin = mini_deltaF_F_traces(nframes_back+1,:);
 output = struct();
@@ -197,6 +227,8 @@ output.F_filt = F_filt; % Output of all filters (bandpass + smoothing + deconv)
 output.F_filt1 = F_filt1; % Output of 1st filter (bandpass)
 output.F_deconv = F_deconv; % Output of deconvolution (before refiltering)
 output.mini_frames = mini_frames; % num_rois x 1 cell array of mini peak frames in each ROI
+output.mini_baselines = mini_baselines; % 1 x num_rois cell array of mini baselines in each ROI
+output.mini_baselines_lin = mini_baselines_lin; % 1 x num_minis vector of baselines of ech mini
 output.mini_peaks_deltaF_F = mini_peaks_deltaF_F;% num_rois x 1 cell array of peak deltaF/F values in each ROI
 output.mini_frames_lin = mini_frames_lin; % num_minis x 1 vector of all mini_frames
 output.mini_roi_inds = roi_inds; % num_minis x 1 vector of ROI index 
@@ -204,13 +236,14 @@ output.mini_roi_inds = roi_inds; % num_minis x 1 vector of ROI index
 output.mini_F_traces = aligned_minis; % num_timepoints x num_minis raw 
                                       % fluorescence values of each mini
                                       % aligned to peak
+output.mini_F_traces_roi = mini_F_traces_roi; % mini_F_traces organized by roi in cell aray                                      
 output.mini_deltaF_F_traces = mini_deltaF_F_traces; % num_timepoints x num_minis
                                                     % deltaF/F traces of
                                                     % each mini aligned to
                                                     % peak
+output.mini_deltaF_F_traces_roi = mini_deltaF_F_traces_roi; % deltaF/F traces aligned to peak organized by roi in cell array
 output.mini_peaks_deltaF_F_lin = mini_peaks_deltaF_F_lin; % peak deltaF/F value of 
                                                   % each mini                                                    
-
 if in.plot_figs
    rois_w_minis = ~cellfun(@isempty ,mini_frames,'UniformOutput',1);
    rois_w_minis_inds = find(rois_w_minis);
@@ -266,7 +299,10 @@ if in.plot_figs
        ii = rois_w_minis_inds(i);  
        plot(t*1e3,mini_deltaF_F_traces(:,roi_inds==ii)); hold on;
        plot(t*1e3,mean(mini_deltaF_F_traces(:,roi_inds==ii),2),'k','LineWidth',2); 
-       title(sprintf('ROI %g (%g minis)',ii,length(output.mini_frames{ii})));
+       title(sprintf('%g: Peak %.2f +/- %.2f (n = %g)',ii,...
+                    mean(output.mini_peaks_deltaF_F{ii}),...
+                    std(output.mini_peaks_deltaF_F{ii},0),...
+                    length(output.mini_frames{ii})));
 %        plot(t*1e3,mini_deltaF_F_traces(:,roi_inds==ii),'Color',roi_cols(i,:)); hold on;
 %        [ls(roi_inds==ii).Color] = deal(roi_cols(ii,:)); 
         if i >= ((Nrows-1)*Ncols)

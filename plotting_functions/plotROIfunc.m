@@ -34,7 +34,8 @@ else
 end
 y = func_output.(func_name);
 if strcmp(func_name,'mean')
-    y = y - y(1,:); % start all traces at 0 for plot
+    non_nan_frames = find(~isnan(y(:,1)));
+    y = y - y(non_nan_frames(1),:); % start all traces at 0 for plot
     sbar_str = sprintf('Scale bar = %g a.u.',in.sbar_len);
 else
     sbar_str = sprintf('Scale bar = %g%%',100*in.sbar_len);
@@ -69,7 +70,7 @@ if regexp(func_name,'aligned','ONCE')
         end
     end
 end
-if nargin < 4
+if nargin < 4 || isempty(sampling_rate)
     x = 1:size(y,1); % frames    
     unit_str = 'frames';
 else    
