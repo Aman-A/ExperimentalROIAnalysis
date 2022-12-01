@@ -44,6 +44,7 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
               in = sl.in.processVarargin(in,varargin); 
             if nargin > 0
 %                 obj.initial_units = units; 
+                assert(any(strcmp(units,{'sec','frames'})),'ExperimentSettings units must be ''sec'' or ''frames''')
                 obj.units = units;
                 obj.sampling_rate = sampling_rate;                                
                 obj.stim_wind = stim_wind;

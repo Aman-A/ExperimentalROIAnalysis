@@ -33,9 +33,10 @@ else
     ax = in.ax; 
 end
 y = func_output.(func_name);
-if strcmp(func_name,'mean')
+if regexp(func_name,'mean','ONCE')
     non_nan_frames = find(~isnan(y(:,1)));
     y = y - y(non_nan_frames(1),:); % start all traces at 0 for plot
+%     y = y - mean(y,1,'omitnan'); % set baseline to mean of trace
     sbar_str = sprintf('Scale bar = %g a.u.',in.sbar_len);
 else
     sbar_str = sprintf('Scale bar = %g%%',100*in.sbar_len);
@@ -149,28 +150,14 @@ else
             end
         end
         % Set vertical offsets
-%         if in.offset_factor < 1
-%             offset = linspace(in.offset_factor*max(y,[],'all')*size(y,2),...
-%                                 0,size(y,2));
-%         else
-           if strcmp(ax.YLimMode,'auto') % YLim wasn't set, use num_rois to set it and offset               
-%                offset = linspace(1.4*num_rois-in.offset_factor,...
-%                                 0,size(y,2));
-%                offset = linspace(in.offset_factor*num_rois,0,size(y,2));
-%                ax.YLim = [-0.2 offset(1)*(num_rois+1)/num_rois];
-                offset = linspace(num_rois*in.offset_factor,...
-                                    0,size(y,2));  
-                ax.YLim = [-0.2 offset(1)+max(y(:,1))];
-%                 ax.YLim = [-0.2 1.05*(offset(1)+max(y(:,1)))];
-           else
-                offset = linspace(num_rois*in.offset_factor,...
-                                    0,size(y,2));  
-%                offset = linspace(ax.YLim(2)-in.offset_factor,...
-%                                 0,size(y,2));  
-           end           
-%         end
-%         y = func_output.(func_name);
-        
+        offset = linspace(num_rois*in.offset_factor,...
+                0,size(y,2));
+        if strcmp(ax.YLimMode,'auto') % YLim wasn't set, set now
+            ax.YLim = (offset(1)+max(y(:,1)))*[-0.05 1];
+        else
+            offset = linspace(num_rois*in.offset_factor,...
+                0,size(y,2));
+        end
         lns = plot(ax,x,y+offset); % plot trace/s
         if in.show_y_tick_labels
             ax.YTick = fliplr(offset);
