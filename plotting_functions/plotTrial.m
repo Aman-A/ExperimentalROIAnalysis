@@ -234,7 +234,7 @@ if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0
                     'stim_pulse_dur',exp_settings.convert2Time(exp_settings.stim_pulse_dur));
     drawnow; 
     if in.save_fig > 1 % set to 2 to plot individual trials   
-       fig_name = [rec.img_name '_' in.plot_func]; 
+       fig_name = [rec.img_name '_' in.plot_func '_' in.roi_func_mode(1:3)]; 
        printFig(fig,fig_dir,fig_name); 
     end
 end
