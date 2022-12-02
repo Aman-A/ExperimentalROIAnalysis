@@ -24,8 +24,8 @@ switch preset_name
                                  % (based on raw F trace). Set to 0 to skip this. 
         settings.nframes_back = 10; % number of frames before each mini peak to extract
         settings.nframes_forward = 12; % number of frames after each mini peak to extract
-        settings.stim_frames = exp_settings.stim_vals; % ignore if no stim
-        settings.blank_around_stim = [exp_settings.baseline_wind,exp_settings.stim_wind]; % ignore if no stim
+        settings.stim_frames = []; % ignore if no stim
+        settings.blank_around_stim = []; % ignore if no stim
         settings.plot_filt_output_roi_index = 1; % plot example of filtering in this roi
         settings.min_mini_width = 40e-3; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
         settings.min_peak_distance = 120e-3; % sec - min distance between mini peaks to allow
@@ -33,6 +33,9 @@ switch preset_name
         settings.apply_filter = 1;
         settings.filt_type = 'butter'; % filter type, 'gauss' for gaussian or 'butter' for butterworth
         settings.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
+        settings.save_figs = 0; % 1 to save figures, 0 to skip
+        settings.save_figs_dir = ''; % save figures to this directory (or leave blank to skip)
+        settings.trial_name = ''; % for file saving
         settings.refilter_deconv = 0; % 1 to refilter deconvolved trace (usually doesn't have much effect, can skip)
         settings.smooth_filt_width = 0; % width of median smoothing filter, takes 
                                         % moving median of this number of frames,
@@ -62,13 +65,13 @@ switch preset_name
         settings.threshold = 10; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
                         % baseline fluctations)
-        settings.snr_thresh = 5; % throw out minis with 
+        settings.snr_thresh = 4.5; % throw out minis with 
                                  % mini SNR (peak/std(baseline)) less than this number 
                                  % (based on raw F trace). Set to 0 to skip this. 
-        settings.nframes_back = round(0.15*sampling_rate); % number of frames before each mini peak to extract
-        settings.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract
-        settings.stim_frames = exp_settings.stim_vals; % ignore if no stim
-        settings.blank_around_stim = [exp_settings.baseline_wind,exp_settings.stim_wind/4]; % ignore if no stim
+        settings.nframes_back = 30; % number of frames before each mini peak to extract
+        settings.nframes_forward = 80; % number of frames after each mini peak to extract
+        settings.stim_frames = []; % ignore if no stim
+        settings.blank_around_stim = [10,10]; % ignore if no stim
         settings.plot_filt_output_roi_index = 17; % plot example of filtering in this roi
         settings.min_mini_width = 0.005; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
         settings.min_peak_distance = 0.1; % sec - min distance between mini peaks to allow
@@ -76,6 +79,9 @@ switch preset_name
         settings.apply_filter = 1;
         settings.filt_type = 'gauss'; % filter type, 'gauss' for gaussian or 'butter' for butterworth
         settings.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
+        settings.save_figs = 0; % 1 to save figures, 0 to skip
+        settings.save_figs_dir = ''; % save figures to this directory (or leave blank to skip)
+        settings.trial_name = ''; % for file saving
         settings.refilter_deconv = 1; % 1 to refilter deconvolved trace (usually doesn't have much effect, can skip)
         settings.smooth_filt_width = 5; % width of median smoothing filter, takes 
                                         % moving median of this number of frames,
@@ -91,7 +97,7 @@ switch preset_name
                                       % decay time constant of minis in your
                                       % recordings, which can be measured after
                                       % detection below
-        settings.num_frames_skip_start_end = 5; % frames to remove from start/end due to filtering artifacts
+        settings.num_frames_skip_start_end = 160; % frames to remove from start/end due to filtering artifacts
         settings.use_asls_baseline = 1;  % 1  to use asymmetric least squares baseline removal
                                          % 0 uses simple average of nframes_back
                                          % frames before each peak, may be less
@@ -99,6 +105,6 @@ switch preset_name
                                          % minis
         settings.asls_smoothness = 100; % smoothness param for asymmetric least squares (see asLS_baseline.m for description)
         settings.asls_asym = 0.4; % asymmetry parameter for asymmetric least squares
-        settings.find_pk_frame = round(0.025*exp_settings.sampling_rate);% look 25 ms around peak from filtered F in raw F to get actual peak time
-        settings.num_frames_skip_start_end = round(0.8*exp_settings.sampling_rate);
+        settings.find_pk_frame = 5;% look 25 ms around peak from filtered F in raw F to get actual peak time
+        
 end

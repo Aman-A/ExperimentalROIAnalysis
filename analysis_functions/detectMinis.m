@@ -38,6 +38,9 @@ in.fc = [0.5 30]; % 0.5 to 30 Hz high pass filter cutoff
 in.smooth_filt_type = 'med'; %'med' or 'sgolay'
 in.smooth_filt_width = 5; % 5 for med or 15 for sgolay
 in.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
+in.save_figs = 0; % 1 to save figures, 0 to skip
+in.save_figs_dir = ''; % save figures to this directory (saves to current directory if empty
+in.trial_name = ''; % for file saving
 in.plot_x_time = 0; % 1 to use time on x-axis, 0 to use frames
 in.plot_filt_output_roi_index = 4; % index of ROI to plot filter output of, leave as 0 to skip
 in.deconv = 0; 
@@ -123,12 +126,30 @@ else % x axis is frame
     stim_frames_plot = in.stim_frames; 
     xaxis_label = 'frame';
 end
-
-if in.plot_filt_output_roi_index > 0
+% get file names for saving
+if in.save_figs
+    save_figs = 1;
+    if isempty(in.save_figs_dir)
+        fig_dir = './mini_analysis';
+    else
+        fig_dir = in.save_figs_dir;
+    end
+    if isempty(in.trial_name)
+        fig_basename = 'trial';
+    else
+        fig_basename = in.trial_name;
+    end
+else
+    save_figs = 0;
+end
+% set figure size
+fig_units = 'inches';
+fig_pos = [4.8 4.2 18.5 9];
+if in.plot_filt_output_roi_index > 0 && in.plot_figs
     ii = in.plot_filt_output_roi_index; 
 %     x_lim = [490 530]; % roi 4
     x_lim = [1 x_full(end)];
-    figure('Units','inches','Position',[29 5 14 6.5]); 
+    fig = figure('Units',fig_units,'Position',fig_pos); 
     ax = subplot(4,1,1); 
     if isempty(in.stim_frames)
        plot(x_full,F(:,ii)-mean(F(1:10,ii))); 
@@ -149,14 +170,21 @@ if in.plot_filt_output_roi_index > 0
     subplot(4,1,4); % filters + deconv
     if in.refilter_deconv
         plot(x_full,F_deconv(:,ii)); hold on; plot(F_blanked_filt(:,ii)); xlim(x_lim);
-        plot([x_full(1) x_full(end)],in.threshold*sigmas(ii)*[1 1])
+        plot([x_full(1) x_full(end)],sigmas(ii)*[1 1])
+        plot([x_full(1) x_full(end)],in.threshold*sigmas(ii)*[1 1],'--')
         legend('Deconvolved','Deconvolved + refiltered',...
-                'Threshold','Box','off','Location','northeast','Orientation','horizontal')
+                'STD',sprintf('Threshold (%.1f x STD)',in.threshold),...
+                'Box','off','Location','northeast','Orientation','horizontal')
     else
         plot(x_full,F_deconv(:,ii)); xlim(x_lim); hold on;
         plot([x_full(1) x_full(end)],in.threshold*sigmas(ii)*[1 1])
     end    
     title(sprintf('Deconv with tau_{d} = %g ms',in.deconv_tau*1e3)); box off;     
+    sgtitle(sprintf('%s: ROI %g',in.trial_name,ii),'Interpreter','none');
+    if save_figs
+        printFig(fig,fig_dir,[fig_basename '_filt_output_roi' num2str(ii)],...
+            'formats','png','resolutions','-r300');        
+    end
 end
 %% Peak detection
 
@@ -306,9 +334,9 @@ output.mini_snr_lin = cell2mat(mini_snr);
 output.evoked_peaks = evoked_peaks; % save evoked stim peaks (empty if no stim)
 output.evoked_peaks_filt = evoked_peaks_filt; % save evoked stim peaks from filtered trace (empty if no stim)
 output.settings = in; 
-%% Plot
+%% Plot results
 if in.plot_figs
-
+    % Plot only in ROIs with minis, or if no minis, plot all ROIs
     if num_rois_w_mini > 0
         rois_plot = ~cellfun(@isempty ,mini_frames_filt,'UniformOutput',1);        
         num_rois_plot = num_rois_w_mini;
@@ -328,7 +356,7 @@ if in.plot_figs
     offset = linspace(num_rois_plot*in.offset_factor,...
                     0,num_rois_plot);
     % Plot full time course with minis marked
-    fig1 = figure;
+    fig1 = figure('Units',fig_units,'Position',fig_pos);
     plot(x_full,F_rois_plot  + offset);
     hold on; box off; axis tight;
     if num_rois_plot > 1
@@ -351,12 +379,16 @@ if in.plot_figs
     ax.YTick = fliplr(offset);
     ax.YTickLabel = fliplr(rois_plot_inds);
     xlabel(ax,xaxis_label);
+    title(in.trial_name,'Interpreter','none')
+    if save_figs
+        printFig(fig1,fig_dir,[fig_basename '_filtF_w_minis'],...
+            'formats','png','resolutions','-r300');        
+    end
     % Plot minis within each ROI overlaid
     if num_rois_w_mini > 0
-        fig2 = figure('Units','inches','Position',[4.9 4.2 18.7 8.9]);
+        fig2 = figure('Units',fig_units,'Position',fig_pos);
         [Nrows,Ncols] = getSubplotDimensions(num_rois_plot);
-        %    ls = plot(t*1e3,mini_deltaF_F_traces);
-        roi_cols = jet(num_rois_plot);
+%         roi_cols = jet(num_rois_plot);
         for i = 1:num_rois_plot
             ax = subplot(Nrows,Ncols,i);
             ii = rois_plot_inds(i);        
@@ -373,8 +405,13 @@ if in.plot_figs
                 ylabel('\Delta F/F_{0}');
             end
             box(ax,'off');
-%             ylim([-max(mini_peaks_deltaF_F_lin)*0.5 1.05*max(mini_peaks_deltaF_F_lin)])
+            ylim([-max(mini_peaks_deltaF_F_lin)*0.5 1.05*max(mini_peaks_deltaF_F_lin)])
             xlim([x_mini(1),x_mini(end)]);
+        end
+        sgtitle(in.trial_name,'Interpreter','none');
+        if save_figs
+            printFig(fig2,fig_dir,[fig_basename '_minis_overlaid'],...
+                'formats','png','resolutions','-r300');
         end
     end
 end
