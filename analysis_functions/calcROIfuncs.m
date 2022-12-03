@@ -78,7 +78,7 @@ end
 % Check sampling rate matches recording
 if abs((1/recording.exposure_time - exp_settings.sampling_rate)/exp_settings.sampling_rate) > 0.1
     fprintf(['WARNING: Check input sampling rate, exposure time of imaging ' ...
-              'suggests sampling rate was close to %.0f Hz\n'],round(1/recording.exposure_time,-2))
+              'suggests sampling rate was close to %.0f Hz\n'],round(1/recording.exposure_time,-1))
 end
 % Get stim and baseline settings
 baseline_wind_inds = exp_settings.baseline_wind_inds; 

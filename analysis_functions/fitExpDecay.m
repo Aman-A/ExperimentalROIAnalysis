@@ -37,14 +37,14 @@ for i = 1:Ntraces
     if decay_fit_order == 1 % monoexponential decay
         % y = A*exp(-t/taud1)
         fit_eqn = 'a*exp(-x/b)';
-        upper_bounds = [peak_y,in.max_taud]; % replace first element in loop
+        upper_bounds = [1.1*peak_y,in.max_taud]; % replace first element in loop
         lower_bounds = [min(y_fit),0];
         start_points = [peak_y*0.8,0.5];
         fprintf('Fitting decay to monoexponential function\n')
     elseif decay_fit_order == 2 % biexponential decay
         % y = A*(p * exp(-t/taud1) + (1-p) * exp(-t/taud2))
         fit_eqn = 'a*(b*exp(-x/c) + (1-b)*exp(-x/d))';
-        upper_bounds = [peak_y,1,in.max_taud,in.max_taud];
+        upper_bounds = [1.1*peak_y,1,in.max_taud,in.max_taud];
         lower_bounds = [0,0,0,0];
         start_points = [peak_y*0.8,0.8,0.5,0.5];
         fprintf('Fitting decay to biexponential function\n')

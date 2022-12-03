@@ -33,6 +33,9 @@ if nargin < 6
     baseline_wind = min(diff(stim_indices)); % only applies to mode 2
 end
 spike_widths = zeros(num_stim,1);
+if iscolumn(stim_indices)
+    stim_indices = stim_indices';
+end
 inds = [1,stim_indices,length(y)];
 if width_mode == 1  % 1 - use baseline and frac_amp of first spike to calculate
                     % width of all spikes in train (nFWHM from Cho 2020)

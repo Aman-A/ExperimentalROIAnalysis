@@ -18,7 +18,9 @@ function output = detectMinis(F,sampling_rate,varargin)
 % To do: Add width criteria based on upstroke/downstroke of mini (FWHM?)
 % AUTHOR    : Aman Aberra 
 % F - matrix
-
+if nargin < 2
+    sampling_rate = 25; 
+end
 in.threshold = 4; % threshold for peak detection on filtered trace. 
                   % Defined as multiple above noise level (std of
                   % baseline fluctations)
@@ -56,6 +58,11 @@ in.asls_asym = 0.1;  % asymmetry parameter for asymmetric least squares
 in.find_pk_frame = 5; % number of frames around original peak to search in unfiltered traces (or 0 to use peak frame from filtered traces)
 in.est_rise_time_frames = ceil(20e-3*sampling_rate); % take baseline 20 ms before peak (typical rise time of GluSnFR3 signal)
 in = sl.in.processVarargin(in,varargin);
+%% Output default settings struct if called with no inputs
+if nargin == 0
+    output = in; 
+    return; 
+end
 %% Filter traces
 num_rois = size(F,2); 
 blank_around_stim = in.blank_around_stim; 
@@ -387,28 +394,11 @@ if in.plot_figs
     % Plot minis within each ROI overlaid
     if num_rois_w_mini > 0
         fig2 = figure('Units',fig_units,'Position',fig_pos);
-        [Nrows,Ncols] = getSubplotDimensions(num_rois_plot);
-%         roi_cols = jet(num_rois_plot);
-        for i = 1:num_rois_plot
-            ax = subplot(Nrows,Ncols,i);
-            ii = rois_plot_inds(i);        
-            plot(x_mini,mini_deltaF_F_traces(:,roi_inds==ii)); hold on;
-            plot(x_mini,mean(mini_deltaF_F_traces(:,roi_inds==ii),2,'omitnan'),'k','LineWidth',2);
-            title(sprintf('%g: Peak %.2f +/- %.2f (n = %g)',ii,...
-                mean(mini_peaks_deltaF_F{ii}),...
-                std(mini_peaks_deltaF_F{ii},0),...
-                length(mini_frames{ii})));
-            if i >= ((Nrows-1)*Ncols)
-                xlabel(ax,xaxis_label);
-            end
-            if (mod(i,Ncols) == 1 || num_rois_w_mini == 1)
-                ylabel('\Delta F/F_{0}');
-            end
-            box(ax,'off');
-            ylim([-max(mini_peaks_deltaF_F_lin)*0.5 1.05*max(mini_peaks_deltaF_F_lin)])
-            xlim([x_mini(1),x_mini(end)]);
-        end
-        sgtitle(in.trial_name,'Interpreter','none');
+        plotTracesOverlaidGrid_ROIs(x_mini,mini_deltaF_F_traces,roi_inds,...
+                                    'peaks',mini_peaks_deltaF_F,...
+                                    'xaxis_label',xaxis_label,...
+                                    'y_lim',[-max(mini_peaks_deltaF_F_lin)*0.5 1.05*max(mini_peaks_deltaF_F_lin)],...
+                                    'title',in.trial_name);        
         if save_figs
             printFig(fig2,fig_dir,[fig_basename '_minis_overlaid'],...
                 'formats','png','resolutions','-r300');

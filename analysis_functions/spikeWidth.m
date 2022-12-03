@@ -75,6 +75,9 @@ if onset_found && offset_found % linear interpolation between samples to find va
     spike_width = end_time - start_time; 
 else % no spike present
     spike_width = nan; 
+    width_val = nan; 
+    start_time = nan;
+    end_time = nan; 
     return; 
 end
 %% Test plot
