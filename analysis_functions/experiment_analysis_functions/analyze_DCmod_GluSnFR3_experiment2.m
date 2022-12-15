@@ -120,10 +120,15 @@ end
 fprintf('Extraced traces and peaks\n')
 %% Plot mean stim averaged response across ROIs and trials
 if any(in.plot_figs == 1)
+    if num_conditions == 8
+        Nrows = 2; Ncols = 4; 
+    else
+        [Nrows,Ncols] = getSubplotDimensions(num_conditions);
+    end
     fig = figure('Units','normalized');
     fig.Position = [0.047 0.05 in.fig_size]; 
     for i = 1:num_conditions
-        ax = subplot(2,4,i);        
+        ax = subplot(Nrows,Ncols,i);        
         if in.norm_to_cont
             tracesi = mean_dF_F0_norm0{i};
     %         stdi = std_dF_F0_norm0{i}; 
@@ -147,7 +152,7 @@ if any(in.plot_figs == 1)
         end
         title(strrep(conditions{i},'_',' '));
         xlim([-baseline_wind_sec,ta(end)]);
-        ax.YLim(1) = -0.05; 
+%         ax.YLim(1) = -0.05; 
         if i == num_conditions
             legend(in.dc_conds,'Box','off');
         end
@@ -203,16 +208,17 @@ end
 %% Plot traces of specific ROI in all conditions
 if any(in.plot_figs == 3)    
     if in.norm_to_cont
-        yax_lims = [-0.5 5];
+        yax_lims = [-0.5 3];
+%         yax_lims = [-2 6]; 
     else
-        yax_lims = [-0.1 1];                 
+        yax_lims = [-0.1 0.2];                 
     end
     stim_cols2 = {[0 0 0 0.2];[1 0 0 0.1]};    
     fig = figure('Units','normalized');
     fig.Position = [0.001 0.03 in.fig_size];
     for i = 1:length(cond_inds)         
         % plot mean trace
-        mean_tracesi = squeeze(mean_dF_F0_rois{i}(:,in.plot_roi_ind,:)); % [ off, on]
+        mean_tracesi = squeeze(mean_dF_F0_rois{i}(:,in.plot_roi_ind,:)); % [ off, on, off]
         % all responses 
         tracesi = cell(1,2); 
         for j = 1:2
@@ -245,6 +251,7 @@ if any(in.plot_figs == 3)
         if ~isempty(yax_lims)
             ax.YLim = yax_lims;
         end
+        ax.XLim = [ta(1),ta(end)];
     end
     sgtitle(sprintf('Mean and individual responses (%g APs) in ROI %g',...
             length(exp_settings(1).stim_vals(:)),in.plot_roi_ind))

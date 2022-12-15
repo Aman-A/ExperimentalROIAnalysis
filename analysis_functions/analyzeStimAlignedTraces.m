@@ -198,8 +198,8 @@ if any(strcmp(in.funcs,'decay_fit'))
             [fitobj,gof,~] = fit(t_fit,trace_fit,f);
             fitobjs{n} = fitobj;
             if gof.rsquare < 0.5
-                fprintf('Warning: R^2 of decay fit = %.3f for trace (%g, %g, %g)\n',...
-                        gof.rsquare,i_vec(n),j_vec(n),k_vec(n));
+%                 fprintf('Warning: R^2 of decay fit = %.3f for trace (%g, %g, %g)\n',...
+%                         gof.rsquare,i_vec(n),j_vec(n),k_vec(n));
             end
             gofs{n} = gof;
             rsquare(n) = gof.rsquare;
@@ -223,7 +223,7 @@ if any(strcmp(in.funcs,'decay_fit'))
             taud2(n) = nan;
             p(n) = nan;
             if ~successful_spikes(n)
-                fprintf('No spike for trace (%g, %g, %g)\n',i_vec(n),j_vec(n),k_vec(n))
+%                 fprintf('No spike for trace (%g, %g, %g)\n',i_vec(n),j_vec(n),k_vec(n))
             end
         end             
     end        

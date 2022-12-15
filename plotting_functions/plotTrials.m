@@ -116,7 +116,7 @@ if isempty(in.analysis_funcs)
     elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon'})))
         analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
     else
-        analysis_funcs = {'peaks','peak_times'};
+        analysis_funcs = {'peaks','peak_times','poststim_ints'};
     end
 else
    analysis_funcs = in.analysis_funcs; 

@@ -81,7 +81,8 @@ else
 %         x = x - stim_frames; 
 %         stim_frames = 0;     
 %     end
-    if ~isempty(stim_frames)
+    if ~isempty(stim_frames) && numel(stim_frames) < 50
+%     if ~isempty(stim_frames) && ~strcmp(func_name,'deltaF_F0')
         x = x - stim_frames(1); 
         stim_frames = stim_frames - stim_frames(1); 
     end    

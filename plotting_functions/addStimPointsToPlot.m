@@ -45,6 +45,7 @@ end
 leg_names = {ax.Children.DisplayName};
 ind_stim_times = strcmp(leg_names,stim_leg_name);
 if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis
+    hold(ax,'on');
     if stim_marker_mode == 1
         stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*0.99*ones(1,length(stim_frames)),...
             'LineStyle','none','Color',in.color,'Marker','.','MarkerSize',8,'DisplayName',stim_leg_name);
