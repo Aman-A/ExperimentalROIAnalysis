@@ -19,3 +19,10 @@ ans =
 ```
 
 Next, go to the `experiment_scripts` folder to see examples and useful scripts 
+
+Toolbox Dependencies:
+
+Image Processing
+Signal Processing
+Curve fitting
+Statistics and Machine Learning
