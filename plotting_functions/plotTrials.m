@@ -98,7 +98,7 @@ for i = 1:num_trials
     if isfield(datai.func_output,'deltaF_F0_aligned2')
         deltaF_F0_aligned2{i} = datai.func_output.deltaF_F0_aligned2; 
     end
-    trial_times(i) = datai.recording.time_start;
+    trial_times(i) = datai.recording.time_start{1};
     bslines{i} = datai.func_output.baseline;
     rois_all{i} = datai.rois;
     if isfield(datai.func_output,'mean')

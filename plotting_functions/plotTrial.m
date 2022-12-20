@@ -56,20 +56,19 @@ in = sl.in.processVarargin(in,varargin);
 % load_processed_data == 1
 if isa(rec_name,'Recording')
     rec = rec_name; 
-elseif isa(rec_name,'char') || isa(rec_name,'string')
+elseif isa(rec_name,'char') || isa(rec_name,'string') || iscell(rec_name)
     rec = Recording(rec_name,'position',in.position,'condition',in.condition,...
                     'dish',in.dish,'reporter',in.reporter,'exp_date',in.exp_date,...
                     'data_fold',in.data_fold,'pixel_size',in.pixel_size,...
                     'div',in.div,'bin_size',in.bin_size);             
 end
 % Prepare filename for saving data and check if it exists
-[~,img_name_no_ext] = fileparts(rec_name); 
 roiset_filename_no_ext = getROIset_name(rois_or_roiset_filename,...
                                             in.transform_type,...
                                             in.registration_rec);  
 fig_dir = fullfile(rec.filedir,['figs_',roiset_filename_no_ext]);
 save_data_filename = fullfile(rec.filedir,sprintf('%s-%s-%s-data.mat',...
-                                                  img_name_no_ext,in.roi_func_mode,...
+                                                  rec.img_name{1},in.roi_func_mode,...
                                                   roiset_filename_no_ext));
 if exist(save_data_filename,'file') && in.load_processed_data
     % Load processed data (skips showing diff image, even if set in
@@ -92,9 +91,9 @@ if exist(save_data_filename,'file') && in.load_processed_data
     fprintf('Loaded processed data from %s\n',save_data_filename); 
     % Plot baseline, peak, diff images
     if ~isempty(rec.condition)
-        img_name = [rec.condition '/' rec.img_name];
+        img_name = [rec.condition '/' rec.img_name{1}];
     else
-        img_name = rec.img_name; 
+        img_name = rec.img_name{1}; 
     end
     fig_hands = plotDiffImage(output_data.mean_bsline_img,output_data.peak_stim_img,...
                               output_data.diff_img,img_name,exp_settings,...
@@ -102,7 +101,7 @@ if exist(save_data_filename,'file') && in.load_processed_data
                               'filt_width',in.filt_width,...
                               'pixel_size',rec.pixel_size*rec.bin_size,...
                               'cmap',in.diff_image_cmap);               
-    addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,rec.img_name,...
+    addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,rec.img_name{1},...
                          in.close_img_after_save,in.show_roi_labels);
 else
     rec.load();  % Load image data
@@ -177,7 +176,7 @@ else
     end    
     if any(in.show_diff_image)
         % Overlay on diff image and save        
-        addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,rec.img_name,...
+        addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,rec.img_name{1},...
                              in.close_img_after_save,in.show_roi_labels);
     else
         fprintf('Skipping diff image plot\n'); 
@@ -234,7 +233,7 @@ if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0
                     'stim_pulse_dur',exp_settings.convert2Time(exp_settings.stim_pulse_dur));
     drawnow; 
     if in.save_fig > 1 % set to 2 to plot individual trials   
-       fig_name = [rec.img_name '_' in.plot_func '_' in.roi_func_mode(1:3)]; 
+       fig_name = [rec.img_name{1} '_' in.plot_func '_' in.roi_func_mode(1:3)]; 
        printFig(fig,fig_dir,fig_name); 
     end
 end

@@ -87,7 +87,7 @@ if strcmp(in.transform_type,'displace')
     rois2.registration_rec = fixed_recording.filepath; 
     rois2.transform_type = in.transform_type; 
     fprintf('Coregistered %s to %s using non-parameteric displacement in %.3f sec \n',...
-            moving_recording.img_name,fixed_recording.img_name,time_elapsed); 
+            moving_recording.img_name{1},fixed_recording.img_name{1},time_elapsed); 
     fprintf('Mean displacement (%.3f, %.3f) um\n',...
                  mean(dr(:,1))*fixed_recording.pixel_size,...
                  mean(dr(:,2))*fixed_recording.pixel_size); 
@@ -121,7 +121,7 @@ else
     rois2.registration_rec = fixed_recording.filepath; 
     rois2.transform_type = in.transform_type; 
     fprintf('Coregistered %s to %s using %s transformation in %.3f sec \n',...
-            moving_recording.img_name,fixed_recording.img_name,...
+            moving_recording.img_name{1},fixed_recording.img_name{1},...
             in.transform_type,time_elapsed); 
     varargout = {T,[],rois2}; 
     % For some reason, output of imwarp with tform is different from output
@@ -163,8 +163,8 @@ if in.plot_result
         [~,roi_set_filename_no_ext] = fileparts(rois.roi_set_filename);    
         fig_dir = fullfile(moving_recording.filedir,...
                             sprintf('figs_%s_%s_%s',roi_set_filename_no_ext,...
-                            fixed_recording.img_name,in.transform_type));         
-        fig_name = sprintf('%s_disp_results',moving_recording.img_name); 
+                            fixed_recording.img_name{1},in.transform_type));         
+        fig_name = sprintf('%s_disp_results',moving_recording.img_name{1}); 
         printFig(fig,fig_dir,fig_name);         
     end
 end

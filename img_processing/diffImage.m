@@ -89,9 +89,9 @@ else
 end
 if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
     if ~isempty(recording.condition)
-        img_name = [recording.condition '/' recording.img_name];
+        img_name = [recording.condition '/' recording.img_name{1}];
     else
-        img_name = recording.img_name; 
+        img_name = recording.img_name{1}; 
     end
     fig_hands = plotDiffImage(bsline_img,peak_stim_img,diff_img,img_name,...
                    exp_settings,in);

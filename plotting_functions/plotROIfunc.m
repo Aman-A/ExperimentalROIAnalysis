@@ -108,8 +108,8 @@ if strcmp(func_output.roi_func_mode,'combine')
     else
         roi_str = sprintf('all %g ROIs',num_rois);
     end
-    display_names = strcat(func_output.img_name,{': '},roi_str);
-    title_str = func_output.img_name;
+    display_names = strcat(func_output.img_name{1},{': '},roi_str);
+    title_str = func_output.img_name{1};
     if isfield(func_output,'baseline')
        title_str = [title_str sprintf(': Baseline = %.1f a.u.',...
                                         func_output.baseline(1))];
@@ -125,7 +125,7 @@ else
     if isrow(display_names)
        display_names = display_names'; % make column vector for setting DisplayName below
     end
-    title_str = [func_output.img_name ':']; 
+    title_str = [func_output.img_name{1} ':']; 
     if isfield(func_output,'baseline')
         title_str = {title_str, sprintf('B = %.1f ± %.1f a.u.',...
                                         mean(func_output.baseline(:,1)),...

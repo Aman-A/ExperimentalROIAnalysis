@@ -166,7 +166,7 @@ if in.rem_pbleach
     end
 end
 %% Generate stim-aligned traces using means
-if any(strcmp(funcs,'mean'))
+if any(strcmp(funcs,'mean')) && ~isempty(stim_frames)
     baseline_wind = exp_settings.baseline_wind;
     align_output = calcStimAlignedResponses(output.mean,stim_frames,...
                                             baseline_wind,stim_wind,...
