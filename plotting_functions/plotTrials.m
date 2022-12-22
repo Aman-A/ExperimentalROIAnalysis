@@ -113,7 +113,7 @@ if isempty(in.analysis_funcs)
         analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
     elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
         analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
-    elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon'})))
+    elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon','Voltron'})))
         analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
     else
         analysis_funcs = {'peaks','peak_times','poststim_ints'};
@@ -137,6 +137,10 @@ if strcmp(in.analyze_traces,'deltaF_F0_aligned')
 elseif strcmp(in.analyze_traces,'deltaF_F0_aligned2')
     analyze_aligned_traces = deltaF_F0_aligned2; 
     train_peak_baseline_mode = 2; 
+end
+if regexp(in.reporter,'Voltron')  
+    analyze_aligned_traces = -analyze_aligned_traces; % negative going indicator
+    fprintf('Flipping negative going indicator %s\n',in.reporter);
 end
 if strcmp(in.roi_func_mode,'combine')    
     deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
