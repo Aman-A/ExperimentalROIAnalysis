@@ -69,9 +69,13 @@ analysis_file = fullfile(in.save_dir,in.save_filename);
 if in.load
     % check if exists    
     if exist(analysis_file,'file')
-        output = load(analysis_file);
-        fprintf('Loaded analysis data from %s\n',analysis_file);
-        return;     
+        output = load(analysis_file);        
+        if all(ismember(in.funcs,fieldnames(output)))                   
+            fprintf('Loaded analysis data from %s\n',analysis_file);
+            return;    
+        else
+            fprintf('Saved analysis data is missing requested outputs, rerunning analysis...\n')
+        end
     else
         fprintf('No analysis file to load, running analysis...\n')
     end

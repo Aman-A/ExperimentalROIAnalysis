@@ -47,10 +47,14 @@ if iscell(recs_or_imgstack)
     recs = recs_or_imgstack; 
     full_rec = zeros(maxrow,maxcol,recs{1}.imsize(3));
     for i = 1:N
+        if recs{i}.loaded ==0
+            recs{i}.load();
+        end
         row0i = y0 + round(xy(i,2));
         col0i = x0 + round(xy(i,1));        
         full_rec(row0i+1:row0i+r,col0i+1:col0i+c,:) = full_rec(row0i+1:row0i+r,col0i+1:col0i+c,:) + recs{i}.vals;
     end
+    full_rec = full_rec/N;
     varargout = {full_rec};
 else
     img_stack = recs_or_imgstack;
@@ -60,5 +64,6 @@ else
         col0i = x0 + round(xy(i,1));
         full_img(row0i+1:row0i+r,col0i+1:col0i+c) = full_img(row0i+1:row0i+r,col0i+1:col0i+c) + img_stack(:,:,i);        
     end
+    full_img = full_img/N;
     varargout = {full_img};
 end

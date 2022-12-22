@@ -88,22 +88,22 @@ mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x,[4 5])),deltaF_F0_aligned2,...
 std_dF_F0_rois = cellfun(@(x) squeeze(std(x,0,[4 5])),deltaF_F0_aligned2,...
             'UniformOutput',0); % std across stim within trains and trials
 sem_dF_F0_rois = cellfun(@(x) x/sqrt(num_stim),std_dF_F0_rois,'UniformOutput',0);
-mean_dF_F0_rois_norm0 = cellfun(@(x) x./max(x(:,:,1),[],1),...
+mean_dF_F0_rois_norm0 = cellfun(@(x) x./max(x(:,:,1),[],1,'omitnan'),...
                                 mean_dF_F0_rois,'UniformOutput',0);
 std_dF_F0_rois_norm0 = cellfun(@(x,y) x./max(y(:,:,1),[],1),...
                                 std_dF_F0_rois,mean_dF_F0_rois,'UniformOutput',0);
 sem_dF_F0_rois_norm0 = cellfun(@(x) x/sqrt(num_stim),std_dF_F0_rois_norm0,'UniformOutput',0);
 % mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x(:,:,:,:,1),[4 5])),deltaF_F0_aligned2,'UniformOutput',0); % average across stim within trains
 % Average raw dF/F0 traces across ROIs
-mean_dF_F0 = cellfun(@(x) squeeze(mean(x,2)),mean_dF_F0_rois,...
+mean_dF_F0 = cellfun(@(x) squeeze(mean(x,2,'omitnan')),mean_dF_F0_rois,...
                 'UniformOutput',0); % average across ROIs
-std_dF_F0 = cellfun(@(x) squeeze(std(x,0,2)),mean_dF_F0_rois,...
+std_dF_F0 = cellfun(@(x) squeeze(std(x,0,2,'omitnan')),mean_dF_F0_rois,...
                 'UniformOutput',0); % std across ROIs
 sem_dF_F0 = cellfun(@(x) x/sqrt(num_rois),std_dF_F0,'UniformOutput',0);
 % Average traces normalized within trial across ROIs
-mean_dF_F0_norm0 = cellfun(@(x) squeeze(mean(x,2)),mean_dF_F0_rois_norm0,...
+mean_dF_F0_norm0 = cellfun(@(x) squeeze(mean(x,2,'omitnan')),mean_dF_F0_rois_norm0,...
                 'UniformOutput',0); % average across ROIs
-std_dF_F0_norm0 = cellfun(@(x) squeeze(std(x,0,2)),mean_dF_F0_rois_norm0,...
+std_dF_F0_norm0 = cellfun(@(x) squeeze(std(x,0,2,'omitnan')),mean_dF_F0_rois_norm0,...
                 'UniformOutput',0); % std across ROIs
 sem_dF_F0_norm0 = cellfun(@(x) x/sqrt(num_rois),std_dF_F0_norm0,'UniformOutput',0);
 % sem_deltaF_F0_aligned = std_deltaF_F0_aligned;
@@ -208,10 +208,15 @@ end
 %% Plot traces of specific ROI in all conditions
 if any(in.plot_figs == 3)    
     if in.norm_to_cont
-        yax_lims = [-0.5 3];
-%         yax_lims = [-2 6]; 
+%         yax_lims = [-0.5 3];
+        yax_lims = [-2 6]; 
     else
         yax_lims = [-0.1 0.2];                 
+    end
+    if num_conditions == 8
+        Nrows = 2; Ncols = 4;
+    else
+        [Nrows,Ncols] = getSubplotDimensions(num_conditions);
     end
     stim_cols2 = {[0 0 0 0.2];[1 0 0 0.1]};    
     fig = figure('Units','normalized');
@@ -229,8 +234,8 @@ if any(in.plot_figs == 3)
             norm_factor = max(mean_tracesi(:,1),[],1);
             mean_tracesi = mean_tracesi/norm_factor;
             tracesi = cellfun(@(x) x/norm_factor,tracesi,'UniformOutput',0); 
-        end
-        ax = subplot(2,4,i);
+        end        
+        ax = subplot(Nrows,Ncols,i);
         for j = 1:2
             p = plot(ta,tracesi{j},'LineWidth',0.25,'Color',stim_cols2{j});
             hold on;
