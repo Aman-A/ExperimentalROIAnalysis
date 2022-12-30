@@ -19,6 +19,7 @@ in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
 in.pixel_size = []; % pixel size in µm, if not empty, adds scale bar
 in.peak_mode = 'max'; % 'max' or 'mean' for peak_stim_img and meanDiffImage                           
+in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in = sl.in.processVarargin(in,varargin); 
 if in.filt_width > 0
     filt_str = sprintf('filter window %g',in.filt_width);
@@ -63,10 +64,20 @@ end
 if any(in.include_plots==3) || any(in.include_plots==4) % Difference or mean difference image
     % subplot(3,1,3);
     fig = figure(in.fig_settings{:});
+    if isnumeric(in.peak_mode)
+        pk_str = sprintf('%g frames post-stim',diff(in.peak_mode));
+    elseif strcmp(in.peak_mode,'max')
+        pk_str = 'peak';
+    elseif strcmp(in.peak_mode,'min')
+        pk_str = 'neg peak';
+    elseif strcmp(in.peak_mode,'mean')
+        pk_str = sprintf('%g frames post-stim',exp_settings.stim_wind);
+    end
+
     if any(in.include_plots==3)
-        title_str = sprintf('%s: Peak - baseline, %s',img_name,filt_str);
+        title_str = sprintf('%s: %s - baseline, %s',img_name,pk_str,filt_str);
     else
-        title_str = sprintf('%s: Mean peak - baseline, %s',img_name,filt_str);
+        title_str = sprintf('%s: Mean %s - baseline, %s',img_name,pk_str,filt_str);
     end
     plot_img(diff_img,title_str,in.cmap,in.cb_settings,in.title_settings,...
              in.cax_mode,in.cax_lims,in.pixel_size);        

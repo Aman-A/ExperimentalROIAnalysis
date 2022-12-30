@@ -46,7 +46,7 @@ mot_correct = 0; % motion correction - SLOW, usually not necessary
 % 5) Specify your sampling rate and frames at which stimuli were applied.
 % If no stimuli were applied, leave stim_times, stim_wind, and baseline_wind blank
 % Experiment/imaging settings
-sampling_rate = 25; % Hz
+sampling_rate = 50; % Hz
 stim_times = []; 
 stim_wind = []; % sec to analyze after each stim (also gets blanked in detectMinis)
 baseline_wind = []; % sec for baseline window 

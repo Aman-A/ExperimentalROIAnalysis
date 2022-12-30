@@ -164,6 +164,9 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         function info = getFitsInfo(obj)
             info = fitsinfo(obj.filepath);
             obj.imsize = info.PrimaryData.Size; 
+            if length(obj.imsize) == 2
+                obj.imsize = [obj.imsize 1]; % add 3rd dimension
+            end
             if any(strcmp('EXPOSURE',info.PrimaryData.Keywords(:,1)))
                 obj.exposure_time = ...
                     info.PrimaryData.Keywords{strcmp(info.PrimaryData.Keywords(:,1),'EXPOSURE'),2};

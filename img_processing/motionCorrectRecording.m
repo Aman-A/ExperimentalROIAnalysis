@@ -1,4 +1,5 @@
-function out = motionCorrectRecording(recording,ref_frames,print_status)
+function out = motionCorrectRecording(recording,ref_frames,print_status,...
+                                     method)
 %MOTIONCORRECTRECORDING ... 
 %  
 %   Inputs 
@@ -38,20 +39,38 @@ end
 if nargin < 3
     print_status = 1; 
 end
-ref = mean(data(:,:,ref_frames),3); 
-refFFT = fft2(ref);
-drawnow;
-data2 = data; 
-% pobj = parpool;
-parfor f = 1:size(data,3)
-    if ~mod(f,400) && print_status
-        disp(['registering frame: ' int2str(f)])
-    end
-    %align data
-    [~, G] = dftregistration(refFFT,fft2(data(:,:,f)),4);
-    data2(:,:,f) = real(ifft2(G));
+if nargin < 4
+    method = 'dft'; % 'dft' discrete fourier transform method
+                    % 'imregtform' affine transformation with imregtform
 end
-% delete(pobj);
+ref = mean(data(:,:,ref_frames),3); 
+data2 = data; 
+switch method    
+    case 'dft'
+        refFFT = fft2(ref);
+        drawnow;        
+        % pobj = parpool;
+        parfor f = 1:size(data,3)
+            if ~mod(f,400) && print_status
+                disp(['registering frame: ' int2str(f)])
+            end
+            %align data
+            [~, G] = dftregistration(refFFT,fft2(data(:,:,f)),4);
+            data2(:,:,f) = real(ifft2(G));
+        end
+        % delete(pobj);
+    case 'imregtform'
+        transform_type = 'affine';
+        [optimizer,metric] = imregconfig('multimodal');
+        parfor f = 1:size(data,3)
+            if ~mod(f,400) && print_status
+                disp(['registering frame: ' int2str(f)])
+            end
+            tform = imregtform(data(:,:,f),ref,transform_type,optimizer,metric)
+            data2(:,:,f) = imwarp(data(:,:,f),tform,...
+                            'OutputView',imref2d(size(ref)));
+        end
+end
 disp('Done alignment')
 
 switch out_mode

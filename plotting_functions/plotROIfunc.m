@@ -25,6 +25,7 @@ in.sort_traces = 0; % 1 for ascending, 2 for descending
 in.stim_marker_mode = []; % 1 for points, 2 for vertical lines, 3 for horz (needs stim_pulse_dur)
 in.stim_pulse_dur = []; % duration of stimulus pulses, default ignore
 in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
+in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     figure;
@@ -34,12 +35,21 @@ else
 end
 y = func_output.(func_name);
 if regexp(func_name,'mean','ONCE')
-    non_nan_frames = find(~isnan(y(:,1)));
-    y = y - y(non_nan_frames(1),:); % start all traces at 0 for plot
+    if strcmp(func_output.roi_func_mode,'separate') && size(y,2) > 1
+        non_nan_frames = find(~isnan(y(:,1)));
+        y = y - y(non_nan_frames(1),:); % start all traces at 0 for plot
+    end
 %     y = y - mean(y,1,'omitnan'); % set baseline to mean of trace
     sbar_str = sprintf('Scale bar = %g a.u.',in.sbar_len);
+    y_flipped = 0; 
 else
     sbar_str = sprintf('Scale bar = %g%%',100*in.sbar_len);
+    y = y*in.indicator_dir; 
+    if in.indicator_dir < 0
+        y_flipped = 1;
+    else
+        y_flipped = 0;
+    end
 end
 baseline_wind = size(func_output.baseline_wind_inds,1);
 if regexp(func_name,'aligned','ONCE') 
@@ -184,16 +194,20 @@ else
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 if strcmp(func_name,'deltaF_F0')
-    ylabel(ax,'\Delta F/F_{0}')
+    ylabel_str = '\Delta F/F_{0}';
 elseif strcmp(func_name,'deltaF')
-    ylabel(ax,'\Delta F')
+    ylabel_str = '\Delta F';
 elseif regexp(func_name,'aligned','ONCE')
-    ylabel(ax,'Mean \Delta F/F_{0}')
+    ylabel_str = 'Mean \Delta F/F_{0}';
 elseif strcmp(func_name,'mean')
-    ylabel(ax,'mean F (a.u.)')
+    ylabel_str = 'mean F (a.u.)';
 else
-   ylabel(ax,func_name);  
+   ylabel_str = func_name; 
 end
+if y_flipped
+    ylabel_str = ['- ' ylabel_str];
+end
+ylabel(ax,ylabel_str)
 box(ax,'off'); 
 if in.title_on
     title(ax,title_str,'Interpreter','none','FontSize',8); 

@@ -39,6 +39,7 @@ mean_func_field = ['mean_' plot_func '_all'];
 F = experiment_output.(func_field);
 if isfield(experiment_output,mean_func_field)
     meanF = experiment_output.(mean_func_field); % mean across trials within condition/ROI
+    meanF = cellfun(@(x) mean(x,3),meanF,'UniformOutput',0); 
 else
 %     meanF = cellfun(@(x) mean(x,[2 4]),F,'UniformOutput',0); % mean across trials within condition/ROI
     meanF = cellfun(@(x) squeeze(mean(x,[2 4 5])),F,'UniformOutput',0); % mean across trials within condition/ROI
@@ -50,7 +51,7 @@ if any(num_frames ~= num_frames(1))
     max_frames = max(num_frames); 
     for i = 1:length(meanF)
         if num_frames(i) ~= max_frames
-            meanF{i} = [meanF{i};nan(max_frames-num_frames(i),size(meanF{i},2))];
+            meanF{i} = [meanF{i};nan([max_frames-num_frames(i),size(meanF{i},2:ndims(meanF{i}))])];
         end
     end
 end

@@ -23,6 +23,7 @@ in = sl.in.processVarargin(in,varargin);
 % Data compiled across trials and conditions in output struct
 out = struct();
 out.conditions = conditions;
+out.means_all = cell(1,num_conditions); 
 out.deltaF_F0_all = cell(1,num_conditions); 
 out.mean_deltaF_F0_all = cell(1,num_conditions); 
 out.peaks_deltaF_F0_all = cell(1,num_conditions);
@@ -67,6 +68,7 @@ for i = 1:num_conditions
     % trial data for ith condition
     tdi = plotTrials(in.img_names{i},exp_settings(i),roiset_filename,plot_settings);    
     if isempty(tdi); continue; end
+    out.means_all{i} = tdi.means;    
     out.deltaF_F0_all{i} = tdi.deltaF_F0;    
     out.mean_deltaF_F0_all{i} = tdi.mean_deltaF_F0;    
     if isfield(tdi,'deltaF_F0_aligned')

@@ -55,6 +55,7 @@ in.title_settings = {'Interpreter','none','Color','w'};
 in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
 in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
 in.pixel_size = recording.pixel_size*recording.bin_size;
+in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in = sl.in.processVarargin(in,varargin);
 if isa(recording,'Recording') && recording.loaded == 0
     recording.load(); 
@@ -67,8 +68,10 @@ end
 if exp_settings.num_stim > 0
     if strcmp(in.peak_mode,'max')
         peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
-    else
+    elseif strcmp(in.peak_mode,'mean')
         peak_stim_img = mean(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),3);
+    elseif strcmp(in.peak_mode,'min')
+        peak_stim_img = min(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
     end
 else
     peak_stim_img = max(recording.vals,[],3); % peak across recording
@@ -80,12 +83,13 @@ if in.filt_width > 0
 end
 if any(in.include_plots == 4) && exp_settings.num_stim > 0
     diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
-                            exp_settings.stim_wind,in.peak_mode);
+                            exp_settings.stim_wind,in.peak_mode,in.indicator_dir);
     if in.filt_width > 0
         diff_img = imgaussfilt(diff_img,in.filt_width); %,'FilterSize',filt_wind);    
     end
 else
-    diff_img = peak_stim_img-bsline_img;
+    diff_img = (peak_stim_img-bsline_img)*in.indicator_dir;
+    
 end
 if ~isempty(in.include_plots) && all(in.include_plots ~= 0)
     if ~isempty(recording.condition)
