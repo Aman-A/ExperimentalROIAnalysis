@@ -1,9 +1,10 @@
 function out = motionCorrectRecording(recording,ref_frames,print_status,...
                                      method)
-%MOTIONCORRECTRECORDING ... 
+%MOTIONCORRECTRECORDING Apply motion correction to recording or image stack 
 %  
 %   Inputs 
 %   ------ 
+%   recording : Recording object or m x n x T image stack
 %   Optional Inputs 
 %   --------------- 
 %   Outputs 

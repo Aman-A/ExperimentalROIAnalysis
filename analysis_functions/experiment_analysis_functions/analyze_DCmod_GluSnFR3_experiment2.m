@@ -21,6 +21,7 @@ if nargin == 0
     sort_amp_ind = 4; % amplitude to sort ROIs by
     save_figs = 1;
 end
+
 in.plot_figs = [1:7]; % Select analysis figures to plot
                       % 1 - Plot mean trace averaged across ROIs
                       % 2 - Plot mean traces averaged within ROIs
@@ -43,6 +44,7 @@ in.roi_func_mode = 'separate';
 in.cols = lines(length(cond_inds));
 in.fig_size = [0.97 0.88]; % in 'normalized' units
 in.data_fold = getDataFold();
+in.analysis_fig_fold = '';
 in = sl.in.processVarargin(in,varargin);
 
 cols = in.cols; 
@@ -53,11 +55,13 @@ data_file = sprintf('%s_%s_%s_%s_%s',exp_date,reporter,dish,in.roi_func_mode,...
 if ~isempty(in.data_file_suffix)
     data_file = [data_file '_' in.data_file_suffix];
 end
+if isempty(in.analysis_fig_fold)
+    in.analysis_fig_fold = fullfile(exp_fold,['figs_' roiset_filename]);
+end
 out = load(fullfile(exp_fold,[data_file '.mat']));
 fprintf('Loaded data: %s\n',data_file);
 %%
-% analysis_fig_fold = fullfile(exp_fold,'analysis');
-analysis_fig_fold = fullfile(exp_fold,['figs_' roiset_filename]);
+
 if ~isempty(cond_inds)
     conditions = out.conditions(cond_inds);
 else
@@ -160,7 +164,7 @@ if any(in.plot_figs == 1)
     sgtitle('Mean response across ROIs with and without DC stimulus (+/- SEM)')
     if save_figs
         fig_name = sprintf('meanF_all_DCamp_norm%g',in.norm_to_cont);
-        printFig(fig,analysis_fig_fold,fig_name);
+        printFig(fig,in.analysis_fig_fold,fig_name);
     end
 end
 %% Plot mean stim averaged response across trials within each ROI
@@ -201,15 +205,15 @@ if any(in.plot_figs == 2)
         drawnow; 
         if save_figs
             fig_name = sprintf('meanF_ROIs_%s_DCamp_norm%g',cond_names{condj},in.norm_to_cont);
-            printFig(fig,analysis_fig_fold,fig_name);
+            printFig(fig,in.analysis_fig_fold,fig_name);
         end
     end
 end
 %% Plot traces of specific ROI in all conditions
 if any(in.plot_figs == 3)    
     if in.norm_to_cont
-%         yax_lims = [-0.5 3];
-        yax_lims = [-2 6]; 
+%         yax_lims = [-0.1 4];
+        yax_lims = [-1 4]; 
     else
         yax_lims = [-0.1 0.2];                 
     end
@@ -263,7 +267,7 @@ if any(in.plot_figs == 3)
     if save_figs
         fig_name = sprintf('meanF_all_DCamp_norm%g_roi%g',in.norm_to_cont,...
                 in.plot_roi_ind);
-        printFig(fig,analysis_fig_fold,fig_name);
+        printFig(fig,in.analysis_fig_fold,fig_name);
     end
 end
 %% Plot distribution of peaks within ROI
@@ -317,7 +321,7 @@ if any(in.plot_figs == 4)
 %     end
     if save_figs
         fig_name = sprintf('peakF_dists_all_DCamp_norm%g_roi%g',in.norm_to_cont,in.plot_roi_ind);
-        printFig(fig,analysis_fig_fold,fig_name);
+        printFig(fig,in.analysis_fig_fold,fig_name);
     end
 end
 %% Peaks analysis
@@ -385,7 +389,7 @@ if any(in.plot_figs == 5)
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
     if save_figs
-        printFig(fig,analysis_fig_fold,sprintf('mean_peaks_rois_sort%g',sort_amp_ind));
+        printFig(fig,in.analysis_fig_fold,sprintf('mean_peaks_rois_sort%g',sort_amp_ind));
     end
     % Plot norm peaks
     fig = figure('Units','normalized');
@@ -407,7 +411,7 @@ if any(in.plot_figs == 5)
     ax.XTickLabel = roi_inds1;
 %     ax.YLim
     if save_figs
-        printFig(fig,analysis_fig_fold,sprintf('mean_peaks_rois_norm_sort%g',sort_amp_ind));
+        printFig(fig,in.analysis_fig_fold,sprintf('mean_peaks_rois_norm_sort%g',sort_amp_ind));
     end
     % Plot norm peaks vs intensity within ROI on same axis
     fig = figure('Units','normalized');
@@ -418,7 +422,8 @@ if any(in.plot_figs == 5)
         sem_peaksj = squeeze(sem_peaks_rois_norm(j,2,:));
 %         mean_peaksj = squeeze(peaks_per_change_rois(j,:))';
 %         sem_peaksj = squeeze(peaks_per_change_sem_rois(j,:))';
-        [b,~,~,~,stats] = regress(mean_peaksj,[ones(size(xj)) xj]);
+%         [b,~,~,~,stats] = regress(mean_peaksj,[ones(size(xj)) xj]);
+        [b,~,~,~,stats] = regress(mean_peaksj,xj); % no intercept
         Rsq = stats(1); p = stats(3); 
         if p < 0.05
             colj = [1 0 0];
@@ -429,7 +434,8 @@ if any(in.plot_figs == 5)
         end
         errorbar(xj,mean_peaksj,sem_peaksj,...
                 'o','MarkerFaceColor',colj,'Color',colj); hold on;
-        plot(xj,b(1) + b(2)*xj,'-','Color',colj,'LineWidth',lw);
+%         plot(xj,b(1) + b(2)*xj,'-','Color',colj,'LineWidth',lw);
+        plot(xj,b(1)*xj,'-','Color',colj,'LineWidth',lw);
     end
     ax = gca;
     xlabel('ROI index');
@@ -441,7 +447,7 @@ if any(in.plot_figs == 5)
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;    
     if save_figs
-        printFig(fig,analysis_fig_fold,sprintf('mean_peaks_rois_norm_vs_amp_sort%g',sort_amp_ind));
+        printFig(fig,in.analysis_fig_fold,sprintf('mean_peaks_rois_norm_vs_amp_sort%g',sort_amp_ind));
     end
     % Plot percent modulation    
     fig = figure('Units','normalized');
@@ -464,7 +470,7 @@ if any(in.plot_figs == 5)
     ax.XTickLabel = roi_inds1;
 %     ax.YLim = [-50 50];
     if save_figs
-        printFig(fig,analysis_fig_fold,sprintf('mean_peaks_rois_per_change_sort%g',sort_amp_ind));
+        printFig(fig,in.analysis_fig_fold,sprintf('mean_peaks_rois_per_change_sort%g',sort_amp_ind));
     end  
 end
 %% Bar plot of frac. modulation
@@ -494,7 +500,7 @@ if any(in.plot_figs == 6)
     box off;
     title(sprintf('Proportion of %g ROIs modulated by DC',num_rois))
     if save_figs
-        printFig(fig,analysis_fig_fold,['per_change_rois_bar' num2str(bar_mode)]);
+        printFig(fig,in.analysis_fig_fold,['per_change_rois_bar' num2str(bar_mode)]);
     end
 
 end
@@ -513,7 +519,7 @@ if any(in.plot_figs == 7)
         title(cond_names{i})
     end
     if save_figs
-        printFig(fig,analysis_fig_fold,'map_per_change_rois');
+        printFig(fig,in.analysis_fig_fold,'map_per_change_rois');
     end
 end
 end

@@ -13,7 +13,10 @@ function char_cell_array = numericVec2chars(vec,str_pattern)
 %   Examples 
 %   --------------- 
 
-% AUTHOR    : Aman Aberra 
+% AUTHOR    : Aman Aberra
+if nargin < 2
+    str_pattern = '%g'; % default just output number
+end
 assert(isvector(vec),'vec must be a 1D vector')
 
 char_cell_array = cell(size(vec));
