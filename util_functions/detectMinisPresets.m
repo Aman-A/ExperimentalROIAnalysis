@@ -14,7 +14,7 @@ function settings = detectMinisPresets(preset_name)
 % AUTHOR    : Aman Aberra 
 
 switch preset_name
-    case 'loki_25Hz'
+    case 'loki_50Hz'
         settings = struct(); 
         settings.threshold = 4; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
@@ -27,7 +27,7 @@ switch preset_name
         settings.stim_frames = []; % ignore if no stim
         settings.blank_around_stim = []; % ignore if no stim
         settings.plot_filt_output_roi_index = 1; % plot example of filtering in this roi
-        settings.min_mini_width = 40e-3; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
+        settings.min_mini_width = 10e-3; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
         settings.min_peak_distance = 120e-3; % sec - min distance between mini peaks to allow
         settings.deconv = 1; % set to 1 to use deconvolution, may need to adjust threshold if turned off
         settings.apply_filter = 1;
