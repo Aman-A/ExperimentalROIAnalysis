@@ -1,4 +1,4 @@
-function analyze_DCmod_GluSnFR3_experiment2(exp_date,reporter,dish,roiset_filename,...
+function analyze_DCmod_GluSnFR3_experiment2(data_or_data_params,...
                     cond_inds,cond_names,sort_amp_ind,save_figs,varargin)
 %% Analyze responses to train during DC stimulation at different amplitudes
 % Assumes experimental paradigm in DC stim is applied during second train
@@ -41,25 +41,38 @@ in.norm_to_cont = 1; % normalize responses to control (DC off) within trial/ROI
 in.data_file_suffix = 'train';
 in.roi_func_mode = 'separate';
 % plot settings
-in.cols = lines(length(cond_inds));
+in.cols = []; 
 in.fig_size = [0.97 0.88]; % in 'normalized' units
 in.data_fold = getDataFold();
 in.analysis_fig_fold = '';
 in = sl.in.processVarargin(in,varargin);
 
 cols = in.cols; 
-%% Load data
-exp_fold = fullfile(in.data_fold,exp_date,reporter,dish);
-data_file = sprintf('%s_%s_%s_%s_%s',exp_date,reporter,dish,in.roi_func_mode,...
-                                    roiset_filename);
-if ~isempty(in.data_file_suffix)
-    data_file = [data_file '_' in.data_file_suffix];
+%% Load data if necessary
+if isfield(data_or_data_params,'img_names')
+    out = data_or_data_params; % input experiment data struct directly
+    exp_date = out.exp_date;
+    reporter = out.reporter;
+    dish = out.dish; 
+    roiset_filename = out.roiset_filename_no_ext; 
+    exp_fold = fullfile(in.data_fold,exp_date,reporter,dish);
+else % load using fields of data_or_data_params
+    exp_date = data_or_data_params.exp_date;
+    reporter = data_or_data_params.reporter;
+    dish = data_or_data_params.dish;
+    roiset_filename = data_or_data_params.roiset_filename;   
+    data_file = sprintf('%s_%s_%s_%s_%s',exp_date,reporter,dish,...
+                                        in.roi_func_mode,roiset_filename);
+    if ~isempty(in.data_file_suffix)
+        data_file = [data_file '_' in.data_file_suffix];
+    end
+    exp_fold = fullfile(in.data_fold,exp_date,reporter,dish);
+    out = load(fullfile(exp_fold,[data_file '.mat']));
+    fprintf('Loaded data: %s\n',data_file);
 end
 if isempty(in.analysis_fig_fold)
     in.analysis_fig_fold = fullfile(exp_fold,['figs_' roiset_filename]);
 end
-out = load(fullfile(exp_fold,[data_file '.mat']));
-fprintf('Loaded data: %s\n',data_file);
 %%
 
 if ~isempty(cond_inds)
@@ -79,7 +92,8 @@ deltaF_F0_all = out.deltaF_F0_all(cond_inds);
 % get responses aligned within train
 deltaF_F0_aligned2 = out.deltaF_F0_aligned2_all(cond_inds); 
 rois = out.rois_all{1}{1};
-rois_xy = [rois.x,rois.y];
+pixel_size = out.plot_settings.pixel_size; % um
+rois_xy = [rois.x,rois.y]*pixel_size; % convert to um
 center2center_dists = sqrt((rois_xy(:,1) - rois_xy(:,1)').^2 + ... 
                             (rois_xy(:,2)-rois_xy(:,2)').^2);
 diag_inds = 1:size(center2center_dists,1) + 1:numel(center2center_dists); % indices of diagonal elements
@@ -121,11 +135,13 @@ if in.norm_to_cont
 else
     trace_ylabel_str = 'Mean \Delta F/F_{0}';
 end
-fprintf('Extraced traces and peaks\n')
+fprintf('Extracted traces and peaks\n')
 %% Plot mean stim averaged response across ROIs and trials
 if any(in.plot_figs == 1)
     if num_conditions == 8
         Nrows = 2; Ncols = 4; 
+    elseif num_conditions == 10
+        Nrows = 2; Ncols = 5; 
     else
         [Nrows,Ncols] = getSubplotDimensions(num_conditions);
     end
@@ -201,7 +217,7 @@ if any(in.plot_figs == 2)
              xlim([-baseline_wind_sec,ta(end)]);
 %              ax.YLim(1) = -0.5;            
         end
-        sgtitle(strrep(out.conditions{condj},'_',' '));
+        sgtitle(strrep(conditions{condj},'_',' '));
         drawnow; 
         if save_figs
             fig_name = sprintf('meanF_ROIs_%s_DCamp_norm%g',cond_names{condj},in.norm_to_cont);
@@ -219,6 +235,8 @@ if any(in.plot_figs == 3)
     end
     if num_conditions == 8
         Nrows = 2; Ncols = 4;
+    elseif num_conditions == 10
+        Nrows = 2; Ncols = 5;
     else
         [Nrows,Ncols] = getSubplotDimensions(num_conditions);
     end
@@ -367,6 +385,31 @@ mean_peaks_rois_norm = mean_peaks_rois_norm(sort_rois,:,:);
 sem_peaks_rois_norm = sem_peaks_rois_norm(sort_rois,:,:);
 %% Analyze ROI specific modulation
 % peaks : [num_trains x num_rois x num_stim x num_trials]
+if isempty(cols)
+    if num_conditions == 8
+        cols = flipud([ 0.6445         0    0.1484 % for 8
+            0.8398    0.1875    0.1523
+            0.9531    0.4258    0.2617
+            0.9883    0.6797    0.3789
+            0.6680    0.8477    0.9102
+            0.4531    0.6758    0.8164
+            0.2695    0.4570    0.7031
+            0.1914    0.2109    0.5820]);
+    elseif num_conditions == 10
+        cols = flipud([0.4023         0    0.1211 % for 10
+            0.6953    0.0938    0.1680
+            0.8359    0.3750    0.3008
+            0.9531    0.6445    0.5078
+            0.9883    0.8555    0.7773
+            0.8164    0.8945    0.9375
+            0.5703    0.7695    0.8672
+            0.2617    0.5742    0.7617
+            0.1289    0.3984    0.6719
+            0.0195    0.1875    0.3789]);
+    else
+        cols = lines(length(cond_names(cond_inds)));
+    end
+end
 if any(in.plot_figs == 5)            
     % Plot peaks
     fig = figure('Units','normalized');
@@ -418,13 +461,14 @@ if any(in.plot_figs == 5)
     fig.Position = [0.001 0.03 in.fig_size];       
     for j = 1:num_rois
         xj = linspace(j-0.4,j+0.4,num_conditions)';
-        mean_peaksj = squeeze(mean_peaks_rois_norm(j,2,:));
-        sem_peaksj = squeeze(sem_peaks_rois_norm(j,2,:));
+        mean_peaksj = squeeze(100*(mean_peaks_rois_norm(j,2,:)-1)); % percent change
+        sem_peaksj = squeeze(100*sem_peaks_rois_norm(j,2,:));
 %         mean_peaksj = squeeze(peaks_per_change_rois(j,:))';
 %         sem_peaksj = squeeze(peaks_per_change_sem_rois(j,:))';
-%         [b,~,~,~,stats] = regress(mean_peaksj,[ones(size(xj)) xj]);
-        [b,~,~,~,stats] = regress(mean_peaksj,xj); % no intercept
-        Rsq = stats(1); p = stats(3); 
+        [b,~,~,~,stats] = regress(mean_peaksj,[ones(size(xj)) xj-j]); % center x at 0
+%         [b,~,~,~,stats] = regress(mean_peaksj,xj-j); % center x at 0
+        Rsq = stats(1); 
+        p = stats(3); 
         if p < 0.05
             colj = [1 0 0];
             lw = 1;
@@ -434,12 +478,13 @@ if any(in.plot_figs == 5)
         end
         errorbar(xj,mean_peaksj,sem_peaksj,...
                 'o','MarkerFaceColor',colj,'Color',colj); hold on;
-%         plot(xj,b(1) + b(2)*xj,'-','Color',colj,'LineWidth',lw);
-        plot(xj,b(1)*xj,'-','Color',colj,'LineWidth',lw);
+        plot(xj,b(1) + b(2)*(xj-j),'-','Color',colj,'LineWidth',lw);
+%         plot(xj,b(1)*(xj-j),'-','Color',colj,'LineWidth',lw);
     end
     ax = gca;
     xlabel('ROI index');
-    ylabel('Mean peak \Delta F/F_{0} (norm. to 0 mA)')
+%     ylabel('Mean peak \Delta F/F_{0} (norm. to 0 mA)')
+    ylabel('Change in mean peak \Delta F/F_{0} (%)')
     box off; grid on;
 %     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
     title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
@@ -447,7 +492,7 @@ if any(in.plot_figs == 5)
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;    
     if save_figs
-        printFig(fig,in.analysis_fig_fold,sprintf('mean_peaks_rois_norm_vs_amp_sort%g',sort_amp_ind));
+        printFig(fig,in.analysis_fig_fold,sprintf('mean_peaks_rois_per_change_vs_amp_sort%g',sort_amp_ind));
     end
     % Plot percent modulation    
     fig = figure('Units','normalized');
@@ -481,6 +526,7 @@ per_dec_rois = squeeze(100*sum(peak_dec_rois)/num_rois);
 per_nochange_rois = 100 - per_inc_rois - per_dec_rois;
 peak_change_class = squeeze(zeros(size(peak_inc_rois)) + peak_dec_rois*1 + ...
                             peak_inc_rois*2); % 0 - no change, 1 decrease, 2 increase
+bar_cols = [0.6,0.6,0.6;0.4023    0.6602    0.8086;0.9336    0.5391    0.3828];
 if any(in.plot_figs == 6)
     % peak_inc_rois = mean_peaks_rois_norm(:,2:end) > 1 + sem_peaks_rois_norm(:,1);
     % peak_dec_rois = mean_peaks_rois_norm(:,2:end) < 1 - sem_peaks_rois_norm(:,1);
@@ -491,6 +537,9 @@ if any(in.plot_figs == 6)
         b = bar([per_nochange_rois,per_dec_rois,per_inc_rois],'stacked');
     else
         b = bar([per_nochange_rois,per_dec_rois,per_inc_rois]);
+    end
+    for i = 1:size(bar_cols,1)
+        b(i).FaceColor = bar_cols(i,:);
     end
     ax = gca;
     ax.XTick = 1:length(cond_names);
@@ -508,15 +557,25 @@ end
 if any(in.plot_figs == 7)
     fig = figure('Units','normalized');
     fig.Position = [0.001 0.03 in.fig_size];        
+    if num_conditions == 8
+        Nrows = 2; 
+        Ncols = 4; 
+    else
+        [Nrows,Ncols] = getSubplotDimensions(num_conditions);
+    end
     for i = 1:num_conditions
-        ax = subplot_tight(2,4,i);
+        ax = subplot_tight(Nrows,Ncols,i);
 %         scatter(rois_xy(:,1),rois_xy(:,2),50,peaks_per_change_rois(:,i),'filled'); 
         scatter(rois_xy(:,1),rois_xy(:,2),50,peak_change_class(:,i),'filled'); 
         axis equal; axis tight; 
-%         colormap(bluewhitered); 
-        colormap(lines(3)) % no change, decrase, increase
-        colorbar;
+        colormap(bar_cols); % no change, decrase, increase
+%         colormap(lines(3)) % no change, decrase, increase        
         title(cond_names{i})
+        if i == num_conditions
+            cb = colorbar;
+            cb.Ticks = [0.25 1 1.75];
+            cb.TickLabels = {'No change','Decrease','Increase'};
+        end
     end
     if save_figs
         printFig(fig,in.analysis_fig_fold,'map_per_change_rois');

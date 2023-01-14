@@ -22,7 +22,7 @@ switch preset_name
         settings.snr_thresh = 3; % throw out minis with 
                                  % mini SNR (peak/std(baseline)) less than this number 
                                  % (based on raw F trace). Set to 0 to skip this. 
-        settings.nframes_back = 10; % number of frames before each mini peak to extract
+        settings.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract
         settings.nframes_forward = 12; % number of frames after each mini peak to extract
         settings.stim_frames = []; % ignore if no stim
         settings.blank_around_stim = []; % ignore if no stim
@@ -61,7 +61,7 @@ switch preset_name
         settings.asls_smoothness = 5; % smoothness param for asymmetric least squares (see asLS_baseline.m for description)
         settings.asls_asym = 0.1;  % asymmetry parameter for asymmetric least squares
         settings.est_rise_time_frames = 1; % take baseline this many frames before peak (typical rise time of GluSnFR3 signal)
-    case 'thor_200Hz'
+    case {'thor_200Hz','odin_200Hz'}
         settings.threshold = 10; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
                         % baseline fluctations)
