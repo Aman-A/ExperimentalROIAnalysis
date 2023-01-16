@@ -62,6 +62,10 @@ elseif isa(rec_name,'char') || isa(rec_name,'string')
                     'data_fold',in.data_fold,'pixel_size',in.pixel_size,...
                     'div',in.div,'bin_size',in.bin_size);             
 end
+%% Motion correct
+if in.motion_correct
+    rec.motionCorrect(exp_settings.baseline_wind_inds(:,1));
+end
 % Prepare filename for saving data and check if it exists
 roiset_filename_no_ext = getROIset_name(rois_or_roiset_filename,...
                                             in.transform_type,...
@@ -95,34 +99,34 @@ if exist(save_data_filename,'file') && in.load_processed_data
     else
         img_name = rec.img_name; 
     end
-    fig_hands = plotDiffImage(output_data.mean_bsline_img,output_data.peak_stim_img,...
-                              output_data.diff_img,img_name,exp_settings,...
-                              'include_plots',in.show_diff_image,...
-                              'filt_width',in.filt_width,...
+    fig_hands = plotDiffImage(output_data.imgs,img_name,in.show_diff_image,...
+                              exp_settings,'filt_width',in.filt_width,...
                               'pixel_size',rec.pixel_size*rec.bin_size,...
                               'cmap',in.diff_image_cmap,...
                               'indicator_dir',in.indicator_dir);               
     addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,rec.img_name,...
                          in.close_img_after_save,in.show_roi_labels);
 else
-    rec.load();  % Load image data
-    %% Motion correct
-    if in.motion_correct
-        rec = motionCorrectRecording(rec,exp_settings.baseline_wind_inds(:,1));
-    end
+%     rec.load();  % Load image data
+%     %% Motion correct
+%     if in.motion_correct
+%         motcorr_filename = fullfile(rec.filedir,[rec.img_name,'_motcorrect',rec.format]); 
+%         if in.load_processed_data && exist(motcorr_filename,'file')
+% 
+%         else
+%             rec = motionCorrectRecording(rec,exp_settings.baseline_wind_inds(:,1));
+%         end
+%         if in.save_processed_data
+%             
+%             fitswrite(rec.vals,motcorr_filename); 
+%             fprintf('Saved motion corrected recording to %s\n',motcorr_filename)
+%         end
+%     end
     %% Output peak image
-    [mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(rec,...
-                                                        exp_settings,...                                                        
-                                                        'include_plots',...
-                                                        in.show_diff_image,...
-                                                        'filt_width',...
-                                                        in.filt_width,...
-                                                        'peak_mode',...
-                                                        in.peak_mode,...
-                                                        'cmap', ...
-                                                        in.diff_image_cmap, ...
-                                                        'indicator_dir',...
-                                                        in.indicator_dir);                          
+    [imgs,fig_hands] = diffImage(rec,exp_settings,in.show_diff_image,...
+                                'filt_width',in.filt_width,'peak_mode',in.peak_mode,...
+                                'cmap',in.diff_image_cmap,...
+                                'indicator_dir',in.indicator_dir);                          
     %% Load saved ROIs
     if isempty(in.roiset_filedir)
        in.roiset_filedir = [rec.filedir filesep '..']; % default location
@@ -166,14 +170,16 @@ else
     if in.recenterROIs ~= 0
         if ischar(in.recenterROIs) 
             if strcmp(in.recenterROIs,'diff')
-                recenter_img = diff_img;
+                recenter_img = imgs.diff_img;
+            elseif strcmp(in.recenterROIs,'mean_diff')
+                recenter_img = imgs.mean_diff_img;
             elseif strcmp(in.recenterROIs,'peak')
-                recenter_img = peak_stim_img;
+                recenter_img = imgs.peak_stim_img;
             elseif strcmp(in.recenterROIs,'baseline')
-                recenter_img = mean_bsline_img;
+                recenter_img = imgs.mean_bsline_img;
             end
         elseif in.recenterROIs == 1
-            recenter_img = diff_img; % recenter on this by default if no mode specified
+            recenter_img = imgs.diff_img; % recenter on this by default if no mode specified
         end
         rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     end    
@@ -192,9 +198,7 @@ else
     output_data.recording = rec.unload(); % save with data unloaded, reduce HD usage
     output_data.settings = exp_settings;    
     output_data.rois = rois; 
-    output_data.mean_bsline_img = mean_bsline_img;
-    output_data.peak_stim_img = peak_stim_img;
-    output_data.diff_img = diff_img; 
+    output_data.imgs = imgs;     
     output_data.funcs = in.funcs; 
     output_data.func_output = func_output;     
     output_data.fig_dir = fig_dir; 

@@ -208,5 +208,38 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             axis equal; axis tight; axis off; 
             set(gca,'YDir','normal')
         end
+        function motionCorrect(obj,ref_frames,print_status,method)
+            if nargin < 3
+                print_status = 1; 
+            end
+            if nargin < 4
+                method = 'dft';
+            end  
+            motcorr_img_name = [obj.img_name,'_motcorr_' method];
+            motcorr_format = '.fits'; % 
+            motcorr_filepath = fullfile(obj.filedir,[motcorr_img_name motcorr_format]); % update name
+            % try loading motion corrected file if exists
+            if exist(motcorr_filepath,'file')
+                obj.img_name = motcorr_img_name;
+                obj.format = motcorr_format; 
+                obj.filepath = motcorr_filepath; 
+                obj.load(); % load using new filepath to motion corrected recording
+            else
+                % motion correct raw recording
+                if ~obj.loaded
+                    obj.load();
+                end
+                obj.vals = motionCorrectRecording(obj.vals,ref_frames,print_status,...
+                                              method);
+                obj.img_name = motcorr_img_name;
+                obj.format = motcorr_format; 
+                obj.filepath = motcorr_filepath; 
+                % skip saving for now to save disk space, recreate as
+                % needed and use adjusted name for downstream processed
+                % data files
+%                 fitswrite(obj.vals,obj.filepath);
+%                 fprintf('Saved motion corrected recording to %s\n',obj.filepath)
+            end            
+        end
     end    
 end

@@ -15,7 +15,6 @@ in.include_plots = [0 4]; % same format as diffImage, 1 - baseline, 2 - peak,
                       % 3 diff image, leave empty or set to 0 to skip 
                       % plotting
 in.img_stack_name = 'diffimage_stack';     
-in.img_mode = 'diff'; % 'diff','peak',or 'bsline'
 in.img_names_all = cell(size(trial_folders)); 
 in.save_sep_images = 0;
 in.sep_images_dir = 'stack';
@@ -48,16 +47,15 @@ else
 end
 full_path_to_img1 = fullfile(trial_folders{1},img_name1); 
 rec1 = Recording(full_path_to_img1); rec1.load();
-[bsline_img1,pk_img1,diff_img1,~] = diffImage(rec1,exp_settings(1),'include_plots',...
-                                              in.include_plots);                         
-img_stack = zeros(size(diff_img1,1),size(diff_img1,2),num_trials);
-if strcmp(in.img_mode,'diff')
-    img_stack(:,:,1) = diff_img1; 
-elseif strcmp(in.img_mode,'peak')
-   img_stack(:,:,1) = pk_img1; 
-elseif strcmp(in.img_mode,'bsline')
-    img_stack(:,:,1) = bsline_img1;
-end
+assert(sum(in.include_plots > 0)  == 1,...
+        'include_plots should include single plot to output')
+[img_struct,~] = diffImage(rec1,exp_settings(1),in.include_plots);
+img_fields = fieldnames(img_struct); 
+img_field = img_fields{end}; % skip bsline_img if include_plots = 3 or 4
+img1 = img_struct.(img_field); 
+img_stack = zeros([size(img1,[1 2]),num_trials]);
+img_stack(:,:,1) = img1; 
+
 % Load rest of images 
 trial_ind = 2;
 % Load images and compute difference, specified by parameters in
@@ -83,15 +81,9 @@ for i = 1:length(trial_folders)
         full_path_to_imgj = fullfile(trial_folderi,img_namesi{j}); 
         rec_ij = Recording(full_path_to_imgj); 
         rec_ij.load(); 
-        [bsline_img,pk_img,diff_img,~] = diffImage(rec_ij,exp_settings(i),'include_plots',...
-                                    in.include_plots); 
-        if strcmp(in.img_mode,'diff')
-            img_stack(:,:,trial_ind) = diff_img;
-        elseif strcmp(in.img_mode,'peak')
-            img_stack(:,:,trial_ind) = pk_img;
-        elseif strcmp(in.img_mode,'bsline')
-            img_stack(:,:,trial_ind) = bsline_img;
-        end
+        [img_struct,~] = diffImage(rec_ij,exp_settings(i),in.include_plots); 
+        img_stack(:,:,trial_ind)  = img_struct.(img_field);
+        
         if in.save_sep_images
             path_to_img = fullfile(sep_images_dir,[num2str(i),'_',img_namesi{j} '.fits']); 
             fitswrite(img_stack(:,:,trial_ind),path_to_img)

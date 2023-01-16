@@ -34,17 +34,26 @@ num_traces = size(traces,2);
 output = struct();
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
-    peaks = zeros(num_stim,num_traces); % [num_stim x num_traces] peak amps 
-    peak_times = zeros(num_stim,num_traces); % [num_stim x num_traces] peak times (relative to stimulus)
-    pk_inds = zeros(num_stim,num_traces); 
-    for i = 1:num_stim
-        [peaks(i,:),pk_inds(i,:)] = max(traces(stim_wind_inds(i,:),:),[],1);
-        peak_times(i,:) = exp_settings.convert2Time(stim_wind_inds(i,pk_inds(i,:)) - stim_frames(i));
+    if num_stim > 0
+        peaks = zeros(num_stim,num_traces); % [num_stim x num_traces] peak amps 
+        peak_times = zeros(num_stim,num_traces); % [num_stim x num_traces] peak times (relative to stimulus)
+        pk_inds = zeros(num_stim,num_traces); 
+        for i = 1:num_stim
+            [peaks(i,:),pk_inds(i,:)] = max(traces(stim_wind_inds(i,:),:),[],1);
+            peak_times(i,:) = exp_settings.convert2Time(stim_wind_inds(i,pk_inds(i,:)) - stim_frames(i));
+        end
+        output.peaks = peaks;
+        output.mean_peak = mean(peaks,2:ndim(peaks)); % mean across trials (not stimuli)
+        output.std_peak = std(peaks,0,2:ndim(peaks)); 
+        output.sem_peak = output.std_peak/sqrt(length(peaks));
+    else
+        [peaks,pk_inds] = max(traces,[],1);
+        peak_times = exp_settings.convert2Time(pk_inds); 
+        output.peaks = peaks;
+        output.mean_peak = mean(output.peaks,2); 
+        output.std_peak = std(output.peaks,0,2:ndims(output.peaks));
+        output.sem_peak = output.std_peak/sqrt(numel(output.peaks));
     end
-    output.peaks = peaks;
-    output.mean_peak = mean(peaks,2); % mean across trials (not stimuli)
-    output.std_peak = std(peaks,0,2); 
-    output.sem_peak = output.std_peak/sqrt(length(peaks));
 end
 if any(strcmp(in.funcs,'peak_times'))
     output.peak_times = peak_times; 
