@@ -185,13 +185,13 @@ else
 end
 set(lns,{'DisplayName'},display_names); % set legend names
 
-% if isempty(regexp(func_name,'aligned','ONCE'))
-%     stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax,...
-%                                          'stim_pulse_dur',in.stim_pulse_dur);
-% else
-%     stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
-%                                             ax,'stim_pulse_dur',in.stim_pulse_dur);
-% end
+if isempty(regexp(func_name,'aligned','ONCE'))
+    stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax,...
+                                         'stim_pulse_dur',in.stim_pulse_dur);
+else
+    stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
+                                            ax,'stim_pulse_dur',in.stim_pulse_dur);
+end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 if strcmp(func_name,'deltaF_F0')
     ylabel_str = '\Delta F/F_{0}';

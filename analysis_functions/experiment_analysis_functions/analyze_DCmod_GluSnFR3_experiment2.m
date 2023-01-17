@@ -229,7 +229,8 @@ end
 if any(in.plot_figs == 3)    
     if in.norm_to_cont
 %         yax_lims = [-0.1 4];
-        yax_lims = [-1 4]; 
+%         yax_lims = [-1 4]; 
+        yax_lims = []; 
     else
         yax_lims = [-0.1 0.2];                 
     end
@@ -407,7 +408,7 @@ if isempty(cols)
             0.1289    0.3984    0.6719
             0.0195    0.1875    0.3789]);
     else
-        cols = lines(length(cond_names(cond_inds)));
+        cols = lines(num_conditions);
     end
 end
 if any(in.plot_figs == 5)            
@@ -429,6 +430,7 @@ if any(in.plot_figs == 5)
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
     title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
             mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
     if save_figs
@@ -450,6 +452,7 @@ if any(in.plot_figs == 5)
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
     title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
             mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
 %     ax.YLim
@@ -489,6 +492,7 @@ if any(in.plot_figs == 5)
 %     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
     title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
         mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+    ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;    
     if save_figs
@@ -511,6 +515,7 @@ if any(in.plot_figs == 5)
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
     title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
             mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
 %     ax.YLim = [-50 50];
@@ -524,8 +529,9 @@ peak_dec_rois = mean_peaks_rois_norm(:,2,:) + sem_peaks_rois_norm(:,2,:) < 1 - s
 per_inc_rois = squeeze(100*sum(peak_inc_rois)/num_rois);
 per_dec_rois = squeeze(100*sum(peak_dec_rois)/num_rois);
 per_nochange_rois = 100 - per_inc_rois - per_dec_rois;
+% 0 - no change, 1 decrease, 2 increase
 peak_change_class = squeeze(zeros(size(peak_inc_rois)) + peak_dec_rois*1 + ...
-                            peak_inc_rois*2); % 0 - no change, 1 decrease, 2 increase
+                            peak_inc_rois*2); 
 bar_cols = [0.6,0.6,0.6;0.4023    0.6602    0.8086;0.9336    0.5391    0.3828];
 if any(in.plot_figs == 6)
     % peak_inc_rois = mean_peaks_rois_norm(:,2:end) > 1 + sem_peaks_rois_norm(:,1);
@@ -566,13 +572,14 @@ if any(in.plot_figs == 7)
     for i = 1:num_conditions
         ax = subplot_tight(Nrows,Ncols,i);
 %         scatter(rois_xy(:,1),rois_xy(:,2),50,peaks_per_change_rois(:,i),'filled'); 
-        scatter(rois_xy(:,1),rois_xy(:,2),50,peak_change_class(:,i),'filled'); 
-        axis equal; axis tight; 
-        colormap(bar_cols); % no change, decrase, increase
+        scatter(ax,rois_xy(:,1),rois_xy(:,2),50,peak_change_class(:,i),'filled'); 
+        axis(ax,'equal','tight');        
+        caxis(ax,[0 2])
+        colormap(ax,bar_cols); % no change, decrase, increase
 %         colormap(lines(3)) % no change, decrase, increase        
-        title(cond_names{i})
+        title(ax,cond_names{i})
         if i == num_conditions
-            cb = colorbar;
+            cb = colorbar(ax);
             cb.Ticks = [0.25 1 1.75];
             cb.TickLabels = {'No change','Decrease','Increase'};
         end
