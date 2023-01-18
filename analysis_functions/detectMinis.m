@@ -113,7 +113,8 @@ if in.deconv
         blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);
 else
     F_filt = F_filt2; 
-    F_deconv = F_filt2;    
+    F_deconv = F_filt2;   
+    gauss_fit_params = []; 
     % get sigmas below
     [F_blanked,F_blanked_filt,evoked_peaks,evoked_peaks_filt] = ...
         blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);
@@ -340,6 +341,7 @@ output.mini_snr = mini_snr;
 output.mini_snr_lin = cell2mat(mini_snr);
 output.evoked_peaks = evoked_peaks; % save evoked stim peaks (empty if no stim)
 output.evoked_peaks_filt = evoked_peaks_filt; % save evoked stim peaks from filtered trace (empty if no stim)
+output.gauss_fit_params = gauss_fit_params; 
 output.settings = in; 
 %% Plot results
 if in.plot_figs
