@@ -9,8 +9,10 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         condition char {mustBeTextScalar}
         position char {mustBeTextScalar} % name of position (TODO: make class, load from micromanager)
         img_name char {mustBeTextScalar} % file name
+        img_name_orig char {mustBeTextScalar} % original file name (e.g. before mot correction)
         filedir char {mustBeTextScalar} % full path to directory containing file
         filepath char {mustBeTextScalar} % full path to file
+        filepath_orig char {mustBeTextScalar} % full path to original file (e.g. before mot correction)
         format char {mustBeTextScalar}    % image file format
         pixel_size = 0.4; % size of individual pixel in µm (for scale bar) 
                           % default for Andor iXon Ultra 897 (Thor)
@@ -87,6 +89,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                    obj.filedir = path_to_img;               
                 end
                 obj.img_name = name;
+                obj.img_name_orig = name; 
                 % Get file format
                 if isempty(in.format)
                     if isempty(ext)                   
@@ -99,6 +102,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 end                        
                 % Build full path to file
                 obj.filepath = fullfile(obj.filedir,[obj.img_name,obj.format]); 
+                obj.filepath_orig = fullfile(obj.filedir,[obj.img_name,obj.format]); 
                 if exist(obj.filepath,'file')
                     d = dir(obj.filepath);             
                     [Y, M, D, H, MI, S] = datevec(d.datenum); % file creation time to sec precision
@@ -115,13 +119,21 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 end
             end
         end
-        function load(obj,print_status)
+        function load(obj,load_orig,print_status)
             if nargin < 2
+                load_orig = 0; % load raw file (not motion corrected)
+            end
+            if nargin < 3
                print_status = 1; 
             end
+            if load_orig
+                load_filepath = obj.filepath_orig;
+            else
+                load_filepath = obj.filepath;
+            end
             if strcmp(obj.format,'.fits')
-                if exist(obj.filepath,'file')
-                    obj.vals = fitsread(obj.filepath); 
+                if exist(load_filepath,'file')
+                    obj.vals = fitsread(load_filepath); 
                 else % try getting local data_fold and reconstruct path
                     data_fold_loc = getDataFold(); 
                     filedir_loc = fullfile(data_fold_loc,obj.exp_date,obj.reporter,...
@@ -135,14 +147,14 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     obj.vals = fitsread(obj.filepath); % now try loading again
                 end             
             elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')   
-                  obj.vals = single(tiffreadVolume(obj.filepath)); % 8.6 sec (ssd), 35.5 sec (hd)
+                  obj.vals = single(tiffreadVolume(load_filepath)); % 8.6 sec (ssd), 35.5 sec (hd)
             else
                error('Other file formats not implemented yet');  
             end
             obj.loaded = true; 
             if print_status > 0                
                 fprintf('Loaded %g x %g x %g image stack from %s\n',...
-                         obj.imsize,obj.filepath); 
+                         obj.imsize,load_filepath); 
             end
         end
         function obj_unloaded = unload(obj,print_status)
@@ -208,14 +220,17 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             axis equal; axis tight; axis off; 
             set(gca,'YDir','normal')
         end
-        function motionCorrect(obj,ref_frames,print_status,method)
+        function motionCorrect(obj,ref_frames,method,run_mot_corr,print_status)            
             if nargin < 3
-                print_status = 1; 
-            end
-            if nargin < 4
                 method = 'dft';
             end  
-            motcorr_img_name = [obj.img_name,'_motcorr_' method];
+            if nargin < 4
+                run_mot_corr = 1; % set to 0 just generate name without running
+            end
+            if nargin < 5
+                print_status = 1; 
+            end
+            motcorr_img_name = [obj.img_name_orig,'_motcorr_' method];
             motcorr_format = '.fits'; % 
             motcorr_filepath = fullfile(obj.filedir,[motcorr_img_name motcorr_format]); % update name
             % try loading motion corrected file if exists
@@ -224,21 +239,23 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 obj.format = motcorr_format; 
                 obj.filepath = motcorr_filepath; 
                 obj.load(); % load using new filepath to motion corrected recording
-            else
-                % motion correct raw recording
-                if ~obj.loaded
-                    obj.load();
-                end
-                obj.vals = motionCorrectRecording(obj.vals,ref_frames,print_status,...
-                                              method);
-                obj.img_name = motcorr_img_name;
-                obj.format = motcorr_format; 
-                obj.filepath = motcorr_filepath; 
+            else 
+                % motion correct raw recording                                
+                if run_mot_corr
+                    if ~obj.loaded
+                        obj.load(1);
+                    end
+                    obj.vals = motionCorrectRecording(obj.vals,ref_frames,print_status,...
+                                                  method);
                 % skip saving for now to save disk space, recreate as
                 % needed and use adjusted name for downstream processed
                 % data files
 %                 fitswrite(obj.vals,obj.filepath);
 %                 fprintf('Saved motion corrected recording to %s\n',obj.filepath)
+                end
+                obj.img_name = motcorr_img_name;
+                obj.format = motcorr_format; 
+                obj.filepath = motcorr_filepath; 
             end            
         end
     end    

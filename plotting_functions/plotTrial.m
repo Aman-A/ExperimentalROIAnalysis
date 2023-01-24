@@ -64,7 +64,7 @@ elseif isa(rec_name,'char') || isa(rec_name,'string')
 end
 %% Motion correct
 if in.motion_correct
-    rec.motionCorrect(exp_settings.baseline_wind_inds(:,1));
+    rec.motionCorrect(exp_settings.baseline_wind_inds(:,1),'dft',0,1);
 end
 % Prepare filename for saving data and check if it exists
 roiset_filename_no_ext = getROIset_name(rois_or_roiset_filename,...
@@ -107,6 +107,9 @@ if exist(save_data_filename,'file') && in.load_processed_data
     addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,rec.img_name,...
                          in.close_img_after_save,in.show_roi_labels);
 else
+    if in.motion_correct
+        rec.motionCorrect(exp_settings.baseline_wind_inds(:,1),'dft',1,1);
+    end
 %     rec.load();  % Load image data
 %     %% Motion correct
 %     if in.motion_correct
@@ -179,8 +182,12 @@ else
                 recenter_img = imgs.mean_bsline_img;
             end
         elseif in.recenterROIs == 1
-            recenter_img = imgs.diff_img; % recenter on this by default if no mode specified
-        end
+            if isfield(imgs,'mean_diff_img')
+                recenter_img = imgs.mean_diff_img; % recenter on this by default if no mode specified
+            else
+                recenter_img = imgs.diff_img; 
+            end
+        end 
         rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     end    
     if any(in.show_diff_image)

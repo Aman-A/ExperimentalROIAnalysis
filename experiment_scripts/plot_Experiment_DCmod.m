@@ -83,7 +83,7 @@ if regexp(ps.plot_func,'aligned')
     ps.y_lim = []; 
 else
     ps.x_lim = [-0.2 stim_vals(end) + stim_wind];
-    ps.y_lim = [-0.2 24.4];
+    ps.y_lim = [];
 end
 
 summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...

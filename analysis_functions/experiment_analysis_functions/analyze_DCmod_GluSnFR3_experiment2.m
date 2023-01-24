@@ -384,6 +384,7 @@ peaks_per_change_sem_rois = peaks_per_change_sem_rois(sort_rois,:);
 % normalized peaks to mean control
 mean_peaks_rois_norm = mean_peaks_rois_norm(sort_rois,:,:);
 sem_peaks_rois_norm = sem_peaks_rois_norm(sort_rois,:,:);
+rois_xy = rois_xy(sort_rois,:);
 %% Analyze ROI specific modulation
 % peaks : [num_trains x num_rois x num_stim x num_trials]
 if isempty(cols)
