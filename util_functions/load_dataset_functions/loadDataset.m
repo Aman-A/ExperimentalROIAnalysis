@@ -19,7 +19,7 @@ if nargin < 3 || isempty(mode_str)
    mode_str = 'default';
 end
 % def = loadDatasetDefinition(dataset_def_filename);
-if strcmp(reporter,'GluSnFR3')
+if ~isempty(regexp(reporter,'GluSnFR3','ONCE'))
     [data,def,norm_data,train_data] = loadDefaultDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin{:});
     varargout = {norm_data,train_data};    

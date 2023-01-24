@@ -1,6 +1,6 @@
 function rois = detectROIs(recording,intens_thresh,area_thresh,roi_radius,varargin)
 % Detect ROIs from image (intended for Synapsin-mRuby images)
-% default intens_thresh = 2.9e3, area_thresh = 4
+% default intens_thresh = 2.9e3, area_thresh = 4 (in microns)
 % if intens_thresh < 1, uses as quantile cutoff based on values in image
 % area_thresh = [min_area] or [min_area max_area]
 in.center_mode = 2; % 0 - off, 1 - cetner based on points, 2 - center based on peak value

@@ -131,6 +131,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             else
                 load_filepath = obj.filepath;
             end
+            t_start = tic; 
             if strcmp(obj.format,'.fits')
                 if exist(load_filepath,'file')
                     obj.vals = fitsread(load_filepath); 
@@ -147,14 +148,15 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     obj.vals = fitsread(obj.filepath); % now try loading again
                 end             
             elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')   
-                  obj.vals = single(tiffreadVolume(load_filepath)); % 8.6 sec (ssd), 35.5 sec (hd)
+%                   obj.vals = single(tiffreadVolume(load_filepath)); 
+                obj.vals = single(loadtiff(load_filepath));                
             else
                error('Other file formats not implemented yet');  
             end
             obj.loaded = true; 
             if print_status > 0                
-                fprintf('Loaded %g x %g x %g image stack from %s\n',...
-                         obj.imsize,load_filepath); 
+                fprintf('Loaded %g x %g x %g image stack from %s  in %.3f s\n',...
+                         obj.imsize,load_filepath,toc(t_start)); 
             end
         end
         function obj_unloaded = unload(obj,print_status)
