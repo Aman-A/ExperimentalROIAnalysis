@@ -360,7 +360,7 @@ if in.plot_figs
     mini_frames_plot = mini_frames_filt; % switch to mini_frames if plotting unfiltered trace
     non_nan_frames = find(~isnan(F_rois_plot(:,1)));
     if isempty(in.offset_factor)
-        in.offset_factor = max(max(F_rois_plot,[],1,'omitnan')-mean(F_rois_plot,1,'omitnan'))*1.1;
+        in.offset_factor = quantile(max(F_rois_plot,[],1,'omitnan')-mean(F_rois_plot,1,'omitnan'),0.9)*1.1;
     end
     offset = linspace(num_rois_plot*in.offset_factor,...
                     0,num_rois_plot);

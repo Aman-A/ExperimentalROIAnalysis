@@ -17,13 +17,17 @@ if ischar(recording) % path to recording file
     recording.load(); 
     vals = recording.vals;
     pixel_size = recording.pixel_size;
+    imsize = recording.imsize; 
 elseif isa(recording,'Recording')
     recording.load(); 
     vals = recording.vals;
     pixel_size = recording.pixel_size;
+    imsize = recording.imsize; 
 else
     vals = recording;
+    vals0 = vals; % original, unfiltered image
     pixel_size = 0.4; % default (um) for 40x with EMCCDs
+    imsize = size(vals); 
 end
 
 if isempty(roi_radius) || roi_radius == 0
@@ -48,10 +52,12 @@ if in.filt_width > 0
 end
 % Binarize using threshold
 if intens_thresh < 1
-    intens_thresh = quantile(vals(:),intens_thresh);
+    intens_thresh_val = quantile(vals(:),intens_thresh);
+else
+    intens_thresh_val = intens_thresh;     
 end
 vals_bin = zeros(size(vals)); 
-vals_bin(vals>=intens_thresh) = 1;
+vals_bin(vals>=intens_thresh_val) = 1;
 vals_bin = logical(vals_bin); 
 % Fill 
 % remove objects below area_thresh
@@ -59,7 +65,7 @@ vals_bin = logical(vals_bin);
 area_thresh_px = area_thresh/pixel_size^2; % convert to pixels 
 if length(area_thresh_px) == 1 % input min cutoff only
    % assign max possible for upper range
-    area_thresh_px = [area_thresh_px recording.imsize(1)*recording.imsize(2)];
+    area_thresh_px = [area_thresh_px imsize(1)*imsize(2)];
 end
 vals_holes = bwareafilt(vals_bin,area_thresh_px);
 vals_filled = imfill(vals_holes,'holes');
@@ -71,7 +77,7 @@ if in.center_mode == 1 % make circular ROIs using center of boundary points
     centers = cell2mat(cellfun(@(x) mean(x,1),B2,'UniformOutput',0));
 elseif in.center_mode == 2 % make circular ROIs centered on peak intensity within boundary
     rois_poly = ROIs(B2);
-    rois_poly.recenterROIs(recording.vals(:,:,1));
+    rois_poly.recenterROIs(vals);
     center_x = cellfun(@(x) mean(x),rois_poly.x,'UniformOutput',1);
     center_y = cellfun(@(x) mean(x),rois_poly.y,'UniformOutput',1);
     centers = [center_x,center_y];
@@ -98,8 +104,8 @@ end
 % Exclude ROIs to close to edge
 if in.min_distance_to_edge > 0
     % left, right, bottom, top
-    imsize = recording.imsize(1:2)*pixel_size;     
-    edge_dists = [centers_um(:,1),imsize(2)-centers_um(:,1),centers_um(:,2),imsize(1)-centers_um(:,2)];
+    imsize_um = imsize(1:2)*pixel_size;     
+    edge_dists = [centers_um(:,1),imsize_um(2)-centers_um(:,1),centers_um(:,2),imsize_um(1)-centers_um(:,2)];
     edge_rois = any(edge_dists < in.min_distance_to_edge,2);
 %     centers_um = centers_um(~edge_rois,:);
     centers = centers(~edge_rois,:);
@@ -133,10 +139,20 @@ if in.plot_figs
 %     set(gca, 'LooseInset', get(gca,'TightInset'))
 %     fig1.Position(3:4) = [19.3 5];
     fig2 = figure('Units','inches','Position',[0.1 1 20.5 5.2]); 
-    recording.plot(); ax = gca;
-    rois.plot('g',gca,1,1); 
-    caxis(quantile(recording.vals(:),[0.6 0.999]))
-    colormap(inferno(1000));      
+    ax = gca;
+    if isa(recording,'Recording')
+        recording.plot(); 
+        caxis(ax,quantile(recording.vals(:),[0.6 0.999]))
+    else
+        imagesc(vals0)
+        axis(ax,'equal','tight','off')
+        ax.YDir = 'normal';
+        colorbar; 
+        caxis(ax,quantile(vals0(:),[0.6 0.999]))
+    end    
+    rois.plot('g',ax,1,1); 
+    
+    colormap(ax,inferno(1000));      
     ax.Position = [0.05 0.05 0.9 0.9];
 %     InSet = get(ax, 'TightInset');
 %     set(ax, 'Position', [InSet(1:2), 1-InSet(1)-InSet(3), 1-InSet(2)-InSet(4)])
