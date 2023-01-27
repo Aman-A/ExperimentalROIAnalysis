@@ -33,12 +33,26 @@ if ~isempty(in.exp_settings_fixed)
 else
     exp_settings_fixed = exp_settings_moving;
 end
-[fixed_bsline, fixed_peak, fixed_diff] = diffImage(fixed_recording,exp_settings_fixed,...
-                                                  'include_plots',[],...
-                                                  'baseline_mode',in.baseline_mode);
-[moving_bsline, moving_peak, moving_diff] = diffImage(moving_recording,exp_settings_moving,...
-                                                  'include_plots',[],...
-                                                  'baseline_mode',in.baseline_mode);
+if exp_settings_fixed.num_stim > 0
+    include_plots_fixed = [0 1 2 4]; 
+else
+    include_plots_fixed = [0 1 2 3];
+end
+if exp_settings_moving.num_stim > 0
+    include_plots_moving = [0 1 2 4]; 
+else
+    include_plots_moving = [0 1 2 3];
+end
+fixed_imgs = diffImage(fixed_recording,exp_settings_fixed,include_plots_fixed,...                         ,...
+                          'baseline_mode',in.baseline_mode);
+fixed_bsline = fixed_imgs.bsline_img;
+fixed_peak = fixed_imgs.peak_stim_img;
+fixed_diff = fixed_imgs.mean_diff_img;
+moving_imgs = diffImage(moving_recording,exp_settings_moving,include_plots_moving,...
+                      'baseline_mode',in.baseline_mode);
+moving_bsline = moving_imgs.bsline_img;
+moving_peak = moving_imgs.peak_stim_img;
+moving_diff = moving_imgs.mean_diff_img;
 if strcmp(in.z_proj,'baseline')       
     fixed_img = fixed_bsline;
     moving_img = moving_bsline;

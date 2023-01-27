@@ -83,7 +83,7 @@ if regexp(ps.plot_func,'aligned')
     ps.y_lim = []; 
 else
     ps.x_lim = [-0.2 stim_vals(end) + stim_wind];
-    ps.y_lim = [-0.2 24.4];
+    ps.y_lim = [];
 end
 
 summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
@@ -100,7 +100,6 @@ out = plotTrials_multipleConditions(conditions,ps,exp_settings,...
 %%
 cond_inds = [2:9]; 
 amps = [-2,-1, -0.5,-0.1,-0.05,0.05,0.1,0.5,1,2];
-% amps = [-1,1];
 cond_names = arrayfun(@(x) sprintf('%g mA',x),amps,'UniformOutput',0);
 sort_amp_ind = 1;
 save_figs = 1;

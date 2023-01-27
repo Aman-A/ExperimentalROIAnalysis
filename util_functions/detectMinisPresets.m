@@ -1,4 +1,4 @@
-function settings = detectMinisPresets(preset_name)
+function settings = detectMinisPresets(preset_name,sampling_rate)
 %DETECTMINIPRESETS Outputs preset settings for a given experimental
 %configuration (given by preset_name)
 %  
@@ -15,6 +15,10 @@ function settings = detectMinisPresets(preset_name)
 
 switch preset_name
     case 'loki_50Hz'
+        if nargin == 1
+            sampling_rate = 50;
+            fprintf('Using preset sampling rate %g Hz\n',sampling_rate)
+        end
         settings = struct(); 
         settings.threshold = 4; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
@@ -61,17 +65,21 @@ switch preset_name
         settings.asls_smoothness = 5; % smoothness param for asymmetric least squares (see asLS_baseline.m for description)
         settings.asls_asym = 0.1;  % asymmetry parameter for asymmetric least squares
         settings.est_rise_time_frames = 1; % take baseline this many frames before peak (typical rise time of GluSnFR3 signal)
-    case {'thor_200Hz','odin_200Hz'}
+    case {'thor_200Hz','odin_200Hz','thor_100Hz'}
+        if nargin == 1
+            sampling_rate = 200;
+            fprintf('Using preset sampling rate %g Hz\n',sampling_rate)
+        end
         settings.threshold = 10; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
                         % baseline fluctations)
         settings.snr_thresh = 4.5; % throw out minis with 
                                  % mini SNR (peak/std(baseline)) less than this number 
                                  % (based on raw F trace). Set to 0 to skip this. 
-        settings.nframes_back = 30; % number of frames before each mini peak to extract
-        settings.nframes_forward = 80; % number of frames after each mini peak to extract
+        settings.nframes_back = round(0.15*sampling_rate); % number of frames before each mini peak to extract
+        settings.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract
         settings.stim_frames = []; % ignore if no stim
-        settings.blank_around_stim = [10,10]; % ignore if no stim
+        settings.blank_around_stim = 0.1*sampling_rate*[1,1]; % ignore if no stim
         settings.plot_filt_output_roi_index = 17; % plot example of filtering in this roi
         settings.min_mini_width = 0.005; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
         settings.min_peak_distance = 0.1; % sec - min distance between mini peaks to allow

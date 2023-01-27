@@ -59,12 +59,15 @@ else
         roiset_filename_no_ext = getROIset_name(def.roiset_filename{i},...
                                                  def.transform_type{i},...
                                                   def.registration_rec{i});  
-        if isempty(in.summary_data_file_suffix)
-            summary_data_file = sprintf('%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
-                                       roi_func_mode,roiset_filename_no_ext);
-        else
+        if ~isempty(in.summary_data_file_suffix)
             summary_data_file = sprintf('%s_%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
                                        roi_func_mode,roiset_filename_no_ext,in.summary_data_file_suffix);
+        elseif any(strcmp(def.Properties.VariableNames,'data_suffix'))      
+            summary_data_file = sprintf('%s_%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
+                                       roi_func_mode,roiset_filename_no_ext,def.data_suffix{i});
+        else
+            summary_data_file = sprintf('%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
+                                       roi_func_mode,roiset_filename_no_ext);
         end
         summary_data_filepath = fullfile(exp_data_fold,[summary_data_file '.mat']);
         if exist(summary_data_filepath,'file')

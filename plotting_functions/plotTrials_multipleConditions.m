@@ -134,7 +134,7 @@ if in.save_summary_data
     end
     summary_data_filepath = fullfile(plot_settings.data_fold,plot_settings.exp_date,...
                                      plot_settings.reporter,plot_settings.dish,...
-                                     summary_datafile);       
+                                     [summary_datafile '.mat']);       
     save(summary_data_filepath,'-STRUCT','out');
     fprintf('Saved summary data to %s\n',summary_datafile);
 end
