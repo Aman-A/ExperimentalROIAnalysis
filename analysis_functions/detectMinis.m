@@ -26,9 +26,9 @@ in.threshold = 4; % threshold for peak detection on filtered trace.
                   % baseline fluctations)
 in.snr_thresh = []; % throw out minis with mini SNR (peak/std(baseline)) < this number (based on raw F trace)
                     % skips this step if left empty
-in.min_mini_width = 40e-3; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')                                                
+in.min_mini_width = 25e-3; % sec - minimum peak full width at half max, 
 in.min_peak_distance = 3*in.min_mini_width;
-in.width_ref = 'halfprom'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
+in.width_ref = 'halfheight'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
 in.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract (default 0.4 sec)
 in.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract
 in.stim_frames = []; % frames at which stimuli were applied (if applicable)
@@ -57,6 +57,7 @@ in.asls_smoothness = 5; % smoothness param for asymmetric least squares (see asL
 in.asls_asym = 0.1;  % asymmetry parameter for asymmetric least squares
 in.find_pk_frame = 5; % number of frames around original peak to search in unfiltered traces (or 0 to use peak frame from filtered traces)
 in.est_rise_time_frames = ceil(20e-3*sampling_rate); % take baseline 20 ms before peak (typical rise time of GluSnFR3 signal)
+in.print_level = 0; % print level
 in = sl.in.processVarargin(in,varargin);
 %% Output default settings struct if called with no inputs
 if nargin == 0
@@ -101,7 +102,7 @@ if in.deconv
                                                     0,...
                                                     'none');
         % refit histogram to gaussian
-        gauss_fit_params = zeros(3,num_rois); % 3 parameters
+        gauss_fit_params = zeros(3,num_rois); % 3 parameters - amplitude A, mean /mu, std /sigma
         for i = 1:num_rois
             gauss_fit_params(:,i) = fitHistSingleGaussian(F_filt(:,i),10); % 10 bins per std    
         end
@@ -208,6 +209,8 @@ if in.num_frames_skip_start_end > 0
     F_findpks(1:in.num_frames_skip_start_end,:) = nan;
     F_findpks(end-in.num_frames_skip_start_end:end,:) = nan;
 end
+t_mini = (0:(nframes_back+nframes_forward))'/sampling_rate;
+t_mini = t_mini - t_mini(nframes_back+1);
 % Exclusion criteria
 % Exclude ROIs with evoked SNR < threshold
 snr_thresh = in.snr_thresh; 
@@ -218,19 +221,21 @@ mini_frames_filt = cell(1,num_rois); % frames based on filtered trace
 mini_traces = cell(1,num_rois); 
 mini_baselines = cell(1,num_rois);
 mini_snr = cell(1,num_rois);
+mini_widths = cell(1,num_rois);
 roi_inds = []; % ROI index for each mini
 for i = 1:num_rois
     if any(F_findpks(:,i) >= thresholds(i))
-        [~,mini_framesi,widthsi] = findpeaks(F_findpks(:,i),...
+        [~,mini_framesi,peak_widthsi] = findpeaks(F_findpks(:,i),...
                                   'MinPeakHeight',thresholds(i),...
                                   'MinPeakDistance',min_peak_distance*sampling_rate,...
-                                   'MinPeakWidth',min_mini_width*sampling_rate,... 
+                                  'MinPeakWidth',1,... % 1 frame 'MinPeakWidth',min_mini_width*sampling_rate,
                                   'WidthReference',width_ref,... % halfheight or halfprom
                                   'Annotate','extents');                                                 
         mini_framesi_filt = mini_framesi; 
         mini_tracesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
         baselinesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
         peaksi = zeros(1,length(mini_framesi));
+        widthsi = zeros(1,length(mini_framesi));        
         for j = 1:length(mini_framesi) % loop through minis in this ROI
             mini_frame0ij = mini_framesi(j);
             if in.find_pk_frame > 0
@@ -247,6 +252,9 @@ for i = 1:num_rois
                 end
                 [peaksi(j),loc] = max(F_blanked(start_wind:end_wind,i),[],'omitnan');
                 mini_frame0ij = start_wind + loc - 1; 
+                % check if new frame is too close to other minis (most
+                % common if local maximum during long decay is above
+                % threshold)                
                 mini_framesi(j) = mini_frame0ij; % update to new frame           
             end
             mini_framesij = (mini_frame0ij-nframes_back):(mini_frame0ij+nframes_forward);
@@ -258,8 +266,21 @@ for i = 1:num_rois
             if in.use_asls_baseline
                 baselinesi(include_inds,j) = asLS_baseline(mini_tracesi(include_inds,j),...
                             in.asls_smoothness,in.asls_asym);
-            end
-        end    
+            end            
+        end 
+        keep_minis = true(1,length(mini_framesi));
+        % Remove events too close to eachother after adjusting to peak in
+        % raw trace 
+        for j = 1:length(mini_framesi)-1            
+            if (mini_framesi(j+1) - mini_framesi(j) < min_peak_distance*sampling_rate)
+                keep_minis(j+1) = false;
+                if in.print_level > 0
+                    fprintf('ROI %g: mini at %g and %g too close, removing 2nd\n',...
+                        i,mini_framesi(j),mini_framesi(j+1))
+                end
+            end            
+        end
+        % Filter out spurious events by SNR
         if in.use_asls_baseline
             std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 
 %             std_baselinesi = std(baselinesi(1:nframes_back,:),0,1,'omitnan');  % use smoothed baseline trace
@@ -273,12 +294,31 @@ for i = 1:num_rois
         end
         snri = (peaksi-mean_baselinesi)./std_baselinesi;
         if snr_thresh > 0
-            keep_minis = snri > snr_thresh; 
-            fprintf('Excluded %g minis in ROI %g with SNR < %.1f\n',...
-                    sum(~keep_minis),i,snr_thresh)
-        else
-            keep_minis = true(1,length(mini_framesi));
+            keep_minis1 = snri > snr_thresh; 
+            if in.print_level > 0 && any(~keep_minis1)
+                fprintf('Excluded %g minis in ROI %g with SNR < %.1f\n',...
+                        sum(~keep_minis1),i,snr_thresh)
+            end
+            keep_minis = keep_minis & keep_minis1; 
         end
+        % Filter out spurious events by width
+        for j = find(keep_minis) % only check minis that pass SNR criterion
+            widthsi(j) = spikeWidth(t_mini,mini_tracesi(:,j),... % set stim_index to peak frame - in.find_pk_frame
+                        nframes_back+1 - in.find_pk_frame,0.5,0,...
+                        nframes_back+1);%  Get FWHM
+        end
+        if min_mini_width > 0                  
+            keep_minis2 = widthsi > min_mini_width; 
+            if in.print_level > 0 && any(~keep_minis2(keep_minis))
+                % Print number of minis excluded due to FWHM criteria that
+                % passed SNR criterion and total excluded
+                fprintf('Excluded %g minis in ROI %g with FWHM < %.1f ms (%g total)\n',...
+                        sum(~keep_minis2(keep_minis)),i,min_mini_width*1e3,...
+                        sum(~keep_minis2 | ~keep_minis))
+            end
+            keep_minis = keep_minis & keep_minis2; % undefined width (nan) will also fail to pass
+        end
+
         mini_framesi_filt = mini_framesi_filt(keep_minis);
         mini_framesi = mini_framesi(keep_minis);
         mini_traces{i} = mini_tracesi(:,keep_minis);
@@ -286,6 +326,7 @@ for i = 1:num_rois
         mini_frames_filt{i} = mini_framesi_filt; 
         mini_baselines{i} = mean_baselinesi(keep_minis)'; % column vector 
         mini_snr{i} = snri(keep_minis);
+        mini_widths{i} = widthsi(keep_minis); 
         roi_inds = [roi_inds;i*ones(length(mini_framesi),1)];
     else
        mini_frames{i} = [];  
@@ -338,7 +379,9 @@ output.mini_peaks_deltaF_F = mini_peaks_deltaF_F;% num_rois x 1 cell array of pe
 output.mini_peaks_deltaF_F_lin = mini_peaks_deltaF_F_lin; % peak deltaF/F value of 
                                                   % each mini       
 output.mini_snr = mini_snr;
+output.mini_widths = mini_widths;
 output.mini_snr_lin = cell2mat(mini_snr);
+output.mini_widths_lin = cell2mat(mini_widths); 
 output.evoked_peaks = evoked_peaks; % save evoked stim peaks (empty if no stim)
 output.evoked_peaks_filt = evoked_peaks_filt; % save evoked stim peaks from filtered trace (empty if no stim)
 output.gauss_fit_params = gauss_fit_params; 
@@ -395,11 +438,13 @@ if in.plot_figs
     end
     % Plot minis within each ROI overlaid
     if num_rois_w_mini > 0
+%         y_lim = [-max(mini_peaks_deltaF_F_lin)*0.5 1.05*max(mini_peaks_deltaF_F_lin)];
+        y_lim = []; 
         fig2 = figure('Units',fig_units,'Position',fig_pos);
         plotTracesOverlaidGrid_ROIs(x_mini,mini_deltaF_F_traces,roi_inds,...
                                     'peaks',mini_peaks_deltaF_F,...
                                     'xaxis_label',xaxis_label,...
-                                    'y_lim',[-max(mini_peaks_deltaF_F_lin)*0.5 1.05*max(mini_peaks_deltaF_F_lin)],...
+                                    'y_lim',y_lim,...
                                     'title',in.trial_name);        
         if save_figs
             printFig(fig2,fig_dir,[fig_basename '_minis_overlaid'],...

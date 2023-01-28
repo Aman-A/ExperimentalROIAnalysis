@@ -3,17 +3,18 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
     % all ROIs). Maybe make it wrapper for plot function, modify plot
     properties
         % circle ROI properties
-         x0 % original center x's
-         y0 % original center y's
-         x  % current center x's
-         y  % current center y's
-         radius % radius in pixels        
+        x0 % original center x's
+        y0 % original center y's
+        x  % current center x's
+        y  % current center y's
+        radius % radius in pixels
         % Rectangular ROI properties
-         r0 % original edge positions [min row, max row, min column, max column]        
-         r  % current edge positions [min row, max row, min column, max column]
+        r0 % original edge positions [min row, max row, min column, max column]
+        r  % current edge positions [min row, max row, min column, max column]
         names % names from ImageJ
         num_rois % number of rois
         types % Cell array of ROItypes, e.g. 'Oval'/'Circle' or 'Rectangle'
+        rois % matlab images.roi object array
         roiset_filename char {mustBeTextScalar} % file name
         format char {mustBeTextScalar} % file extension (default '.zip')
         roiset_filedir char {mustBeTextScalar} % directory file is in
@@ -51,15 +52,11 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             
             if load_roi                
                 obj.parseFileName(roiset_filename,in.roiset_filedir);  % saves file name properties to object                       
-                if strcmp(obj.format,'.zip')
-                    % load saved ImageJ ROI set from .zip 
-                    ROIarray = ReadImageJROI(obj.roiset_filepath); 
-                     obj.num_rois = length(ROIarray);
-                     % Process ROIs into easier to work with format
-                    obj.processROIs(ROIarray);   
-                elseif strcmp(obj.format,'.mat')
-                    % Load saved ROIs object from .mat
-                    data = load(obj.roiset_filepath);
+                if strcmp(obj.format,'.zip')                    
+                    ROIarray = ReadImageJROI(obj.roiset_filepath); % load saved ImageJ ROI set from .zip                                        
+                    obj.processROIs(ROIarray); % Process ROIs into easier to work with format
+                elseif strcmp(obj.format,'.mat')                    
+                    data = load(obj.roiset_filepath); % Load saved ROIs object from .mat
                     obj = data.rois; 
                 end                       
                 [obj.loaded] = deal(true);
@@ -72,71 +69,20 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     end
                 end                 
             else
-                if iscell(file_or_roi_array) % cell array of polygon ROIs defined as [Npoints x 2] arrays
-                    % NOTE: REQUIRES ALL ROIS TO BE SAME FORMAT
-                    obj.num_rois = length(file_or_roi_array);  
-                    if isempty(in.names)
-                        obj.names = numericVec2chars(0:obj.num_rois-1,'ROI%g');                       
-                    end
-                    obj.types = repmat({'Polygon'},obj.num_rois,1);
-                    obj.x0 = cell(obj.num_rois,1);
-                    obj.y0 = cell(obj.num_rois,1);
-                    obj.x = cell(obj.num_rois,1);
-                    obj.y = cell(obj.num_rois,1);
-                    for i = 1:obj.num_rois
-                        % format: [x,y] Npoints x 2 array of polygon boundary
-                        obj.x0{i} = file_or_roi_array{i}(:,1);
-                        obj.x{i} = file_or_roi_array{i}(:,1);
-                        obj.y0{i} = file_or_roi_array{i}(:,2);
-                        obj.y{i} = file_or_roi_array{i}(:,2);
-%                         if length(file_or_roi_array{i}) == 3 % Circle
-%                             % format: [center x, center y, radius]
-%                             obj.x0 = file_or_roi_array{i}(1);
-%                             obj.x = obj.x0;
-%                             obj.y0 = file_or_roi_array{i}(1);
-%                             obj.y = obj.y0;
-%                             obj.radius = file_or_roi_array{i}(3);  
-%                             obj.types{i} = 'Circle';
-%                         elseif length(file_or_roi_array{i}) == 4 % Rectangle
-%                             % format: [min row, max row, min column, max column]
-%                             obj.r0 = file_or_roi_array{i};
-%                             obj.r = obj.r0;
-%                             obj.types{i} = 'Rectangle';
-%                         end
-                    end
-                else % ROIs of single type defined with array
-                    obj.num_rois = size(file_or_roi_array,1);  
-                    if isempty(in.names)
-                        obj.names = numericVec2chars(0:obj.num_rois-1,'ROI%g');
-                    end
-                    if size(file_or_roi_array,2) == 3 % Circle
-                        % format: [center x, center y, radius]
-                        obj.x0 = file_or_roi_array(:,1);
-                        obj.x = obj.x0;
-                        obj.y0 = file_or_roi_array(:,2);
-                        obj.y = obj.y0;
-                        obj.radius = file_or_roi_array(:,3);                        
-                        obj.types = repmat({'Circle'},obj.num_rois,1);
-                    elseif size(file_or_roi_array,2) == 4 % Rectangle
-                        % format: [min row, max row, min column, max column]
-                        obj.r0 = file_or_roi_array;
-                        obj.r = obj.r0;
-                        obj.types = repmat({'Rectangle'},obj.num_rois,1);
-                    end
-                end
-                obj.loaded = false;
-            end             
+                obj.processInputROIArray(file_or_roi_array,in.names);
+            end
         end
         function processROIs(obj,ROIarray)
             % Process ImageJ ROI array output by ReadImageJROI.m function
             % to easier to work with format 
+            obj.num_rois = length(ROIarray);
             if isstruct(ROIarray)
                 ROIarray = {ROIarray};
             end
             roi_names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';      
             [obj.names,sorted_inds] = sort(roi_names); %#ok<TRSRT>
             ROIarray = ROIarray(sorted_inds); 
-            obj.types = cellfun(@(x) x.strType,ROIarray,'UniformOutput',0);                     
+            obj.types = cellfun(@(x) x.strType,ROIarray,'UniformOutput',0);            
             if all(strcmp(obj.types,obj.types{1})) % All ROIs have same shape
                 % format of vnRectBounds ['nTop', 'nLeft', 'nBottom', 'nRight']                
                 if strcmp(obj.types{1},'Oval') % assume circle
@@ -148,7 +94,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     obj.y0 = cellfun(@(x,r) x.vnRectBounds(3) - r + 1 - 0.5,...
                                         ROIarray,num2cell(obj.radius)','UniformOutput',1)'; % imagej is 0 indexed, add 1                                        
                     obj.x = obj.x0; % current is same as original initially
-                    obj.y = obj.y0; % current is same as original initially                    
+                    obj.y = obj.y0; % current is same as original initially                       
                 elseif strcmp(obj.types{1},'Rectangle')
                     % TODO: finish
                     % format: r = [min row, max row, min column, max column]
@@ -157,22 +103,101 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     for i = 1:length(ROIarray)
                         obj.r0(i,:) = ROIarray{i}.vnRectBounds([1 3 2 4]);
                         obj.r(i,:) = obj.r0(i,:);
-                    end
+                    end                    
                 elseif strcmp(obj.types{1},'Polygon')
                     obj.x0 = cellfun(@(x) [x.mnCoordinates(:,1);x.mnCoordinates(1,1)],... % add first point to end
                                      ROIarray,'UniformOutput',0); % x coords
                     obj.y0 = cellfun(@(x) [x.mnCoordinates(:,2);x.mnCoordinates(1,2)],...
                                      ROIarray,'UniformOutput',0); % y coords
                     obj.x = obj.x0; % current is same as original initially
-                    obj.y = obj.y0; % current is same as original initially           
+                    obj.y = obj.y0; % current is same as original initially                               
                 else
                     error('Other shapes not implemented');
                 end
             else % ROIs have different shapes, process individually
                 error('Non-uniform shape ROIarray not implemented')
             end
+            obj.updateRoiObjs();
         end
-        function shift_dists = recenterROIs(obj,vals,print_status)
+        function processInputROIArray(obj,roi_array,names)            
+            if iscell(roi_array) % cell array of polygon ROIs defined as [Npoints x 2] arrays
+                % NOTE: REQUIRES ALL ROIS TO BE SAME FORMAT
+                obj.num_rois = length(roi_array);
+                if isempty(names)
+                    obj.names = numericVec2chars(0:obj.num_rois-1,'ROI%g');
+                end
+                obj.types = repmat({'Polygon'},obj.num_rois,1);
+                obj.x0 = cell(obj.num_rois,1);
+                obj.y0 = cell(obj.num_rois,1);
+                obj.x = cell(obj.num_rois,1);
+                obj.y = cell(obj.num_rois,1);                            
+                for i = 1:obj.num_rois
+                    % format: [x,y] Npoints x 2 array of polygon boundary
+                    obj.x0{i} = roi_array{i}(:,1);
+                    obj.x{i} = roi_array{i}(:,1);
+                    obj.y0{i} = roi_array{i}(:,2);
+                    obj.y{i} = roi_array{i}(:,2);                                       
+                end
+            else % ROIs of single type defined with numeric array
+                obj.num_rois = size(roi_array,1);
+                if isempty(names)
+                    obj.names = numericVec2chars(0:obj.num_rois-1,'ROI%g');
+                end
+                if size(roi_array,2) == 3 % Circle
+                    % format: [center x, center y, radius]
+                    obj.x0 = roi_array(:,1);
+                    obj.x = obj.x0;
+                    obj.y0 = roi_array(:,2);
+                    obj.y = obj.y0;
+                    obj.radius = roi_array(:,3);
+                    obj.types = repmat({'Circle'},obj.num_rois,1);                    
+                elseif size(roi_array,2) == 4 % Rectangle
+                    % format: [min row, max row, min column, max column]
+                    obj.r0 = roi_array;
+                    obj.r = obj.r0;
+                    obj.types = repmat({'Rectangle'},obj.num_rois,1);                                       
+                end
+            end
+            obj.loaded = false;
+            obj.updateRoiObjs();
+        end
+        function updateRoiObjs(obj)
+            % Create (or update) matlab ROI objects (images.roi) with
+            % current ROI coordinates
+            if isempty(obj.rois) || length(obj.rois) ~= obj.num_rois
+                obj.rois = gobjects(obj.num_rois,1);
+                for i = 1:obj.num_rois
+                    if strcmp(obj.types{i},'Oval')
+                        obj.rois(i) = images.roi.Circle('Center',...
+                                        [obj.x(i),obj.y(i)],'Radius',obj.radius(i));
+                    elseif strcmp(obj.types{i},'Rectangle')
+                        % [xmin, ymin, width, height]
+                        obj.rois(i) = images.roi.Rectangle('Position',...
+                                            [obj.r(i,3),obj.r(i,1),...
+                                             obj.r(i,4)-obj.r(i,3),...
+                                             obj.r(i,2)-obj.r(i,1)]);
+                    elseif strcmp(obj.types{i},'Polygon')
+                         obj.rois(i) = images.roi.Polygon('Position',...
+                                        [obj.x{i},obj.y{i}]);
+                    end
+                end
+            else
+                for i = 1:obj.num_rois
+                    if strcmp(obj.types{i},'Oval')
+                        obj.rois(i).Center = [obj.x(i),obj.y(i)];
+                        obj.rois(i).Radius = obj.radius(i);                         
+                    elseif strcmp(obj.types{i},'Rectangle')
+                        % [xmin, ymin, width, height]
+                        obj.rois(i).Position = [obj.r(i,3),obj.r(i,1),...
+                                             obj.r(i,4)-obj.r(i,3),...
+                                             obj.r(i,2)-obj.r(i,1)];                        
+                    elseif strcmp(obj.types{i},'Polygon')
+                        obj.rois(i).Position = [obj.x{i},obj.y{i}];                         
+                    end
+                end
+            end
+        end
+        function shift_dists = recenterROIs(obj,vals,print_status,update_roiobjs)
             %   Inputs 
             %   ------ 
             %   obj : instance of ROIs class
@@ -181,6 +206,9 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             %   print_status : integer
             %                   set to 0 for no output, 1 to print
             %                   distances shifted for all ROIs
+            if nargin < 4
+                update_roiobjs = 1; 
+            end
             if nargin < 3
                print_status = 0;  
             end                        
@@ -208,7 +236,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                         shift_dists(i));
                 end
             end
-            obj.shift(shift_vec)
+            obj.shift(shift_vec,update_roiobjs)
 %             obj.x = x_new;
 %             obj.y = y_new;
         end
@@ -222,12 +250,13 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
            shift_dists = mean_shift_threshold*ones(obj.num_rois,1)+1;            
            num_shifts = 0;
            while mean(shift_dists) > mean_shift_threshold
-              shift_dists = obj.recenterROIs(vals,print_status-1); 
+              shift_dists = obj.recenterROIs(vals,print_status-1,1); 
               num_shifts = num_shifts + 1; 
            end
+           obj.updateRoiObjs(); 
            if print_status > 0
                fprintf('After %g shifts, final mean shift = %.2g pixels\n',num_shifts,mean(shift_dists));
-           end
+           end           
         end
         function [mask,mask_rows,mask_cols] = getMask(obj,imsize,roi_inds)
             %GETMASK Outputs composite mask for all input  ROIs
@@ -249,19 +278,25 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             % ImageJ includes pixels in which *center* of pixel falls within ROI
             % Ex: for 5 x 5 circle (radius = 2.5), area should = 21 (4
             % corners from square circumscribing circle are excluded)
+            imsize = imsize(1:2); % ensure 2D
             if nargin < 3
                roi_inds = 1:obj.num_rois; 
             end
+            % slower apparently
+%             mask = nan(imsize);
+%             for i = 1:length(roi_inds)
+%                 mask_bini = createMask(obj.rois(roi_inds(i)),imsize(1),imsize(2));
+%                 mask(mask_bini) = 1;
+%             end
+            mask = nan(imsize);          
             if all(strcmp(obj.types,'Circle')) || all(strcmp(obj.types,'Oval'))
                 xi = obj.x(roi_inds); yi = obj.y(roi_inds); radiusi = obj.radius(roi_inds);
                 [X,Y] = meshgrid(1:imsize(2)+0.5,1:imsize(1)+0.5); % shift to middle of pixels, change to 1 index
                 xyr = permute([xi,yi,radiusi],[3,2,1]); % transpose to put different ROIs in 3rd dimension
-                mask_log = any(hypot(X - xyr(1, 1, :), Y - xyr(1, 2, :)) <= xyr(1, 3, :), 3);
-                mask = nan(imsize); 
+                mask_log = any(hypot(X - xyr(1, 1, :), Y - xyr(1, 2, :)) <= xyr(1, 3, :), 3);                
                 mask(mask_log) = 1; 
             elseif all(strcmp(obj.types,'Rectangle'))
-                % format: r = [min row, max row, min column, max column]        
-                mask = nan(imsize);
+                % format: r = [min row, max row, min column, max column]                        
                 if iscell(obj.r)
                     tic
                     for i = 1:length(roi_inds)
@@ -285,8 +320,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                                Y >= ri(1,1,:) & Y <= ri(1,2,:), 3);                
 %                                       
                 end  
-            elseif all(strcmp(obj.types,'Polygon'))
-                mask = nan(imsize);
+            elseif all(strcmp(obj.types,'Polygon'))                
                [xgrid, ygrid] = meshgrid(1:imsize(2), 1:imsize(1));
                 for i = 1:length(roi_inds)
                    xvi = obj.x{roi_inds(i)};
@@ -377,13 +411,17 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.r0(1:2) = imsize(1) - obj.r0([2 1]); % flip and re-order so min row is first
                 obj.r(1:2) = imsize(1) - obj.r([2 1]);
             end
+            obj.updateRoiObjs(); 
             fprintf('Flipping y coordinate of imported ROIs, check!!\n');
             obj.y_inverted = true;
         end
-        function shift(obj,shift_vec)
-        % shift_vec : [shift_x shift_y] (in pixels) applied to all ROIs
-        % if 1x2, applies same shift to all ROIs, if num_rois x 2, can apply
-        % different shift to all ROIs
+        function shift(obj,shift_vec,update_roiobjs)
+            % shift_vec : [shift_x shift_y] (in pixels) applied to all ROIs
+            % if 1x2, applies same shift to all ROIs, if num_rois x 2, can apply
+            % different shift to all ROIs
+            if nargin < 3
+                update_roiobjs = 1;
+            end
             if iscell(obj.x)
                 for i = 1:size(shift_vec,1)
                     obj.x{i} = obj.x{i} + shift_vec(i,1);
@@ -393,14 +431,18 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.x = obj.x + shift_vec(:,1); 
                 obj.y = obj.y + shift_vec(:,2); 
             end
+            if update_roiobjs
+                obj.updateRoiObjs(); 
+            end
         end
         function affine2d(obj,T)
-        % Apply forward affine transformation using 3x3 matrix T, convention 
-        % given in affine2d.m documentation: [x y 1] = [u v 1] * T, with
-        % T given by [a b 0; c d 0; e f 1]; 
-        r_new = [obj.x, obj.y, ones(obj.num_rois,1)] * T;
-        obj.x = r_new(:,1); 
-        obj.y = r_new(:,2); 
+            % Apply forward affine transformation using 3x3 matrix T, convention 
+            % given in affine2d.m documentation: [x y 1] = [u v 1] * T, with
+            % T given by [a b 0; c d 0; e f 1]; 
+            r_new = [obj.x, obj.y, ones(obj.num_rois,1)] * T;
+            obj.x = r_new(:,1); 
+            obj.y = r_new(:,2); 
+            obj.updateRoiObjs(); 
         end
         function removeROIs(obj,roi_inds)            
             if all(strcmp(obj.types,'Oval'))
@@ -410,10 +452,11 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.y(roi_inds) = []; 
                 obj.names(roi_inds) = [];  
                 obj.types(roi_inds) = []; 
-                obj.num_rois = size(obj.x,1); 
+                obj.num_rois = size(obj.x,1);                 
             else
                 error('Not implemented yet for shapes other than Oval')
             end
+            obj.updateRoiObjs(); 
         end
         function num_pixels = getNumPixels(obj,imsize,roi_inds)
             if nargin < 3
@@ -469,6 +512,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             sliced_rois.names = sliced_rois.names(roi_inds);
             sliced_rois.types = sliced_rois.types(roi_inds);
             sliced_rois.num_rois = length(sliced_rois.names);
+            sliced_rois.updateRoiObjs(); 
         end
     end    
 end

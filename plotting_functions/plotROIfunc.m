@@ -177,7 +177,7 @@ else
         else
             ax.YAxis.Visible = 'off';
         end
-        sbar_hand = plot(ax,ax.XLim(1)*ones(1,2),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
+        sbar_hand = plot(ax,ax.XLim(1)*ones(1,2)+0.01*range(ax.XLim),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
                     'k','LineWidth',3,'DisplayName',sbar_str); 
     else
         lns = plot(ax,x,y); % plot trace/s

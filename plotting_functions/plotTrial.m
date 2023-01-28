@@ -191,7 +191,7 @@ else
         rois.recenterROIsLoop(recenter_img,0,1); % recenter to peak value repeatedly until no further shift occurs
     end    
     if any(in.show_diff_image)
-        % Overlay on diff image and save        
+        % Overlay on diff image and save                
         addROIoverlayAndSave(fig_hands,rois,in.save_fig,fig_dir,rec.img_name,...
                              in.close_img_after_save,in.show_roi_labels);
     else

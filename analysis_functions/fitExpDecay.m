@@ -13,6 +13,7 @@ function decay_fit = fitExpDecay(t,Y,decay_fit_order,varargin)
 % AUTHOR    : Aman Aberra 
 in.max_taud = 1; % sec
 in.align_traces = 1; 
+in.print_level = 1; 
 in = sl.in.processVarargin(in,varargin);
 Ntraces = size(Y,2);
 taud1 = zeros(1,Ntraces); % sec - fast time constant
@@ -40,16 +41,19 @@ for i = 1:Ntraces
         upper_bounds = [1.1*peak_y,in.max_taud]; % replace first element in loop
         lower_bounds = [min(y_fit),0];
         start_points = [peak_y*0.8,0.5];
-        fprintf('Fitting decay to monoexponential function\n')
+        print_str = 'Fitting decay to monoexponential function\n';
     elseif decay_fit_order == 2 % biexponential decay
         % y = A*(p * exp(-t/taud1) + (1-p) * exp(-t/taud2))
         fit_eqn = 'a*(b*exp(-x/c) + (1-b)*exp(-x/d))';
         upper_bounds = [1.1*peak_y,1,in.max_taud,in.max_taud];
         lower_bounds = [0,0,0,0];
         start_points = [peak_y*0.8,0.8,0.5,0.5];
-        fprintf('Fitting decay to biexponential function\n')
+        print_str = 'Fitting decay to biexponential function\n';
     else
         error('%g decay_fit_order not implemented',decay_fit_order);
+    end
+    if in.print_level > 1
+        fprintf(print_str);
     end
     s = fitoptions('Method','NonlinearLeastSquares',...
             'Lower',lower_bounds,...
@@ -59,8 +63,10 @@ for i = 1:Ntraces
     [fitobj,gof,~] = fit(t_fit,y_fit,f);
     fitobjs{i} = fitobj;
     if gof.rsquare < 0.5
-        fprintf('Warning: R^2 of decay fit = %.3f for trace %g\n',...
-            gof.rsquare,i);
+        if in.print_level > 0
+            fprintf('Warning: R^2 of decay fit = %.3f for trace %g\n',...
+                gof.rsquare,i);
+        end
     end
     gofs{i} = gof;
     rsquare(i) = gof.rsquare;

@@ -111,7 +111,7 @@ switch roi_func_mode
         output = struct;     
         num_masks = rois.num_rois; 
         for j = 1:num_masks
-            maskj = rois.getMask(recording.imsize(1:2),j);                
+            maskj = rois.getMask(recording.imsize(1:2),j);                            
             for i = 1:length(funcs)                                   
                 output = apply_func(output,j,funcs{i},recording.vals,maskj,...
                                     baseline_wind_inds); 
@@ -175,8 +175,8 @@ if any(strcmp(funcs,'mean'))
     output.mean_aligned = align_output.mean_aligned;
     output.deltaF_F0_aligned = align_output.deltaF_F0_aligned; 
     ta = exp_settings.getTimeVector(size(align_output.deltaF_F0_aligned,1));
-    output.ta = ta - ta(min(exp_settings.baseline_wind + 1,length(ta))); % set t = 0 to first stim frame 
-    print_str = 'Generated stimulus aligned means and deltaF/F0 traces\n';
+    output.ta = ta - ta(min(exp_settings.baseline_wind + 1,length(ta))); % set t = 0 to first stim frame     
+    print_str = 'Generated stimulus aligned means and deltaF/F0 traces\n';    
     if isfield(align_output,'deltaF_F0_aligned2') % for num_trains > 1, 
         output.mean_aligned2 = align_output.mean_aligned2;
         output.deltaF_F0_aligned2 = align_output.deltaF_F0_aligned2; 
@@ -186,7 +186,7 @@ if any(strcmp(funcs,'mean'))
                     sprintf(' Also aligned to individual spikes in train, use_train_baseline = %g\n',...
                     in.align_use_train_baseline)];        
     end
-    if in.print_level > 0        
+    if in.print_level > 0  && exp_settings.num_stim > 0       
         fprintf(print_str)
     end
 end
@@ -211,7 +211,15 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
         if ind == 1
             output_new.mean = zeros(size(img,3),num_masks); % initialize
         end                
-        output_new.mean(:,ind) = squeeze(sum(img.*mask,[1 2],'omitnan'))/sum(mask,'all','omitnan');                
+        if isa(img,'MappedTensor')        
+            masked_img = arrayfun(img,@(x) x .* ~isnan(mask),3);
+            output_new.mean(:,ind) = squeeze(sum(sum(masked_img,1),2))/sum(mask,'all','omitnan');  
+%             mask_T = MappedTensor(repmat(mask,1,1,size(img,3))); 
+%             output_new.mean(:,ind) = arrayfun(img,@(x) sum(x.*mask),3);
+%             output_new.mean(:,ind) = squeeze(sum(img.*mask_T,[1 2],'omitnan'))/sum(mask,'all','omitnan');                
+        else
+            output_new.mean(:,ind) = squeeze(sum(img.*mask,[1 2],'omitnan'))/sum(mask,'all','omitnan');                
+        end
     elseif strcmp(func,'median') % spatial median across all ROI pixels for each frame
         if ind == 1
             output_new.median = zeros(size(img,3),num_masks); % initialize

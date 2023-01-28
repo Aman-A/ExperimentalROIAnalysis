@@ -12,14 +12,13 @@ function settings = detectMinisPresets(preset_name,sampling_rate)
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-
+settings = detectMinis(); % initialize
 switch preset_name
     case 'loki_50Hz'
         if nargin == 1
             sampling_rate = 50;
             fprintf('Using preset sampling rate %g Hz\n',sampling_rate)
-        end
-        settings = struct(); 
+        end        
         settings.threshold = 4; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
                         % baseline fluctations)
@@ -65,7 +64,7 @@ switch preset_name
         settings.asls_smoothness = 5; % smoothness param for asymmetric least squares (see asLS_baseline.m for description)
         settings.asls_asym = 0.1;  % asymmetry parameter for asymmetric least squares
         settings.est_rise_time_frames = 1; % take baseline this many frames before peak (typical rise time of GluSnFR3 signal)
-    case {'thor_200Hz','odin_200Hz','thor_100Hz'}
+    case {'thor_200Hz','odin_200Hz','thor_100Hz','odin_100Hz'}
         if nargin == 1
             sampling_rate = 200;
             fprintf('Using preset sampling rate %g Hz\n',sampling_rate)
