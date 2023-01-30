@@ -80,7 +80,7 @@ switch preset_name
         settings.stim_frames = []; % ignore if no stim
         settings.blank_around_stim = 0.1*sampling_rate*[1,1]; % ignore if no stim
         settings.plot_filt_output_roi_index = 17; % plot example of filtering in this roi
-        settings.min_mini_width = 0.005; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
+        settings.min_mini_width = 25e-3; % sec - minimum peak FWHM
         settings.min_peak_distance = 0.1; % sec - min distance between mini peaks to allow
         settings.deconv = 1; % set to 1 to use deconvolution, may need to adjust threshold if turned off
         settings.apply_filter = 1;

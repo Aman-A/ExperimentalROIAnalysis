@@ -26,7 +26,7 @@ in.threshold = 4; % threshold for peak detection on filtered trace.
                   % baseline fluctations)
 in.snr_thresh = []; % throw out minis with mini SNR (peak/std(baseline)) < this number (based on raw F trace)
                     % skips this step if left empty
-in.min_mini_width = 25e-3; % sec - minimum peak full width at half max, 
+in.min_mini_width = 0; % sec - minimum peak full width at half max, 
 in.min_peak_distance = 3*in.min_mini_width;
 in.width_ref = 'halfheight'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
 in.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract (default 0.4 sec)
