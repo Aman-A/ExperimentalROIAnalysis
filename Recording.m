@@ -240,7 +240,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 obj.img_name = motcorr_img_name;
                 obj.format = motcorr_format; 
                 obj.filepath = motcorr_filepath; 
-                obj.load(); % load using new filepath to motion corrected recording
+%                 obj.load(); % load using new filepath to motion corrected recording
             else 
                 % motion correct raw recording                                
                 if run_mot_corr

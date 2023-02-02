@@ -26,6 +26,7 @@ in.stim_marker_mode = []; % 1 for points, 2 for vertical lines, 3 for horz (need
 in.stim_pulse_dur = []; % duration of stimulus pulses, default ignore
 in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in.indicator_dir = 1; % 1 = positive going, -1 = negative going
+in.plot_settings = {};
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     figure;
@@ -177,10 +178,12 @@ else
         else
             ax.YAxis.Visible = 'off';
         end
-        sbar_hand = plot(ax,ax.XLim(1)*ones(1,2)+0.01*range(ax.XLim),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
-                    'k','LineWidth',3,'DisplayName',sbar_str); 
+        if in.sbar_len > 0
+            sbar_hand = plot(ax,ax.XLim(1)*ones(1,2)+0.01*range(ax.XLim),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
+                        'k','LineWidth',3,'DisplayName',sbar_str); 
+        end
     else
-        lns = plot(ax,x,y); % plot trace/s
+        lns = plot(ax,x,y,in.plot_settings{:}); % plot trace/s
     end
 end
 set(lns,{'DisplayName'},display_names); % set legend names

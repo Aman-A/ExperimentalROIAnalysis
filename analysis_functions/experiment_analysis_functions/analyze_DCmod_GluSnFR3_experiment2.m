@@ -105,12 +105,17 @@ mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x,[4 5])),deltaF_F0_aligned2,...
             'UniformOutput',0); % average across stim within trains and trials
 std_dF_F0_rois = cellfun(@(x) squeeze(std(x,0,[4 5])),deltaF_F0_aligned2,...
             'UniformOutput',0); % std across stim within trains and trials
-sem_dF_F0_rois = cellfun(@(x) x/sqrt(num_stim),std_dF_F0_rois,'UniformOutput',0);
+sem_dF_F0_rois = cellfun(@(x,y) x/sqrt(prod(size(y,[4,5]))),...
+                            std_dF_F0_rois,deltaF_F0_aligned2,...
+                            'UniformOutput',0);
 mean_dF_F0_rois_norm0 = cellfun(@(x) x./max(x(:,:,1),[],1,'omitnan'),...
                                 mean_dF_F0_rois,'UniformOutput',0);
 std_dF_F0_rois_norm0 = cellfun(@(x,y) x./max(y(:,:,1),[],1),...
-                                std_dF_F0_rois,mean_dF_F0_rois,'UniformOutput',0);
-sem_dF_F0_rois_norm0 = cellfun(@(x) x/sqrt(num_stim),std_dF_F0_rois_norm0,'UniformOutput',0);
+                                std_dF_F0_rois,mean_dF_F0_rois,...
+                                'UniformOutput',0);
+sem_dF_F0_rois_norm0 = cellfun(@(x,y) x/sqrt(prod(size(y,[4,5]))),...
+                                std_dF_F0_rois_norm0,deltaF_F0_aligned2,...
+                                'UniformOutput',0);
 % mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x(:,:,:,:,1),[4 5])),deltaF_F0_aligned2,'UniformOutput',0); % average across stim within trains
 % Average raw dF/F0 traces across ROIs
 mean_dF_F0 = cellfun(@(x) squeeze(mean(x,2,'omitnan')),mean_dF_F0_rois,...
@@ -294,10 +299,10 @@ end
 if any(in.plot_figs == 4)
     cond_xvec_all = -num_conditions:2:num_conditions;
     cond_xvec = cond_xvec_all; cond_xvec(round(length(cond_xvec)/2)) = []; % remove 0
-    xoffset = [-0.5 0.5]; 
+%     xoffset = [-0.5 0.5]; 
     fig = figure('Units','normalized');
     fig.Position = [0.001 0.03 in.fig_size];
-    for i=  1:num_conditions
+    for i =  1:num_conditions
         xi = cond_xvec(i); 
         yi = squeeze(peaks{i}(:,in.plot_roi_ind,:,:));
         if in.norm_to_cont
@@ -305,10 +310,10 @@ if any(in.plot_figs == 4)
             yij = yi(2,:,:)/mean(yi(1,:,:),'all','omitnan');
             yij = yij(:);
 %             if plot_violin
-%                 violin(yij,'x',xi,'edgecolor',stim_cols{2},'facecolor',stim_cols3{2},...
-%                     'medc',stim_cols{2},'mc',[]);
+                violin(yij,'x',xi,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
+                    'medc','r','mc',[]);
 %             else
-                boxplot(yij,'Positions',xi);
+%                 boxplot(yij,'Positions',xi);
 %             end
             hold on;
         else
@@ -319,11 +324,23 @@ if any(in.plot_figs == 4)
                 hold on;
             end
         end
+    end    
+    if in.norm_to_cont
+        peaks_before_roi = cell2mat(cellfun(@(x) ...
+                            squeeze(x(1,in.plot_roi_ind,:))'/mean(x(1,in.plot_roi_ind,:),'all'),...
+                            peaks,'UniformOutput',0))';
+    else
+        peaks_before_roi = cell2mat(cellfun(@(x) squeeze(x(1,in.plot_roi_ind,:))',peaks,'UniformOutput',0));        
     end
+%     boxplot(peaks_before_roi,'Positions',0);
+    violin(peaks_before_roi,'x',0,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
+                    'medc','r','mc',[]);
     ax = gca;
     plot([cond_xvec_all;cond_xvec_all]+1,ax.YLim,'k');
-    ax.XTick = cond_xvec;
-    ax.XTickLabel = cond_names;
+    ax.XTick = [cond_xvec(1:floor(num_conditions/2)),0,cond_xvec(floor(num_conditions/2)+1:end)];
+    ax.XTickLabel = [cond_names(1:floor(num_conditions/2)),'0 mA',cond_names(floor(num_conditions/2)+1:end)];;
+%     ax.XTick = cond_xvec;
+%     ax.XTickLabel = cond_names;
     ax.YGrid = 'on';
     ax.TickLength = [0.005 0];
     box off;

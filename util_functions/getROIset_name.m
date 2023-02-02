@@ -1,6 +1,6 @@
 function roiset_filename_no_ext = getROIset_name(roiset_filename,transform_type,...
                                                  registration_rec)
-%GETROISET_NAME ... 
+%GETROISET_NAME(roiset_filename,transform_type,registration_rec) 
 %  
 %   Inputs 
 %   ------ 

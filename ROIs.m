@@ -335,8 +335,11 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             [mask_rows,mask_cols] = ind2sub(size(mask),mask_inds);
         end
         
-        function plot(obj,col,ax,plot_current,show_labels,num_pts) 
+        function plot(obj,col,ax,plot_current,show_labels,num_pts,lw) 
             % plot current ROIs to axis ax with num_pts points in each curve
+            if nargin < 7
+                lw = 1;   
+            end
             if nargin < 6
                 num_pts = 30;
             end
@@ -383,10 +386,12 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 end
                 if isnumeric(col) && size(col,1) == obj.num_rois && size(col,2) == 3
                     coli = col(i,:);
+                elseif iscell(col)
+                    coli = col{i}; 
                 else
                     coli = col; 
                 end
-                plot(ax,x_ptsi,y_ptsi,'-','Color',coli); hold(ax,'on'); 
+                plot(ax,x_ptsi,y_ptsi,'-','Color',coli,'LineWidth',lw); hold(ax,'on'); 
                 if show_labels
 %                     namei = obj.names{i}; 
 %                     if strncmp(namei,'ROI',3)
