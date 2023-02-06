@@ -59,46 +59,42 @@ if isa(recording,'Recording') && recording.loaded == 0
     recording.load(); 
 end
 img_struct = struct(); % add imgs to struct
-if ~isempty(intersect(include_plots,[1,3,4]))
-    % Compute baseline for bsline_img or diff_img/mean_diff_img
-    if strcmp(in.baseline_mode,'mean')
-        bsline_img = mean(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),3); % use first stimulus if applied as train
-    elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
-        bsline_img = max(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
-    end
-    if in.filt_width > 0
-        bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);        
-    end
-    img_struct.bsline_img = bsline_img; 
+%% Compute baseline for bsline_img or diff_img/mean_diff_img
+if strcmp(in.baseline_mode,'mean')
+    bsline_img = mean(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),3); % use first stimulus if applied as train
+elseif strcmp(in.baseline_mode,'max') || strcmp(in.baseline_mode,'peak')
+    bsline_img = max(recording.vals(:,:,exp_settings.baseline_wind_inds(:,1)),[],3); % use first stimulus if applied as train
 end
-if ~isempty(intersect(include_plots,[2,3]))
-    % Compute post-stim peak for peak_img or diff_img
-    if exp_settings.num_stim > 0 % use 1st stim timing if stim were applied
-        if strcmp(in.peak_mode,'max')
-            peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
-        elseif strcmp(in.peak_mode,'mean')
-            peak_stim_img = mean(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),3);
-        elseif strcmp(in.peak_mode,'min')
-            peak_stim_img = min(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
-        end
-    else
-        peak_stim_img = max(recording.vals,[],3); % peak across recording
-    end
-    if in.filt_width > 0      
-        peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);
-    end
-    img_struct.peak_stim_img = peak_stim_img; 
+if in.filt_width > 0
+    bsline_img = imgaussfilt(bsline_img,in.filt_width); %,'FilterSize',filt_wind);        
 end
+img_struct.bsline_img = bsline_img; 
+
+%% Compute peak or post-stim peak for peak_stim_img
+if exp_settings.num_stim > 0 % use 1st stim timing if stim were applied
+    if strcmp(in.peak_mode,'max')
+        peak_stim_img = max(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+    elseif strcmp(in.peak_mode,'mean')
+        peak_stim_img = mean(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),3);
+    elseif strcmp(in.peak_mode,'min')
+        peak_stim_img = min(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+    end
+else
+    peak_stim_img = max(recording.vals,[],3); % peak across recording
+end
+if in.filt_width > 0      
+    peak_stim_img = imgaussfilt(peak_stim_img,in.filt_width); %,'FilterSize',filt_wind);
+end
+img_struct.peak_stim_img = peak_stim_img; 
+
+%% Create peak - baseline image (diff_img)
+diff_img = (peak_stim_img-bsline_img)*in.indicator_dir;
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
+% already filtered peak and bsline imgs, no need to refilter
+img_struct.diff_img = diff_img; 
 
-if any(include_plots == 3)
-    diff_img = (peak_stim_img-bsline_img)*in.indicator_dir;
-    % already filtered peak and bsline imgs, no need to refilter
-    img_struct.diff_img = diff_img; 
-end
-
-
-if any(include_plots == 4) && exp_settings.num_stim > 0
+% Mean stim-evoked peak - baseline image
+if exp_settings.num_stim > 0
     mean_diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
                             exp_settings.stim_wind,in.peak_mode,in.indicator_dir);
     if in.filt_width > 0

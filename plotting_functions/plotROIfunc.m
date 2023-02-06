@@ -103,7 +103,7 @@ else
     unit_str = 'sec'; 
 end
 if isempty(in.rois)
-    num_rois = length(func_output.roi_inds);
+    num_rois = length(func_output.roi_inds);    
     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');    
 else
     num_rois = in.rois.num_rois; 

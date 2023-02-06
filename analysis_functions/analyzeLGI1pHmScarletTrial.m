@@ -43,7 +43,7 @@ if ~isempty(in.show_diff_image) && all(in.show_diff_image ~= 0)
     in.cax_mode = 'quantile'; % 'quantile', 'abs', or 'auto'
     in.cax_lims = [0.02 0.998]; % color limits, units defined in cax_mode
     % Plot
-    normF_img = lgi1_rois.mean_bsline_img/mean(lgi1_bg.func_output.mean);
+    normF_img = lgi1_rois.imgs.bsline_img/mean(lgi1_bg.func_output.mean);
     fig = figure(in.fig_settings{:});
     imagesc(normF_img)
     ax = gca;

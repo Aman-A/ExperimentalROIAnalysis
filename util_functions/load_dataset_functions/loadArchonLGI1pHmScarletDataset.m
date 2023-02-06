@@ -69,11 +69,16 @@ else
         lgi1_data_file = sprintf('%s_%s_%s',summary_data_file_base,...
                                 in.lgi1_condition,def.lgi1_trial_name{i});        
         lgi1_data_filepath = fullfile(exp_data_fold,[lgi1_data_file '.mat']);
-        if exist(summary_data_filepath,'file')
-            datai = load(summary_data_filepath);
-            data{i} = datai;
-            fprintf('Loaded %s (%g of %g)\n',summary_data_filepath,i,num_dishes);
-            num_loaded = num_loaded + 1; 
+        if exist(summary_data_filepath,'file') || exist(AP_data_filepath,'file')
+           if exist(summary_data_filepath,'file')
+                datai = load(summary_data_filepath);
+                data{i} = datai;
+                num_loaded = num_loaded + 1; 
+                fprintf('Loaded %s (%g of %g)\n',summary_data_filepath,i,num_dishes);
+            else
+                data{i} = []; 
+                fprintf('%s does not exist, skipping...\n',summary_data_file);
+           end            
             % Load AP waveform data
             if exist(AP_data_filepath,'file')
                 AP_data{i} = load(AP_data_filepath);
@@ -85,9 +90,9 @@ else
                 lgi1_data{i} = load(lgi1_data_filepath);
                 num_lgi1_data_loaded = num_lgi1_data_loaded + 1; 
                 fprintf('   Loaded LGI1 data: %s\n',lgi1_data_filepath)
-            end            
+            end                
         else
-            fprintf('%s does not exist, skipping...\n',summary_data_file);
+            fprintf('%s and %s do not exist, skipping...\n',summary_data_file,AP_data_filepath);
         end
     end
     elapsed_time = toc; 
