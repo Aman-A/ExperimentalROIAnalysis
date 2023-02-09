@@ -85,7 +85,7 @@ for i = 1:length(trial_folders)
         img_stack(:,:,trial_ind)  = img_struct.(img_field);
         
         if in.save_sep_images
-            path_to_img = fullfile(sep_images_dir,[num2str(i),'_',img_namesi{j} '.fits']); 
+            path_to_img = fullfile(sep_images_dir,[num2str(i),'_',img_namesi{j}]); 
             fitswrite(img_stack(:,:,trial_ind),path_to_img)
         end
         trial_ind = trial_ind + 1; 

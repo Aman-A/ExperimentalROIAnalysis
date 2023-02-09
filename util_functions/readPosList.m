@@ -1,5 +1,5 @@
 function [x,y,z,labels] = readPosList(poslist_file)
-%READPOSLIST Read stage position list output by micromanager, outputs x, y,
+%[x,y,z,labels] = READPOSLIST Read stage position list output by micromanager, outputs x, y,
 %z coords of each position
 %  
 %   Inputs 
@@ -55,13 +55,5 @@ switch mode
             z(i) = StagePositions(i).DEVICES(ZStage_ind).X;
             labels{i} = StagePositions(i).LABEL;
         end
-        XYStage_ind = strcmp(device_names,'XYStage');
-        ZStage_ind = strcmp(device_names,'ZStage');
-        x(i) = StagePositions(i).DevicePositions.array(XYStage_ind).Position_um.array(1);
-        y(i) = StagePositions(i).DevicePositions.array(XYStage_ind).Position_um.array(2);
-        if ZStage_ind > 0
-            z(i) = StagePositions(i).DevicePositions.array(ZStage_ind).Position_um.array(1);
-        end
-        labels{i} = StagePositions(i).Label.scalar;
 end
 end

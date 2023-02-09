@@ -1,5 +1,5 @@
 function varargout = stitchRecordings(recs_or_imgstack,xy)
-%STITCHRECORDINGS ... 
+%varargout = STITCHRECORDINGS(recs_or_imgstack,xy)
 %  
 %   Inputs 
 %   ------ 

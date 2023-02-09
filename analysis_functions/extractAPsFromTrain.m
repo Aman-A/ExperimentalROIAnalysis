@@ -178,6 +178,7 @@ for i = 1:num_rois
     ylabel(ax1,'Mean F (a.u.)');     
     box(ax1,'off');
     ax1.FontSize = in.font_size;
+    ax1.XLim = [t(1),t(end)];
 %     ax1.XLim = [frames(1),frames(end)];
 %     xlabel(ax1,'Frames'); 
 %     ax1.XLim = [0.9*1e3*stim_frames(1)/exp_settings.sampling_rate t(end)]; 
