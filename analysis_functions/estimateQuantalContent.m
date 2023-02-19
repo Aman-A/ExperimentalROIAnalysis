@@ -1,7 +1,6 @@
-function estimateQuantalContent(rec_names,roiset_files,exp_settings,varargin)
-%ESTIMATEQUANTALCONTENT(rec_names,roiset_files,exp_settings,varargin) 
-% Fit peak histogram of single boutons to multiguassian 
-% to estimate amplitude of single vesicle release events
+function [params_gaussian_all,varargout] = estimateQuantalContent(peaks_rois,...
+                                                                deltaF_F0,varargin)
+%ESTIMATEQUANTALCONTENT ... 
 %  
 %   Inputs 
 %   ------ 
@@ -13,119 +12,42 @@ function estimateQuantalContent(rec_names,roiset_files,exp_settings,varargin)
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-if nargin == 0
-    rec_names = {'3mABi_0mAG/3mABi_0mAG.fits'};    
-    roiset_files = {'RoiSet_auto_pos5_2.mat'};    
-%     rec_names = {'3mABi_0mAG/3mABi_0mAG.fits','3mABi_0mAG/3mABi_0mAG.fits'};    
-%     roiset_files = {'RoiSet_auto_pos5_2.mat','RoiSet_auto_pos5_2.mat'};    
-    exp_settings = ExperimentSettings(0.5:0.5:30,0.4,0.15,...
-                                      'sec',100); % automatically converts to frames
-end
-in.data_dir = '/Volumes/MyPassport/Dartmouth_data/Aman_Olympus/DC_mod_experiments/230117/GluSnFR3_SynmRuby/dish1/'; 
-in.show_diff_image = []; 
-in.load_processed_data = 1; 
-in.save_processed_data = 0; 
-in.save_figs = 0; 
-in.std_threshold = 3.5; % threshold to consider peak success vs. failure, 
-                      % defined as multiple of std of local baseline for
-                      % each stimulus, i.e. peak > 4 x std(baseline) is
-                      % success for in.std_threshold = 4. 
-% in.min_width = [18e-3 60e-3]; % sec - min FWHM of stim evoked response to consider successful response (if >std_threshold)
-in.min_width = 0; 
+in.plot_fits = 1; 
 % histogram fitting parameters, adapted from Mendonca 2022 Quantal_Analysis.m
 in.N_bootstrap = 1e5; 
 in.alpha = 2;
 in.num_bins_per_std_B = 4.5; 
 in.Multi_Gauss_threshold = 6; 
-in.plot_fits = 1;
 in.alpha_fit_dx = 0.01; 
-in.dx=0.001; % fit function x step
-in.lw=2;      % line width of the fit
+in.dx = 0.001; % fit function x step
+in.lw = 2;      % line width of the fit
 in.smooth_bs_dist = 0; % smooth bootstrapped peak distributions with 5 point moving average
-in.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
+in.include_sat_param = 1; % include parameter for saturation of indicator at higher quanta
 in = sl.in.processVarargin(in,varargin);
-%% Load recordings
-if isempty(in.data_dir)
-    in.data_dir = fileparts(rec_names{1});    
-end
-ps = plotTrialSettings;
-ps.plot_func = '';
-ps.roi_func_mode = 'separate';
-ps.funcs = {'mean','baseline','deltaF_F0'};
-ps.show_diff_image = in.show_diff_image; 
-ps.save_fig = in.save_figs; 
-ps.show_roi_labels = 1;
-ps.load_processed_data = in.load_processed_data;
-peaks_all = cell(1,length(rec_names));
-peaks_rois_successes = cell(1,length(rec_names));
-successes_all = cell(1,length(rec_names));
-if length(in.min_width) == 1
-    in.min_width = [in.min_width inf]; % if specific min width only, add max width
-end
-for i = 1:length(rec_names)
-    reci = Recording(fullfile(in.data_dir,rec_names{i}));
-    roisi = ROIs(fullfile(in.data_dir,roiset_files{i}));
-    datai = plotTrial(reci,exp_settings,roisi,[],ps);
-    analysis_out = analyzeStimAlignedTraces(datai.func_output.deltaF_F0_aligned,exp_settings,...
-                                        'funcs',{'peaks'},...
-                                        'save_analysis',0,'load',0);
-    peaksi = analysis_out.peaks; 
-    std_baselinesi = squeeze(std(datai.func_output.deltaF_F0_aligned(1:exp_settings.baseline_wind,:,:),0,1));
-    successesi = peaksi > in.std_threshold.*std_baselinesi; 
-    peaks_all{i} = peaksi;
-    % Extract successful peaks within each ROI (remove failures)
-    peaks_rois_successes{i} = cell(roisi.num_rois,1);
-    t = exp_settings.getTimeVector(size(datai.func_output.deltaF_F0_aligned,1));
-    t = t - t(exp_settings.baseline_wind + 1);
-    for j = 1:roisi.num_rois
-        successesij = successesi(j,:);
-        widthsij = zeros(1,length(successesij));
-        if in.min_width(1) > 0           
-            for k = find(successesij) % check width peaks > std threshold
-                widthsij(k) = spikeWidth(t,datai.func_output.deltaF_F0_aligned(:,j,k),...
-                                         exp_settings.baseline_wind+1,0.5,0);
-            end
-            successesij = successesij & widthsij > in.min_width(1) & widthsij < in.min_width(2);
-        end        
-        peaks_rois_successes{i}{j} = peaksi(j,successesij);
-    end    
-    successes_all{i} = successesi; 
-end
-num_rois = roisi.num_rois; 
-% Convert to [num_rois x num_stim] matrix
-% peaks_mat_all = cell2mat(peaks_all); % assumes same number of ROIs in each recording
-successes_mat = cell2mat(successes_all);
-Pr = mean(successes_mat,2); % [num_rois x 1] vector of release probabilities (>=1 SV)
-peaks_rois_successes_all = cell(num_rois,1);
-% Combine across recordings within ROI
-for i = 1:length(rec_names)
-    for j = 1:roisi.num_rois
-        peaks_rois_successes_all{j} = [peaks_rois_successes_all{j},peaks_rois_successes{i}{j}];
-    end
-end
-% Use last trial to get std of full trace for setting bin size
-deltaF_F0 = datai.func_output.deltaF_F0;
+%% Get baseline variability
 std_all = std(deltaF_F0,0,1);
+num_rois = length(peaks_rois);
 gauss_fit_params = zeros(3,num_rois); % 3 parameters
 % [amplitude; mean; st dev] 
 for i = 1:num_rois
-    gauss_fit_params(:,i) = fitHistSingleGaussian(datai.func_output.deltaF_F0(:,i),10); % 10 bins per std    
+    gauss_fit_params(:,i) = fitHistSingleGaussian(deltaF_F0(:,i),10); % 10 bins per std    
 end
-%% Detect events with detecMinis function
-% presets = detectMinisPresets('thor_100Hz',100);
-% presets.num_frames_skip_start_end = 30; 
-% presets.plot_filt_output_roi_index = 19; 
-% presets.threshold = 6; 
-% mini_out = detectMinis(datai.func_output.mean,100,presets);
 %%
+fprintf('Fitting multigaussian to ROI peaks...\n')
 if in.plot_fits
     [Nrows,Ncols] = getSubplotDimensions(num_rois);
     fig = figure('Units','normalized','Position',[0.1 0.2 0.8 0.6]);
 end
 rng(100) % set random number generator seed
+if in.include_sat_param
+    num_params = 6; 
+else
+    num_params = 5; 
+end
+params_gaussian_all = zeros(num_rois,num_params);
 for i = 1:num_rois
-    roi_tracei = datai.func_output.deltaF_F0(:,i); % use last recording (temporary)
-    peaks_roi = peaks_rois_successes_all{i};
+    roi_tracei = deltaF_F0(:,i); % use last recording (temporary)
+    peaks_roi = peaks_rois{i};
 %     peaks_roi = mini_out.mini_peaks_deltaF_F{i}; 
     std_tracei = std_all(i);
     sigmai = gauss_fit_params(3,i);
@@ -166,7 +88,7 @@ for i = 1:num_rois
         fit_func = @Multimodal_Gaussian;        
     end
     param_multimodal_bs = nlinfit(bins_bs,ycount_bs,fit_func,param0);
-    
+    params_gaussian_all(i,:) = param_multimodal_bs;
 %     xbin_new = linspace(0,1.5*max(bins_bs),200);   
 %     distrib_fit = Multimodal_Gaussian(param_multimodal_bs,xbin_new);
     if in.plot_fits
@@ -229,6 +151,9 @@ for i = 1:num_rois
     end
 end
 fprintf('Done\n')
+if in.plot_fits
+    varargout = {fig};
+end
 %% Single Gaussian function
     function y = SingleGaussian(params,x) % [amplitude; mean; st dev]
         y=params(1).*exp(-(x-params(2)).^2/(2*params(3)));
@@ -301,5 +226,5 @@ fprintf('Done\n')
             abs(A2).*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
             abs(A3).*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
             *adj_factor;        
-    end    
+    end 
 end

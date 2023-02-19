@@ -127,7 +127,7 @@ if strcmp(func_output.roi_func_mode,'combine')
     end
 %     title_str = [title_str sprintf(' (%s combined)',roi_str)];
     % Plot on single axis
-    lns = plot(ax,x,y); % plot trace/s
+    lns = plot(ax,x,y,in.plot_settings{:}); % plot trace/s
 %     lns = shadedErrorBar(x,y,std_y);   
 else
     display_names = roi_names;
@@ -170,7 +170,7 @@ else
             offset = linspace(num_rois*in.offset_factor,...
                 0,size(y,2));
         end
-        lns = plot(ax,x,y+offset); % plot trace/s
+        lns = plot(ax,x,y+offset,in.plot_settings{:}); % plot trace/s
         if in.show_y_tick_labels
             ax.YTick = fliplr(offset);
             ax.YTickLabel = length(offset):-1:1; 

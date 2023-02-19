@@ -110,7 +110,14 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     obj.y0 = cellfun(@(x) [x.mnCoordinates(:,2);x.mnCoordinates(1,2)],...
                                      ROIarray,'UniformOutput',0); % y coords
                     obj.x = obj.x0; % current is same as original initially
-                    obj.y = obj.y0; % current is same as original initially                               
+                    obj.y = obj.y0; % current is same as original initially                                                   
+                elseif strcmp(obj.types{1},'PolyLine')
+                    obj.x0 = cellfun(@(x) [x.mnCoordinates(:,1)],ROIarray,...
+                                            'UniformOutput',0); % x coords
+                    obj.y0 = cellfun(@(x) [x.mnCoordinates(:,2)],ROIarray,...
+                                            'UniformOutput',0); % x coords
+                    obj.x = obj.x0; % current is same as original initially
+                    obj.y = obj.y0; % current is same as original initially       
                 else
                     error('Other shapes not implemented');
                 end
@@ -335,8 +342,11 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             [mask_rows,mask_cols] = ind2sub(size(mask),mask_inds);
         end
         
-        function plot(obj,col,ax,plot_current,show_labels,num_pts,lw) 
+        function plot(obj,col,ax,plot_current,show_labels,num_pts,lw,text_size) 
             % plot current ROIs to axis ax with num_pts points in each curve
+            if nargin < 8 
+                text_size = 12; 
+            end
             if nargin < 7
                 lw = 1;   
             end
@@ -356,10 +366,11 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             if nargin < 2
                 col = 'y';
             end
-            theta = linspace(0,2*pi,num_pts);
+            
             hold(ax,'on'); % add to ax            
             for i = 1:obj.num_rois
                 if strcmp(obj.types{i},'Oval') || strcmp(obj.types{i},'Circle')
+                    theta = linspace(0,2*pi,num_pts);
                     if plot_current
                         xi = obj.x(i); yi = obj.y(i);
                     else
@@ -376,7 +387,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
                     y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
                     xi = mean(x_ptsi); yi = mean(y_ptsi); % for label below
-                elseif strcmp(obj.types{i},'Polygon')
+                elseif strcmp(obj.types{i},'Polygon') || strcmp(obj.types{i},'PolyLine')
                     if plot_current
                        x_ptsi = obj.x{i}; y_ptsi = obj.y{i}; 
                     else
@@ -398,7 +409,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                        namei = namei(4:end); % remove 'ROI' to save space                     
 %                     end
                     namei = num2str(i,'%g'); 
-                    text(ax,xi*1.025,yi,namei,'FontName','Arial','FontSize',12,...
+                    text(ax,xi*1.025,yi,namei,'FontName','Arial','FontSize',text_size,...
                           'Color',coli); 
                 end
             end
@@ -406,7 +417,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         function invert_y(obj,imsize)
         % Invert y coordinate of ROIs based on size of source image
         % imsize : vector containing [height, width, time_points]
-            if strcmp(obj.types{1},'Polygon')
+            if strcmp(obj.types{1},'Polygon') || strcmp(obj.types{1},'PolyLine')
                 obj.y0 = cellfun(@(x) imsize(1) - x,obj.y0,'UniformOutput',0);
                 obj.y = cellfun(@(x) imsize(1) - x,obj.y,'UniformOutput',0);
             elseif strcmp(obj.types{1},'Oval')
@@ -414,7 +425,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.y = imsize(1) - obj.y + 1;
             elseif strcmp(obj.types{1},'Rectangle')
                 obj.r0(1:2) = imsize(1) - obj.r0([2 1]); % flip and re-order so min row is first
-                obj.r(1:2) = imsize(1) - obj.r([2 1]);
+                obj.r(1:2) = imsize(1) - obj.r([2 1]);            
             end
             obj.updateRoiObjs(); 
             fprintf('Flipping y coordinate of imported ROIs, check!!\n');

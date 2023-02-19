@@ -110,7 +110,7 @@ if any(strcmp(in.funcs,'peaks'))
         
     else
         [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:,:),[],1);    
-        pk_inds = pk_inds + stim_frame; % reference to full time vector
+        pk_inds = pk_inds + stim_frame + 1; % reference to full time vector
         peaks = squeeze(peaks);
         pk_inds = squeeze(pk_inds);
         peak_times = exp_settings.convert2Time(pk_inds-stim_frame);

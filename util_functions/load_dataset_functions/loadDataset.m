@@ -33,6 +33,10 @@ elseif ~isempty(regexp(reporter,'Archon','ONCE'))
                                                        roi_func_mode,varargin{:});
         varargout = {AP_data,lgi1_data};
     end
+elseif ~isempty(regexp(reporter,'GCaMP','ONCE'))
+    [data,def,norm_data,train_data] = loadDefaultDataset(dataset_def_filename,...
+                                                   roi_func_mode,varargin{:});
+    varargout = {norm_data,train_data};
 else
     error('Not implemented for input reporter: %s',reporter);
 end

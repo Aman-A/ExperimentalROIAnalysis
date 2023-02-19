@@ -20,6 +20,8 @@ if strcmp(ax.YDir,'normal')
     end
     if isempty(in.text_y_factor)
         text_y_factor = 0.87;
+    else
+        text_y_factor = in.text_y_factor;
     end
 else
     vert_align = 'top';
@@ -28,6 +30,8 @@ else
     end
     if isempty(in.text_y_factor)
         text_y_factor = 1.11;
+    else
+        text_y_factor = in.text_y_factor;
     end
 end
 if isempty(in.sbar_len)
@@ -40,7 +44,7 @@ plot(ax,[in.x_factor*imsize(2),in.x_factor*imsize(2) + sbar_pixel_len],...
         y_factor*imsize(1)*[1 1],...
         'Color',in.color,'LineWidth',in.sbar_lw);
 if in.show_text
-    text(0.1*imsize(2) + sbar_pixel_len/2,...
+    text(in.x_factor*imsize(2) + sbar_pixel_len/2,...
             text_y_factor*y_factor*imsize(1),sprintf('%g \\mu m',sbar_len),...
             'VerticalAlignment',vert_align,'HorizontalAlignment','center',...
             'Color',in.color,'FontSize',16,'FontWeight','bold'); 

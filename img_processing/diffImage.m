@@ -94,7 +94,8 @@ diff_img = (peak_stim_img-bsline_img)*in.indicator_dir;
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 % already filtered peak and bsline imgs, no need to refilter
 img_struct.diff_img = diff_img; 
-
+img_struct.peak_mode = in.peak_mode; 
+img_struct.filt_width = in.filt_width; 
 % Mean stim-evoked peak - baseline image
 if exp_settings.num_stim > 0
     mean_diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...
