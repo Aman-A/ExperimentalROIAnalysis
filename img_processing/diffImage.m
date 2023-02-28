@@ -78,6 +78,8 @@ if exp_settings.num_stim > 0 % use 1st stim timing if stim were applied
         peak_stim_img = mean(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),3);
     elseif strcmp(in.peak_mode,'min')
         peak_stim_img = min(recording.vals(:,:,exp_settings.stim_wind_inds(:,1)),[],3);
+    elseif isvector(in.peak_mode)
+        peak_stim_img = mean(recording.vals(:,:,exp_settings.stim_wind_inds(in.peak_mode(1):in.peak_mode(end),1)),3);
     end
 else
     peak_stim_img = max(recording.vals,[],3); % peak across recording
@@ -92,7 +94,8 @@ diff_img = (peak_stim_img-bsline_img)*in.indicator_dir;
 % diff_img = (peak_stim_img-mean_bsline_img)./mean_bsline_img;
 % already filtered peak and bsline imgs, no need to refilter
 img_struct.diff_img = diff_img; 
-
+img_struct.peak_mode = in.peak_mode; 
+img_struct.filt_width = in.filt_width; 
 % Mean stim-evoked peak - baseline image
 if exp_settings.num_stim > 0
     mean_diff_img = meanDiffImage(recording.vals,exp_settings.stim_vals,exp_settings.baseline_wind,...

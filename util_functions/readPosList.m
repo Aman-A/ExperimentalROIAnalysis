@@ -37,7 +37,9 @@ switch mode
         ZStage_ind = strcmp(device_names,'ZStage');
         x(i) = StagePositions(i).DevicePositions.array(XYStage_ind).Position_um.array(1);
         y(i) = StagePositions(i).DevicePositions.array(XYStage_ind).Position_um.array(2);
-        z(i) = StagePositions(i).DevicePositions.array(ZStage_ind).Position_um.array(1);
+        if any(ZStage_ind)
+            z(i) = StagePositions(i).DevicePositions.array(ZStage_ind).Position_um.array(1);
+        end
         labels{i} = StagePositions(i).Label.scalar; 
     end
     case 2 % Odin uManager

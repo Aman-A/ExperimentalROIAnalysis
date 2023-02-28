@@ -66,7 +66,9 @@ if in.save_sep_images
        mkdir(sep_images_dir); 
        fprintf('Made %s to save stack as separate image fils\n',sep_images_dir); 
     end
-    fitswrite(img_stack(:,:,1),fullfile(sep_images_dir,['1_' img_name1 '.fits']))
+    fitswrite(img_stack(:,:,1),fullfile(sep_images_dir,['1_' img_name1]))
+    imwrite(flipud(img_stack(:,:,1)/max(img_stack(:,:,1),[],'all')),...
+                fullfile(sep_images_dir,['1_' img_name1(1:end-5) '.png']),'png')
 end
 
 for i = 1:length(trial_folders)    
@@ -86,7 +88,9 @@ for i = 1:length(trial_folders)
         
         if in.save_sep_images
             path_to_img = fullfile(sep_images_dir,[num2str(i),'_',img_namesi{j}]); 
-            fitswrite(img_stack(:,:,trial_ind),path_to_img)
+            fitswrite(img_stack(:,:,trial_ind),path_to_img);
+            imwrite(flipud(img_stack(:,:,trial_ind)/max(img_stack(:,:,trial_ind),[],'all')),...
+                [path_to_img(1:end-5) '.png'],'png')
         end
         trial_ind = trial_ind + 1; 
     end

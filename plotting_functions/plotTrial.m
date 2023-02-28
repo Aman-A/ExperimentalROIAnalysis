@@ -1,6 +1,7 @@
 function output_data = plotTrial(rec_name,exp_settings,rois_or_roiset_filename,...
                                 trace_axis,varargin)
-% PLOTTRIAL Plot recording and response vs. time data from single trial
+% PLOTTRIAL(rec_name,exp_settings,rois_or_roiset_filename,trace_axis,varargin) 
+% Plot recording and response vs. time data from single trial
 %  
 % Default file organization expected by plotTrial:
 % <data_fold>/<exp_date>/<reporter>/<dish>/<condition>/<img_name>

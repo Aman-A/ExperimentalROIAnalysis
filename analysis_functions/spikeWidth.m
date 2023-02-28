@@ -34,7 +34,8 @@ if nargin < 5
 end 
 %% Get peak amplitude
 if nargin < 6
-    [peak_val,peak_ind] = max(y,[],1,'omitnan');
+    [peak_val,peak_ind] = max(y(stim_index-1:end),[],1,'omitnan'); % get max after stim_index (in case extraneous peak occurs before stim)
+    peak_ind = peak_ind + stim_index - 2; % re-index to full vector 
 else % input peak index (helps with noisy traces)
     peak_val = y(peak_ind); 
 end
@@ -58,7 +59,7 @@ for i = stim_index:length(y)
         end
     end
     if onset_found && ~offset_found
-        if y(i) <= width_val
+        if i > peak_ind && y(i) <= width_val
             offset_index = i;
             offset_found = 1;
             break;
@@ -99,5 +100,6 @@ if plot_fig
     xlabel('time'); ylabel('amplitude'); 
     legend('Box','off')
 %     xlim([0.09 0.12])    
+    title(sprintf('Width = %f',spike_width))
 end
 end

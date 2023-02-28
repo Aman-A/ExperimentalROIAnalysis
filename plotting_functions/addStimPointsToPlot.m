@@ -1,6 +1,6 @@
 function stimpoints_hand = addStimPointsToPlot(stim_frames,stim_marker_mode,ax,...
                                                varargin)
-%ADDSTIMPOINTSTOPLOT ... 
+%ADDSTIMPOINTSTOPLOT(stim_frames,stim_marker_mode,ax,varargin)
 %  
 %   Inputs 
 %   ------ 
@@ -21,6 +21,8 @@ in.stim_pulse_dur = []; % duration of stimuli (same units as plot's time base),
 in.stim_leg_name = '';
 in.plot_y_factor = 0.99;
 in.color = 'k';
+in.lw_mode3 = 1.5;
+in.point_marker_size = 8;
 in = sl.in.processVarargin(in,varargin);
 if nargin < 3
     ax = gca;
@@ -49,7 +51,7 @@ if ~any(ind_stim_times) % only plot if stim times don't already exist on this ax
     hold(ax,'on');
     if stim_marker_mode == 1
         stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*in.plot_y_factor*ones(1,length(stim_frames)),...
-            'LineStyle','none','Color',in.color,'Marker','.','MarkerSize',8,'DisplayName',stim_leg_name);
+            'LineStyle','none','Color',in.color,'Marker','.','MarkerSize',in.point_marker_size,'DisplayName',stim_leg_name);
     elseif stim_marker_mode == 2
         stimpoints_hand = plot(ax,[stim_frames(:)';stim_frames(:)';nan(size(stim_frames(:)'))],...
             [ax.YLim'.*[1;in.plot_y_factor].*ones(2,length(stim_frames(:)'));nan(size(stim_frames(:)'))],...
@@ -61,7 +63,7 @@ if ~any(ind_stim_times) % only plot if stim times don't already exist on this ax
         stimpoints_hand = plot(ax,...
           [stim_frames(:)';stim_frames(:)'+in.stim_pulse_dur(:);nan(size(stim_frames(:)'))],...
           [ax.YLim(2).*[in.plot_y_factor;in.plot_y_factor].*ones(2,length(stim_frames(:)'));nan(size(stim_frames(:)'))],...
-            'Color',in.color,'LineStyle','-','LineWidth',1.5,'DisplayName',stim_leg_name);
+            'Color',in.color,'LineStyle','-','LineWidth',in.lw_mode3,'DisplayName',stim_leg_name);
     end
     leg_names = {ax.Children.DisplayName};
     ind_stim_times = strcmp(leg_names,stim_leg_name);
