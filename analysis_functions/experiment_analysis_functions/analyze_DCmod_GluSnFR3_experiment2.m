@@ -101,9 +101,9 @@ center2center_dists(diag_inds) = nan;
 
 num_rois = rois.num_rois;
 % Mean traces within ROI, averaged within train across trials
-mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x,[4 5])),deltaF_F0_aligned2,...
+mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x,[4 5],'omitnan')),deltaF_F0_aligned2,...
             'UniformOutput',0); % average across stim within trains and trials
-std_dF_F0_rois = cellfun(@(x) squeeze(std(x,0,[4 5])),deltaF_F0_aligned2,...
+std_dF_F0_rois = cellfun(@(x) squeeze(std(x,0,[4 5],'omitnan')),deltaF_F0_aligned2,...
             'UniformOutput',0); % std across stim within trains and trials
 sem_dF_F0_rois = cellfun(@(x,y) x/sqrt(prod(size(y,[4,5]))),...
                             std_dF_F0_rois,deltaF_F0_aligned2,...
@@ -405,7 +405,14 @@ rois_xy = rois_xy(sort_rois,:);
 %% Analyze ROI specific modulation
 % peaks : [num_trains x num_rois x num_stim x num_trials]
 if isempty(cols)
-    if num_conditions == 8
+    if num_conditions == 6
+        cols = flipud([ 0.6445         0    0.1484 % for 6
+            0.8398    0.1875    0.1523
+            0.9531    0.4258    0.2617            
+            0.4531    0.6758    0.8164
+            0.2695    0.4570    0.7031
+            0.1914    0.2109    0.5820]);
+    elseif num_conditions == 8
         cols = flipud([ 0.6445         0    0.1484 % for 8
             0.8398    0.1875    0.1523
             0.9531    0.4258    0.2617

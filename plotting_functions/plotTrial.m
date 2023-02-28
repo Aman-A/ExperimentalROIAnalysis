@@ -220,7 +220,8 @@ end
 
 if ~strcmp(in.plot_func,'none') && ~isempty(in.plot_func) && all(in.plot_func~=0) 
     if isempty(trace_axis)                       
-        fig = figure; 
+        fig = figure('Units','normalized'); 
+        fig.Position(1:2) = [0.1 0.1];
         trace_axis = gca;
     else
         fig = trace_axis.Parent;    
