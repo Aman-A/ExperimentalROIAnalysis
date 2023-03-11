@@ -147,7 +147,7 @@ if any(in.plot_inds == 7)
     %                                      'UniformOutput',0);
     if out.exp_settings(1).num_trains > 1
         % normalize to first AP in train
-        norm_fwhm = cellfun(@(x) x(:,2)./x(:,1),out.mean_fwhm,'UniformOutput',0); 
+        norm_fwhm = cellfun(@(x) x(2,:)./x(1,:),out.mean_fwhm,'UniformOutput',0); 
         var_name = 'nFWHM ratio'; var_units = '';
     else    
         % normalize to width of first condition condition

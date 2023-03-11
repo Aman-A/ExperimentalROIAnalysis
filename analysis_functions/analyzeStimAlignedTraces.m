@@ -292,7 +292,7 @@ end
 %% FWHM of averaged responses
 if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
     % Stim and trial averaged traces
-    mean_traces = mean(traces,[3 4]); % Average across stim within trial and across trials/trains    
+    mean_traces = squeeze(mean(traces,[4 5])); % Average across stim within train across trials
 %     if trace_dims(3) == 1 % single ROI
 %         mean_traces = squeeze(mean(traces,2)); 
 %     else % multiple ROIs
@@ -303,16 +303,18 @@ if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
     frac_amp = in.frac_amp;
     n_traces = prod(mean_trace_dims(2:end));
     tic
-    if num_trains > 1 % get average FWHM of each spike within train (averaged across multiple trains)
-        stim_indices = baseline_wind + 1 + exp_settings.stim_vals(1,:)-exp_settings.stim_vals(1);
-        mean_fwhm = zeros([mean_trace_dims(2:end),num_stim]); % [num_rois x num_stim] average across trains/trials
+    if num_trains > 1 % get average FWHM of all spikes within each train (averaged across multiple trains)
+        stim_indices = baseline_wind + 1;
+%         stim_indices = baseline_wind + 1 + exp_settings.stim_vals(1,:)-exp_settings.stim_vals(1);
+%         mean_fwhm = zeros([mean_trace_dims(2:end),num_stim]); % [num_rois x num_stim] average across trains/trials
+        mean_fwhm = zeros(n_traces,1);
         for n = 1:n_traces
             mean_fwhm(n,:) = spikeWidths(t,mean_traces(:,n),stim_indices,frac_amp,...
                                         in.train_spike_width_mode,baseline_wind,...
                                         'spline_interp',fwhm_spline_interp);
         end        
     else % get average FWHM of all spikes averaged together (single train)
-        stim_index = exp_settings.baseline_wind + 1; 
+        stim_index = baseline_wind + 1; 
         mean_fwhm = zeros(mean_trace_dims(2),1);
         for n = 1:n_traces
             mean_fwhm(n) = spikeWidth(t,mean_traces(:,n),stim_index,frac_amp);

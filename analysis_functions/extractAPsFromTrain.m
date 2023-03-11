@@ -152,9 +152,9 @@ for j = 1:num_rois
     mean_APs_all{j} = AP_framesj; 
     baselinesj = mean(AP_framesj(AP_window(1)-baseline_start_frame-baseline_wind:AP_window(1)-baseline_start_frame,:),1);
     if in.filt_order > 0 % baseline removed due to high pass filter, just get deltaF
-        deltaF_F0_all{j} = abs(AP_framesj - baselinesj); % get DF/F using AP-specific baseline (for jth roi)
+        deltaF_F0_all{j} = (AP_framesj - baselinesj); % get DF/F using AP-specific baseline (for jth roi)
     else
-        deltaF_F0_all{j} = abs(AP_framesj - baselinesj)./abs(baselinesj); % get DF/F using AP-specific baseline (for jth roi)
+        deltaF_F0_all{j} = (AP_framesj - baselinesj)./abs(baselinesj); % get DF/F using AP-specific baseline (for jth roi)
     end
 end
 % AP_winds(:,end) = [];
