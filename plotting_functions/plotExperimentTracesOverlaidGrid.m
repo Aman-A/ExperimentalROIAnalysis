@@ -14,9 +14,10 @@ function plotExperimentTracesOverlaidGrid(experiment_output,plot_func,varargin)
 % AUTHOR    : Aman Aberra 
 in.fig_units = 'centimeters';
 if strcmp(experiment_output.plot_settings.roi_func_mode,'combine')
-    in.fig_size = [19.8 9.1]; 
+%     in.fig_size = [19.8 9.1]; 
+    in.fig_size = [38 11];
 else
-    in.fig_size = [50 25];
+    in.fig_size = [50 25];    
 end
 in.fig_dir = './';
 % in.fig_name = [plot_func,'_' num2str(length(experiment_output.conditions)),'conds'];
@@ -31,6 +32,8 @@ in.norm_peak_ind = 0; % index of column (condition) to take peak and normalize
                       % all trials to peak
 in.align_to = 'none'; % 'none','max', or 'min'                      
 in.colors = lines(length(experiment_output.conditions));                       
+in.mode = 1; % 1 - plot traces from conditions on same axes
+             % 2 - plot traces from same condition on same axes
 in = sl.in.processVarargin(in,varargin);
 
 func_field = [plot_func '_all'];
@@ -117,4 +120,4 @@ plotTracesOverlaidGrid(t,meanF,[],'x_lim',in.x_lim,...
                       'fig_name',in.fig_name,'plot_func',plot_func,...
                       'leg_labels',experiment_output.conditions,...
                       'fig_units',in.fig_units,'fig_size',in.fig_size,...
-                      'colors',in.colors);
+                      'colors',in.colors,'mode',in.mode);

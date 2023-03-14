@@ -227,8 +227,7 @@ for i = 1:num_rois
     if any(F_findpks(:,i) >= thresholds(i))
         [~,mini_framesi,peak_widthsi] = findpeaks(F_findpks(:,i),...
                                   'MinPeakHeight',thresholds(i),...
-                                  'MinPeakDistance',min_peak_distance*sampling_rate,...
-                                  'MinPeakWidth',1,... % 1 frame 'MinPeakWidth',min_mini_width*sampling_rate,
+                                  'MinPeakDistance',min_peak_distance*sampling_rate,... %'MinPeakWidth',1,... % 1 frame 'MinPeakWidth',min_mini_width*sampling_rate,                                  
                                   'WidthReference',width_ref,... % halfheight or halfprom
                                   'Annotate','extents');                                                 
         mini_framesi_filt = mini_framesi; 

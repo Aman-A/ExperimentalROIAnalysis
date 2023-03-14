@@ -39,6 +39,8 @@ in.title_on = 1;
 in.plot_func = 'deltaF_F0';
 in.leg_labels = ''; 
 in.colors = []; 
+in.mode = 1; % 1 - plot traces from conditions on same axes
+             % 2 - plot traces from same condition on same axes
 in = sl.in.processVarargin(in,varargin);
 % Format plotTracesOverlaid options
 topts = struct(); 
@@ -62,7 +64,11 @@ trace_rows = cellfun(@(x) size(x,1), traces_all,'UniformOutput',1);
 trace_cols = cellfun(@(x) size(x,2), traces_all,'UniformOutput',1);
 assert(all(trace_rows == trace_rows(1)),'All conditions should have same number of time points')
 assert(all(trace_cols == trace_cols(1)),'All conditions should have same number of columns')
-Nax = trace_cols(1);  % number of separate axes
+if in.mode == 1
+    Nax = trace_cols(1);  % number of separate axes
+else
+    Nax = length(traces_all);
+end
 [Nrows,Ncols] = getSubplotDimensions(Nax);
 Nt = trace_rows(1); % number of time points
 Nconds = length(traces_all); % number of conditions
@@ -74,19 +80,27 @@ if ~isempty(in.fig_size)
     fig.Position(3:4) = in.fig_size;
 end
 ti = t; % set t if constant
-for i = 1:Nax    
-    tracesi = zeros(Nt,Nconds);
-    erri = zeros(Nt,Nconds);
-    if iscell(t)
-        ti = zeros(Nt,Nconds);
-    end
-    for j = 1:Nconds
-        tracesi(:,j) = traces_all{j}(:,i);        
-        if ~isempty(err_all)
-            erri(:,j) = err_all{j}(:,i);
-        end
+for i = 1:Nax            
+    if in.mode == 1
         if iscell(t)
-            ti(:,j) = t{j}(:,i);
+            ti = zeros(Nt,Nconds);
+        end
+        tracesi = zeros(Nt,Nconds);
+        erri = zeros(Nt,Nconds);
+        for j = 1:Nconds
+            tracesi(:,j) = traces_all{j}(:,i);        
+            if ~isempty(err_all)
+                erri(:,j) = err_all{j}(:,i);
+            end
+            if iscell(t)
+                ti(:,j) = t{j}(:,i);
+            end
+        end
+    else
+        ti = t{i};
+        tracesi = traces_all{i}; 
+        if ~isempty(err_all)
+            erri = err_all{i}; 
         end
     end
     ax = subplot(Nrows,Ncols,i);
@@ -95,7 +109,11 @@ for i = 1:Nax
 %     end
     plotTracesOverlaid(ti,tracesi,topts); 
     if in.title_on && Nax > 1
-        title(ax,num2str(i));
+        if in.mode == 1
+            title(ax,num2str(i));
+        else
+            title(ax,strrep(in.leg_labels{i},'_',' '))
+        end
     end
     if i < ((Nrows-1)*Ncols)
         xlabel(ax,'');
@@ -120,7 +138,9 @@ for i = 1:Nax
                 plotTracesOverlaid([0;1],nan(2,Nconds),topts)
                 axis(ax_leg,'off');
             end
-            legend(ax_leg,strrep(in.leg_labels,'_',' '),'Box','off');
+            if in.mode == 1
+                legend(ax_leg,strrep(in.leg_labels,'_',' '),'Box','off');                            
+            end
         end
     end
 end
