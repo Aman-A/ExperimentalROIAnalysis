@@ -107,8 +107,8 @@ if isempty(in.rois)
     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');    
 else
     num_rois = in.rois.num_rois; 
-    roi_names = in.rois.names; 
-%     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');     
+%     roi_names = in.rois.names; 
+    roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');     
 end
 hold(ax,'on'); 
 sbar_hand = [];
