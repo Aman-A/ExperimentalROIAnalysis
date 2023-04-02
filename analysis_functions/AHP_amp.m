@@ -28,15 +28,23 @@ bsline = mean(y(1:stim_index-1),'omitnan'); % mean in baseline window
 peak_amp = peak_val - bsline; 
 % Get min after peak
 if in.smooth_trace    
-    y = smooth(y,in.smooth_span,in.smooth_method);  
+    y_smooth = smooth(y,in.smooth_span,in.smooth_method);
+    bsline_smooth = mean(y_smooth(1:stim_index-1),'omitnan'); % mean in baseline window
+    peak_amp_smooth = max(y_smooth(stim_index-1:end)) - bsline_smooth; 
 %     fprintf('Smoothing trace with %g window %s filter before detecting AHP trough\n',...
 %             in.smooth_span,in.smooth_method);
+    % [ahp_val,ahp_ind] = min(y(peak_ind:end));
+    [ahp_val,ahp_ind] = findpeaks(-(y_smooth(peak_ind:end))/peak_amp_smooth,'MinPeakProminence',0.05);    
+else    
+    [ahp_val,ahp_ind] = findpeaks(-(y(peak_ind:end))/peak_amp,'MinPeakProminence',0.05);
 end
-% [ahp_val,ahp_ind] = min(y(peak_ind:end));
-[ahp_val,ahp_ind] = findpeaks(-(y(peak_ind:end))/peak_amp,'MinPeakProminence',0.05);
-if ~isempty(ahp_val)
-    ahp_val = ahp_val(1)*peak_amp;
-    ahp_ind = ahp_ind(1) + peak_ind - 1; 
+
+if ~isempty(ahp_ind)
+    [~,min_ind] = max(ahp_val); % flipped for findpeaks
+    ahp_ind = ahp_ind(min_ind) + peak_ind - 1;
+%     ahp_val = ahp_val(1)*peak_amp;
+%     ahp_ind = ahp_ind(1) + peak_ind - 1; 
+    ahp_val = y(ahp_ind);
     ahp_amp = ahp_val - bsline; 
 else
     ahp_val = nan; 
@@ -46,9 +54,12 @@ else
 end
 if plot_fig
     figure;
-    plot(t,y);
+    plot(t,y,'DisplayName','trace'); hold on; 
+    if in.smooth_trace
+        plot(t,y_smooth,'DisplayName','smoothed trace')
+    end
     hold on; box off; 
-    plot(t(peak_ind),peak_val,'go')
-    plot(t(ahp_ind),-ahp_val,'ro');
-    legend('trace','peak','ahp')
+    plot(t(peak_ind),peak_val,'go','DisplayName','peak')
+    plot(t(ahp_ind),ahp_val,'ko','DisplayName','AHP','MarkerSize',8,'MarkerFaceColor','k');
+    legend()
 end

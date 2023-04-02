@@ -1,9 +1,19 @@
 function [params_gaussian_all,varargout] = estimateQuantalContent(peaks_rois,...
                                                                 deltaF_F0,varargin)
-%ESTIMATEQUANTALCONTENT ... 
+%ESTIMATEQUANTALCONTENT Fit peak histogram of single boutons to multiguassian 
+% function to estimate amplitude of single vesicle release events
 %  
 %   Inputs 
 %   ------ 
+%   peaks_rois : 1 x num_rois cell array
+%                cell array of event (mini/evoked release) amplitudes where
+%                each element is a Nevent x 1 vector of amplitudes from a
+%                single bouton (ROI)
+%   deltaF_F0 : Nt x num_rois matrix 
+%               Columns are deltaF/F0 traces from each ROI (bouton), e.g.
+%               full recording from single trial within each ROI. Used to
+%               extract signal variability
+%               
 %   Optional Inputs 
 %   --------------- 
 %   Outputs 
@@ -12,15 +22,17 @@ function [params_gaussian_all,varargout] = estimateQuantalContent(peaks_rois,...
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-in.plot_fits = 1; 
+in.plot_fits = 1; % Plot histograms for all ROIs
+in.lw = 2;      % line width of the fit in plots
 % histogram fitting parameters, adapted from Mendonca 2022 Quantal_Analysis.m
-in.N_bootstrap = 1e5; 
-in.alpha = 2;
-in.num_bins_per_std_B = 4.5; 
-in.Multi_Gauss_threshold = 6; 
-in.alpha_fit_dx = 0.01; 
+in.N_bootstrap = 1e5; % number of bootstrap events
+in.alpha = 2; % scaling factor for STD of fluorescence signals to generate bootstrapped events
+              % Higher alpha gives larger spread for a given signal
+              % variance
+in.num_bins_per_std_B = 4.5; % Number of histogram bins scaled by STD of fluorescence signals
+in.Multi_Gauss_threshold = 6; % minimum number of events to try multi gaussian fitting
+in.alpha_fit_dx = 0.01; % step size for test normalization values
 in.dx = 0.001; % fit function x step
-in.lw = 2;      % line width of the fit
 in.smooth_bs_dist = 0; % smooth bootstrapped peak distributions with 5 point moving average
 in.include_sat_param = 1; % include parameter for saturation of indicator at higher quanta
 in = sl.in.processVarargin(in,varargin);
@@ -51,7 +63,7 @@ for i = 1:num_rois
 %     peaks_roi = mini_out.mini_peaks_deltaF_F{i}; 
     std_tracei = std_all(i);
     sigmai = gauss_fit_params(3,i);
-    noisei = in.alpha*sigmai;     
+    noisei = in.alpha*sigmai;          
     if length(peaks_roi) <= 5
         fprintf('Only %g events in ROI %g, skipping...\n',length(peaks_roi),i)
         continue;
@@ -70,7 +82,7 @@ for i = 1:num_rois
         ycount_bs = smooth(ycount_bs); % smooth with 5 pt moving average
     end
     bins_bs = [bins_bs(1),bins_bs(end)]; 
-    bins_bs = linspace(bins_bs(1),bins_bs(2),length(ycount_bs)); 
+    bins_bs = linspace(bins_bs(1),bins_bs(2),length(ycount_bs))'; 
     [pk_y,pk_x] = findpeaks(ycount_bs,bins_bs); % peaks
     % Fit to multigaussian distribution
     max_ycount_bs = pk_y(1); 
@@ -87,7 +99,9 @@ for i = 1:num_rois
     else
         fit_func = @Multimodal_Gaussian;        
     end
-    param_multimodal_bs = nlinfit(bins_bs,ycount_bs,fit_func,param0);
+    opts = struct(); 
+    opts.MaxIter = 200; 
+    param_multimodal_bs = nlinfit(bins_bs,ycount_bs,fit_func,param0,opts);
     params_gaussian_all(i,:) = param_multimodal_bs;
 %     xbin_new = linspace(0,1.5*max(bins_bs),200);   
 %     distrib_fit = Multimodal_Gaussian(param_multimodal_bs,xbin_new);
@@ -183,7 +197,8 @@ end
                     A3=param(3);
                     mu=param(4);
                     sigma=param(5);                 
-                    adj_factor = (A1>=0)*(A2>=0)*(A3>=0)*(A1>A3); % adjustment factor to help fit
+                    adj_factor = 1; 
+%                     adj_factor = (A1>=0)*(A2>=0)*(A3>=0)*(A1>A3); % adjustment factor to help fit
             end
             y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
                 abs(A2).*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
