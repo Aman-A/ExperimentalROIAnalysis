@@ -38,12 +38,15 @@ in.show_diff_image = [];
 in.load_processed_data = 1; 
 in.save_processed_data = 0; 
 in.save_figs = 0; 
-in.std_threshold = 0; % threshold to consider peak success vs. failure, 
+in.std_threshold = 3.5; % threshold to consider peak success vs. failure, 
                       % defined as multiple of std of local baseline for
                       % each stimulus, i.e. peak > 4 x std(baseline) is
                       % success for in.std_threshold = 4. 
 % in.min_width = [18e-3 60e-3]; % sec - min FWHM of stim evoked response to consider successful response (if >std_threshold)
 in.min_width = 0; 
+in.plot_func = ''; % plot traces, either 'deltaF_F0' for full traces 
+                   % or 'deltaF_F0_aligned' for stimulus averaged traces in
+                   % each ROI
 % histogram fitting parameters, adapted from Mendonca 2022 Quantal_Analysis.m
 in.plot_fits = 1; % Plot histograms for all ROIs
 in.lw = 2;      % line width of the fit in plots
@@ -63,15 +66,18 @@ if isempty(in.data_dir)
     in.data_dir = fileparts(rec_names{1});    
 end
 ps = plotTrialSettings;
-ps.plot_func = '';
+ps.plot_func = in.plot_func;
 ps.roi_func_mode = 'separate';
 ps.funcs = {'mean','baseline','deltaF_F0'};
 ps.show_diff_image = in.show_diff_image; 
 ps.save_fig = in.save_figs; 
 ps.show_roi_labels = 1;
 ps.load_processed_data = in.load_processed_data;
-ps.transform_type = 'displace';
-ps.registration_rec = '3mABi_0.1mAG/3mABi_0.1mAG.fits';
+ps.transform_type = 'none';
+if exp_settings.num_stim > 0
+    ps.x_lim = [-exp_settings.convert2Time(exp_settings.stim_vals(1)),...
+                diff(exp_settings.convert2Time([exp_settings.stim_vals(1),exp_settings.stim_vals(end)]))]; 
+end
 Nrecs = length(rec_names); % number of recording files
 peaks_all = cell(1,Nrecs);
 peaks_rois_successes = cell(1,Nrecs);
