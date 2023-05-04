@@ -54,7 +54,7 @@ opts.dx = 0.001; % fit function x step
 opts.smooth_bs_dist = 1; % smooth bootstrapped peak distributions with 5 point moving average
 opts.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
 opts.n_G = 2; % number of Gaussians to attempt to fit
-
+opts.roi_func_fig_size = [33 24];
 [params_gaussian_all,peaks_rois_successes_all,Pr] = ...
                         estimateQuantalContentRecs(rec_names,roiset_files,...
                                                     exp_settings,opts);

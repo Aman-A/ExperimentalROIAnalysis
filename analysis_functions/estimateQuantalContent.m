@@ -156,8 +156,9 @@ for i = 1:num_rois
                                 estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y3,'k--','LineWidth',in.lw/1.5);
         end        
-
+        max_y = max(ycount_data);
         xlim(ax,[0 max_x]);
+        ylim(ax,[0 max_y]); 
         title(sprintf('ROI %g',i));
         if i > (Nrows-1)*Ncols
         xlabel(ax,'Amplitude')

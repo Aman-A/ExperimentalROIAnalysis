@@ -61,6 +61,7 @@ in.dx = 0.001; % fit function x step
 in.smooth_bs_dist = 1; % smooth bootstrapped peak distributions with 5 point moving average
 in.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
 in.n_G = 3;
+in.roi_func_fig_size = []; 
 in = sl.in.processVarargin(in,varargin);
 %% Load recordings
 if isempty(in.data_dir)
@@ -78,6 +79,9 @@ ps.transform_type = 'none';
 if exp_settings.num_stim > 0
     ps.x_lim = [-exp_settings.convert2Time(exp_settings.stim_vals(1)),...
                 diff(exp_settings.convert2Time([exp_settings.stim_vals(1),exp_settings.stim_vals(end)]))]; 
+end
+if ~isempty(in.roi_func_fig_size)
+    ps.roi_func_fig_size = in.roi_func_fig_size;
 end
 Nrecs = length(rec_names); % number of recording files
 peaks_all = cell(1,Nrecs);
