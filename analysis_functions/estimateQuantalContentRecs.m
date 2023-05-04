@@ -60,6 +60,7 @@ in.alpha_fit_dx = 0.005; % step size for test normalization values
 in.dx = 0.001; % fit function x step
 in.smooth_bs_dist = 1; % smooth bootstrapped peak distributions with 5 point moving average
 in.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
+in.n_G = 3;
 in = sl.in.processVarargin(in,varargin);
 %% Load recordings
 if isempty(in.data_dir)
@@ -144,5 +145,6 @@ opts.alpha_fit_dx = in.alpha_fit_dx;
 opts.dx = in.dx;
 opts.smooth_bs_dist = in.smooth_bs_dist;
 opts.include_sat_param = in.include_sat_param;
+opts.n_G = in.n_G;
 [params_gaussian_all] = estimateQuantalContent(peaks_rois_successes_all,deltaF_F0,opts); 
 end

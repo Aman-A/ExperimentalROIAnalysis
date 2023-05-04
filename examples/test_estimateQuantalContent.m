@@ -1,22 +1,23 @@
 %% Estimate quantal content on single experiment
 % Experiment should consist of 1 or multiple recordings from same set of
 % boutons
-data_dir = 'test_data/20220802_GluSnFR3_SynmRuby_dish3_350mM_sucrose';
+data_dir = '/Volumes/LM/project quantum bipolar/230411.2/GluSnFR evoked';
 % list of recording files, include extension if .tiff
-rec_names = {'350mM_sucrose.fits','350mM_sucrose_1.fits'};  
+% rec_names = {'GluSnFR3(2).tif','GluSnFR3(4).tif','GluSnFR3(6).tif'};  
+rec_names = {'GluSnFR3(2).tif'};
 
 % list of ROIset files (.zip if generated in ImageJ)
 % Should be in same directory as recording files
-roiset_files = {'RoiSet_auto_wash.mat','RoiSet_auto_wash.mat'}; 
+roiset_files = {'RoiSetEvoked.zip','RoiSetEvoked.zip','RoiSetEvoked.zip'}; 
 % Experiment/imaging settings
-sampling_rate = 200; % Hz
+sampling_rate = 50; % Hz
 % stimulus settings
 delay = 0; % delay of start of stimulus train (sec)
-freq = 0.5; % frequency of stimuli (Hz)
-dur = 41; % duration of stimulus train (sec)
-stim_times = defineStimTrain(0,0.5,41);  % check that number of stimuli match what you expect!
+freq = 2; % frequency of stimuli (Hz)
+dur = 26; % duration of stimulus train (sec)
+stim_times = defineStimTrain(delay,freq,dur);  % check that number of stimuli match what you expect!
 stim_wind = 0.2; % sec to analyze after each stim 
-baseline_wind = 0.05; % sec for baseline window 
+baseline_wind = 0.1; % sec for baseline window 
 units = 'sec'; % 'sec' or 'frames'
 exp_settings = ExperimentSettings(stim_times,stim_wind,baseline_wind,units,sampling_rate); %%
 %% Settings for histogram fitting function, estimateQuantalContentRecs
@@ -27,11 +28,11 @@ opts.plot_func = 'deltaF_F0'; % set to 'deltaF_F0' to plot full fluorescence tra
                               % averaged traces
                               % or '' or 'none' to skip
 
-opts.show_diff_image = [4]; % change to [4] to show mean deltaF image for each trial
+opts.show_diff_image = [4]; % change to [4] to show mean deltaF image for each trial, [0] to skip
 opts.load_processed_data = 1; % load if already processed data exists
 opts.save_processed_data = 1; % save processed data (extracted deltaF/F traces) 
                               % for faster analysis
-opts.save_figs = 0; % set to 1 to save figures
+opts.save_figs = 2; % set to 2 to save figures, 1 to just plot summary
 opts.std_threshold = 0; % threshold to consider peak success vs. failure, 
                       % defined as multiple of std of local baseline for
                       % each stimulus, i.e. peak > 4 x std(baseline) is
@@ -52,10 +53,16 @@ opts.alpha_fit_dx = 0.005; % step size for test normalization values
 opts.dx = 0.001; % fit function x step
 opts.smooth_bs_dist = 1; % smooth bootstrapped peak distributions with 5 point moving average
 opts.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
+opts.n_G = 2; % number of Gaussians to attempt to fit
 
 [params_gaussian_all,peaks_rois_successes_all,Pr] = ...
                         estimateQuantalContentRecs(rec_names,roiset_files,...
                                                     exp_settings,opts);
+if opts.save_figs
+    printFig(gcf,sprintf('figs_%s',roiset_files{1}),sprintf('hist_n%g',length(rec_names)))
+
+end
+
 %% Interpreting output
 % params_gaussian_all is a num_rois x 5 or 6 array of best fit parameters for
 % multigaussian function fit to the peaks from each roi

@@ -35,6 +35,7 @@ in.alpha_fit_dx = 0.01; % step size for test normalization values
 in.dx = 0.001; % fit function x step
 in.smooth_bs_dist = 0; % smooth bootstrapped peak distributions with 5 point moving average
 in.include_sat_param = 1; % include parameter for saturation of indicator at higher quanta
+in.n_G = 3; % # of Gaussians to fit
 in = sl.in.processVarargin(in,varargin);
 %% Get baseline variability
 std_all = std(deltaF_F0,0,1);
@@ -70,7 +71,7 @@ for i = 1:num_rois
     elseif length(peaks_roi) < in.Multi_Gauss_threshold
         n_G=1;
     else
-        n_G=3;
+        n_G=in.n_G;
     end
     % Bootstrap peaks
     peaks_roi_bs = bootstrapEvents(peaks_roi,in.N_bootstrap,noisei);
