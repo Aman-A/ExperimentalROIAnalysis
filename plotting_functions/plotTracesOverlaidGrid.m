@@ -41,6 +41,7 @@ in.leg_labels = '';
 in.colors = []; 
 in.mode = 1; % 1 - plot traces from conditions on same axes
              % 2 - plot traces from same condition on same axes
+in.indicator_dir = 1; % 1 = positive going, -1 = negative going             
 in = sl.in.processVarargin(in,varargin);
 % Format plotTracesOverlaid options
 topts = struct(); 
@@ -72,6 +73,16 @@ end
 [Nrows,Ncols] = getSubplotDimensions(Nax);
 Nt = trace_rows(1); % number of time points
 Nconds = length(traces_all); % number of conditions
+% Make ylabel
+if contains(in.plot_func,'deltaF_F0')
+    y_label = '\Delta F/F_{0}';
+    if contains(in.plot_func,'deltaF_F0_aligned')
+        y_label = ['Mean ' y_label];
+    end
+    if in.indicator_dir < 0
+        y_label = ['-' y_label];
+    end
+end
 %% Plot
 fig = figure('Units','normalized');
 fig.Position(1:2) = [0.01 0.01]; % place at bottom left corner
@@ -119,13 +130,7 @@ for i = 1:Nax
         xlabel(ax,'');
     end
     if (mod(i,Ncols) == 1 || Nax == 1) && isempty(in.x_sbar_len1)
-        if strcmp(in.plot_func,'deltaF_F0')
-            ylabel(ax,'\Delta F/F_{0}')
-        elseif regexp(in.plot_func,'deltaF_F0_aligned')
-            ylabel(ax,'Mean \Delta F/F_{0}')
-        else
-            ylabel(ax,in.plot_func);
-        end
+        ylabel(ax,y_label);
     else
         ylabel(ax,''); 
     end

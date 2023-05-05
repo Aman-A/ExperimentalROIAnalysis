@@ -34,6 +34,7 @@ in.align_to = 'none'; % 'none','max', or 'min'
 in.colors = lines(length(experiment_output.conditions));                       
 in.mode = 1; % 1 - plot traces from conditions on same axes
              % 2 - plot traces from same condition on same axes
+in.indicator_dir = 1; % 1 - positive going, -1 - negative going             
 in = sl.in.processVarargin(in,varargin);
 
 func_field = [plot_func '_all'];
@@ -46,7 +47,8 @@ if isfield(experiment_output,mean_func_field)
 else
 %     meanF = cellfun(@(x) mean(x,[2 4]),F,'UniformOutput',0); % mean across trials within condition/ROI
     meanF = cellfun(@(x) squeeze(mean(x,[2 4 5])),F,'UniformOutput',0); % mean across trials within condition/ROI
-end    
+end  
+meanF = cellfun(@(x) x*in.indicator_dir,meanF,'UniformOutput',0); % flip if negative going
 exp_settings = experiment_output.exp_settings(1);
 %% Pad ending of shorter traces with nans
 num_frames = cellfun(@(x) size(x,1),meanF,'UniformOutput',1);
@@ -120,4 +122,4 @@ plotTracesOverlaidGrid(t,meanF,[],'x_lim',in.x_lim,...
                       'fig_name',in.fig_name,'plot_func',plot_func,...
                       'leg_labels',experiment_output.conditions,...
                       'fig_units',in.fig_units,'fig_size',in.fig_size,...
-                      'colors',in.colors,'mode',in.mode);
+                      'colors',in.colors,'mode',in.mode,'indicator_dir',in.indicator_dir);
