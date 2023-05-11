@@ -93,17 +93,13 @@ deltaF_F0_all = out.deltaF_F0_all(cond_inds);
 deltaF_F0_aligned2 = out.deltaF_F0_aligned2_all(cond_inds); 
 rois = out.rois_all{1}{1};
 pixel_size = out.plot_settings.pixel_size; % um
-rois_xy = [rois.x,rois.y]*pixel_size; % convert to um
-center2center_dists = sqrt((rois_xy(:,1) - rois_xy(:,1)').^2 + ... 
-                            (rois_xy(:,2)-rois_xy(:,2)').^2);
-diag_inds = 1:size(center2center_dists,1) + 1:numel(center2center_dists); % indices of diagonal elements
-center2center_dists(diag_inds) = nan; 
+
 
 num_rois = rois.num_rois;
 % Mean traces within ROI, averaged within train across trials
-mean_dF_F0_rois = cellfun(@(x) squeeze(mean(x,[4 5],'omitnan')),deltaF_F0_aligned2,...
+mean_dF_F0_rois = cellfun(@(x) mean(x,[4 5],'omitnan'),deltaF_F0_aligned2,...
             'UniformOutput',0); % average across stim within trains and trials
-std_dF_F0_rois = cellfun(@(x) squeeze(std(x,0,[4 5],'omitnan')),deltaF_F0_aligned2,...
+std_dF_F0_rois = cellfun(@(x) std(x,0,[4 5],'omitnan'),deltaF_F0_aligned2,...
             'UniformOutput',0); % std across stim within trains and trials
 sem_dF_F0_rois = cellfun(@(x,y) x/sqrt(prod(size(y,[4,5]))),...
                             std_dF_F0_rois,deltaF_F0_aligned2,...
@@ -401,7 +397,7 @@ peaks_per_change_sem_rois = peaks_per_change_sem_rois(sort_rois,:);
 % normalized peaks to mean control
 mean_peaks_rois_norm = mean_peaks_rois_norm(sort_rois,:,:);
 sem_peaks_rois_norm = sem_peaks_rois_norm(sort_rois,:,:);
-rois_xy = rois_xy(sort_rois,:);
+
 %% Analyze ROI specific modulation
 % peaks : [num_trains x num_rois x num_stim x num_trials]
 if isempty(cols)
@@ -586,6 +582,12 @@ if any(in.plot_figs == 6)
 end
 %% Plot spatial distribution of percent modulation of peak at each intensity
 if any(in.plot_figs == 7)
+    rois_xy = [rois.x,rois.y]*pixel_size; % convert to um
+    rois_xy = rois_xy(sort_rois,:);
+    center2center_dists = sqrt((rois_xy(:,1) - rois_xy(:,1)').^2 + ...
+        (rois_xy(:,2)-rois_xy(:,2)').^2);    
+    diag_inds = 1:size(center2center_dists,1) + 1:numel(center2center_dists); % indices of diagonal elements
+    center2center_dists(diag_inds) = nan;
     fig = figure('Units','normalized');
     fig.Position = [0.001 0.03 in.fig_size];        
     if num_conditions == 8
