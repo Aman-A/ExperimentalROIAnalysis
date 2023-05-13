@@ -138,14 +138,14 @@ elseif strcmp(in.analyze_traces,'deltaF_F0_aligned2')
     analyze_aligned_traces = deltaF_F0_aligned2; 
     train_peak_baseline_mode = 2; 
 end
-if regexp(in.reporter,'Voltron')  
+if in.indicator_dir < 0
     analyze_aligned_traces = -analyze_aligned_traces; % negative going indicator
     fprintf('Flipping negative going indicator %s\n',in.reporter);
 end
 roiset_filename_no_ext = getROIset_name(roiset_filename{1},...
                                             in.transform_type,...
                                             in.registration_rec);  
-analysis_filename = sprintf('analysis_%s_%s_%g_trials',roiset_filename_no_ext,...
+analysis_filename = sprintf('analysis_%s_%s_%g_trials.mat',roiset_filename_no_ext,...
                             in.roi_func_mode,num_trials);
 if strcmp(in.roi_func_mode,'combine')    
     deltaF_F0 = trialsCell2Mat(deltaF_F0); % convert to matrix
