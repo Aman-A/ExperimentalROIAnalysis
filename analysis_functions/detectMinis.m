@@ -26,8 +26,8 @@ in.threshold = 4; % threshold for peak detection on filtered trace.
                   % baseline fluctations)
 in.snr_thresh = []; % throw out minis with mini SNR (peak/std(baseline)) < this number (based on raw F trace)
                     % skips this step if left empty
-in.min_mini_width = 0; % sec - minimum peak full width at half max, 
-in.min_peak_distance = 3*in.min_mini_width;
+in.mini_width_range = []; % sec - [min,max] of peak full width at half max, leave empty to skip
+in.min_peak_distance = 3/sampling_rate; % 3 frames by default
 in.width_ref = 'halfheight'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
 in.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract (default 0.4 sec)
 in.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract
@@ -49,7 +49,8 @@ in.deconv = 0;
 in.deconv_tau = 35e-3; % sec (~35 ms is mean decay time constant from my 
                        % evoked GluSnFR3 measurements)
 in.refilter_deconv = 1;     
-in.num_frames_skip_start_end = round(0.1*sampling_rate); % frames to remove from start/end due to filtering artifacts
+in.num_frames_skip_start = round(0.1*sampling_rate); % frames to remove from start/end due to filtering artifacts
+in.num_frames_skip_end = round(0.1*sampling_rate); % frames to remove from start/end due to filtering artifacts
 % in.offset_factor = 1.01; % how much to offset traces in plot
 in.offset_factor = []; 
 in.use_asls_baseline = 1; % set to 1 to use asymmetric least squares baseline detection
@@ -85,7 +86,7 @@ if in.deconv
     F_deconv = deconvSingleExp(F_filt2,sampling_rate,in.deconv_tau); 
     % normalize to max
     if isempty(in.stim_frames)
-        F_deconv = F_deconv ./max(F_deconv(in.num_frames_skip_start_end:end-in.num_frames_skip_start_end,:),[],1,'omitnan');
+        F_deconv = F_deconv ./max(F_deconv(in.num_frames_skip_start:end-in.num_frames_skip_end,:),[],1,'omitnan');
     else
         F_deconv = F_deconv./max(F_deconv(in.stim_frames(1):in.stim_frames(end),:),[],1,'omitnan'); 
     end
@@ -200,14 +201,16 @@ end
 nframes_back = in.nframes_back;
 nframes_forward = in.nframes_forward;         
 thresholds = in.threshold*sigmas; 
-min_mini_width = in.min_mini_width;     
+mini_width_range = in.mini_width_range;     
 min_peak_distance = in.min_peak_distance;
 width_ref = in.width_ref;
 est_rise_time_frames = in.est_rise_time_frames;
 F_findpks = F_blanked_filt;
-if in.num_frames_skip_start_end > 0
-    F_findpks(1:in.num_frames_skip_start_end,:) = nan;
-    F_findpks(end-in.num_frames_skip_start_end:end,:) = nan;
+if in.num_frames_skip_start > 0
+    F_findpks(1:in.num_frames_skip_start,:) = nan;    
+end
+if in.num_frames_skip_end > 0
+    F_findpks(end-in.num_frames_skip_end:end,:) = nan;
 end
 t_mini = (0:(nframes_back+nframes_forward))'/sampling_rate;
 t_mini = t_mini - t_mini(nframes_back+1);
@@ -227,7 +230,7 @@ for i = 1:num_rois
     if any(F_findpks(:,i) >= thresholds(i))
         [~,mini_framesi,peak_widthsi] = findpeaks(F_findpks(:,i),...
                                   'MinPeakHeight',thresholds(i),...
-                                  'MinPeakDistance',min_peak_distance*sampling_rate,... %'MinPeakWidth',1,... % 1 frame 'MinPeakWidth',min_mini_width*sampling_rate,                                  
+                                  'MinPeakDistance',min_peak_distance*sampling_rate,... 
                                   'WidthReference',width_ref,... % halfheight or halfprom
                                   'Annotate','extents');                                                 
         mini_framesi_filt = mini_framesi; 
@@ -306,8 +309,8 @@ for i = 1:num_rois
                         nframes_back+1 - in.find_pk_frame,0.5,0,...
                         nframes_back+1);%  Get FWHM
         end
-        if min_mini_width > 0                  
-            keep_minis2 = widthsi > min_mini_width; 
+        if ~isempty(mini_width_range)% keep minis with width within range
+            keep_minis2 = widthsi >= mini_width_range(1) & widthsi <= mini_width_range(2); 
             if in.print_level > 0 && any(~keep_minis2(keep_minis))
                 % Print number of minis excluded due to FWHM criteria that
                 % passed SNR criterion and total excluded
@@ -409,6 +412,7 @@ if in.plot_figs
     % Plot full time course with minis marked
     fig1 = figure('Units',fig_units,'Position',fig_pos);
     plot(x_full,F_rois_plot  + offset);
+    ax = gca;
     hold on; box off; axis tight;
     if num_rois_plot > 1
         doffset = (offset(1)-offset(2));
@@ -418,14 +422,15 @@ if in.plot_figs
     for i = 1:num_rois_plot
         ii = rois_plot_inds(i);
         if ~isempty(mini_frames_plot{ii})
-            plot(x_full(mini_frames_plot{ii}),offset(i)+doffset*0.5,'r*','MarkerSize',12)
+            plot(ax,x_full(mini_frames_plot{ii}),offset(i)+doffset*0.5,'r*','MarkerSize',12)
         end
     end
-    if in.num_frames_skip_start_end > 0
-        xlim([x_full(in.num_frames_skip_start_end),x_full(end-in.num_frames_skip_start_end)]);
-    else
-        xlim([x_full(1),x_full(end)]);
+    if in.num_frames_skip_start > 0
+        ax.XLim(1) = x_full(in.num_frames_skip_start); 
     end
+    if in.num_frames_skip_end > 0
+        ax.XLim(2) = x_full(end-in.num_frames_skip_end);
+    end    
     ax = gca;
     ax.YTick = fliplr(offset);
     ax.YTickLabel = fliplr(rois_plot_inds);

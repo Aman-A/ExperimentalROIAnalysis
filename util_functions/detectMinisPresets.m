@@ -30,7 +30,7 @@ switch preset_name
         settings.stim_frames = []; % ignore if no stim
         settings.blank_around_stim = []; % ignore if no stim
         settings.plot_filt_output_roi_index = 1; % plot example of filtering in this roi
-        settings.min_mini_width = 10e-3; % sec - minimum peak width, using findpeaks.m definition of width (default 'halfprom')
+        settings.mini_width_range = [10e-3 inf]; % sec - range of FWHM, 
         settings.min_peak_distance = 120e-3; % sec - min distance between mini peaks to allow
         settings.deconv = 1; % set to 1 to use deconvolution, may need to adjust threshold if turned off
         settings.apply_filter = 1;
@@ -55,7 +55,8 @@ switch preset_name
                                       % recordings, which can be measured after
                                       % detection below
         settings.find_pk_frame = 5; % number of frames around original peak to search in unfiltered traces (or 0 to use peak frame from filtered traces)
-        settings.num_frames_skip_start_end = 5; % frames to remove from start/end due to filtering artifacts
+        settings.num_frames_skip_start = 5; % frames to remove from start due to filtering artifacts
+        settings.num_frames_skip_end = 5; % frames to remove from end due to filtering artifacts
         settings.use_asls_baseline = 1;  % 1  to use asymmetric least squares baseline removal
                                          % 0 uses simple average of nframes_back
                                          % frames before each peak, may be less
@@ -80,7 +81,7 @@ switch preset_name
         settings.stim_frames = []; % ignore if no stim
         settings.blank_around_stim = 0.1*sampling_rate*[1,1]; % ignore if no stim
         settings.plot_filt_output_roi_index = 17; % plot example of filtering in this roi
-        settings.min_mini_width = 25e-3; % sec - minimum peak FWHM
+        settings.mini_width_range = [25e-3 inf]; % sec - mini FWHM range
         settings.min_peak_distance = 0.1; % sec - min distance between mini peaks to allow
         settings.deconv = 1; % set to 1 to use deconvolution, may need to adjust threshold if turned off
         settings.apply_filter = 1;
@@ -104,7 +105,8 @@ switch preset_name
                                       % decay time constant of minis in your
                                       % recordings, which can be measured after
                                       % detection below
-        settings.num_frames_skip_start_end = 160; % frames to remove from start/end due to filtering artifacts
+        settings.num_frames_skip_start = 160; % frames to remove from start/end due to filtering artifacts
+        settings.num_frames_skip_end = 160; % frames to remove from end due to filtering artifacts
         settings.use_asls_baseline = 1;  % 1  to use asymmetric least squares baseline removal
                                          % 0 uses simple average of nframes_back
                                          % frames before each peak, may be less
