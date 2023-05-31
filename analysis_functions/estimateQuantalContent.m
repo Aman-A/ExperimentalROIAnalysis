@@ -1,4 +1,4 @@
-function [params_gaussian_all,varargout] = estimateQuantalContent(peaks_rois,...
+function [params_gaussian_all,rsq_adj_all,varargout] = estimateQuantalContent(peaks_rois,...
                                                                 deltaF_F0,varargin)
 %ESTIMATEQUANTALCONTENT Fit peak histogram of single boutons to multiguassian 
 % function to estimate amplitude of single vesicle release events
@@ -58,13 +58,14 @@ else
     num_params = 5; 
 end
 params_gaussian_all = zeros(num_rois,num_params);
+rsq_adj_all = zeros(num_rois,1);
 for i = 1:num_rois
     roi_tracei = deltaF_F0(:,i); % use last recording (temporary)
     peaks_roi = peaks_rois{i};
 %     peaks_roi = mini_out.mini_peaks_deltaF_F{i}; 
     std_tracei = std_all(i);
-    sigmai = gauss_fit_params(3,i);
-    noisei = in.alpha*sigmai;          
+    sigmai_sig = gauss_fit_params(3,i);
+    noisei = in.alpha*sigmai_sig;          
     if length(peaks_roi) <= 5
         fprintf('Only %g events in ROI %g, skipping...\n',length(peaks_roi),i)
         continue;
@@ -84,82 +85,104 @@ for i = 1:num_rois
     end
     bins_bs = [bins_bs(1),bins_bs(end)]; 
     bins_bs = linspace(bins_bs(1),bins_bs(2),length(ycount_bs))'; 
-    [pk_y,pk_x] = findpeaks(ycount_bs,bins_bs); % peaks
+    [pk_y,pk_x] = findpeaks(ycount_bs,bins_bs,'MinPeakProminence',n_G,'NPeaks',n_G); % peaks
     % Fit to multigaussian distribution
     max_ycount_bs = pk_y(1); 
-    loc_max_ycount_bs = pk_x(1); 
-    param0 = [max_ycount_bs(1);
+    loc_max_ycount_bs = pk_x(1);     
+    estim_noise = sigmai_sig;
+    if n_G == 1
+        param0 = [max_ycount_bs(1);                
+                loc_max_ycount_bs;
+                0.1];
+        fit_func = @SingleGaussian;
+    else
+        param0 = [max_ycount_bs(1);
                 max_ycount_bs(1)/2;
                 max_ycount_bs(1)/4;
                 loc_max_ycount_bs;
                 0.1];
-    estim_noise = sigmai;
-    if in.include_sat_param
-        param0 = [param0; 1];
-        fit_func = @Multimodal_GaussianSat;        
-    else
-        fit_func = @Multimodal_Gaussian;        
+        if in.include_sat_param
+            param0 = [param0; 1];
+            fit_func = @Multimodal_GaussianSat;        
+        else
+            fit_func = @Multimodal_Gaussian;        
+        end
     end
     opts = struct(); 
-    opts.MaxIter = 200; 
-    param_multimodal_bs = nlinfit(bins_bs,ycount_bs,fit_func,param0,opts);
-    params_gaussian_all(i,:) = param_multimodal_bs;
+    opts.MaxIter = 200;     
+    [param_multimodal_bs ,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(bins_bs,ycount_bs,fit_func,param0,opts);
+    rsq_adj_all(i) = calcAdjustedRsq(ycount_bs,...
+                                    fit_func(param_multimodal_bs,bins_bs),...
+                                    param_multimodal_bs);
+    params_gaussian_all(i,1:length(param_multimodal_bs)) = param_multimodal_bs;
 %     xbin_new = linspace(0,1.5*max(bins_bs),200);   
 %     distrib_fit = Multimodal_Gaussian(param_multimodal_bs,xbin_new);
     if in.plot_fits
         % Plot
         max_x = max(peaks_roi);
         edges = 0:binsize:max_x;        
-        ax = subplot_tight(Nrows,Ncols,i);
-        h = histogram(peaks_roi,edges,'FaceColor',0.6*[1 1 1],'LineStyle','none');
-        hold on;
+        ax = subplot_tight(Nrows,Ncols,i,[0.08, 0.04]);
+%         ax = subplot(Nrows,Ncols,i);
+        h = histogram(ax,peaks_roi,edges,'FaceColor',0.6*[1 1 1],'LineStyle','none');
+        hold(ax,'on');
         bins_limits=h.BinLimits;
         ycount_data=h.Values;
-        x_bins = linspace(bins_limits(1),bins_limits(2),length(ycount_data)); % on average in the middle of the bin but not exactly
-        ycount_GP = fit_func(param_multimodal_bs,x_bins);
-        alpha_fit=1:in.alpha_fit_dx:10000;                
-        % Perform numerical fitting - best match for non-zero elements of the real histogram
-        Fit_error=zeros(size(alpha_fit));
-        Idx_non_zero=find(ycount_data>0);
-        % normalize using point with minimum error between fit and bootstrapped data
-        for k=1:length(alpha_fit) 
-            Fit_error(k)=sum((ycount_GP(Idx_non_zero)/alpha_fit(k)-ycount_data(Idx_non_zero)).^2);
-        end
-        [~,index_alpha]=min(Fit_error);
-        norm1=alpha_fit(index_alpha); 
+%         x_bins = linspace(bins_limits(1),bins_limits(2),length(ycount_data)); % on average in the middle of the bin but not exactly
+%         ycount_GP = fit_func(param_multimodal_bs,x_bins);
+%         alpha_fit=1:in.alpha_fit_dx:10000;                
+%         % Perform numerical fitting - best match for non-zero elements of the real histogram
+%         Fit_error=zeros(size(alpha_fit));
+%         Idx_non_zero=find(ycount_data>0);
+%         % normalize using point with minimum error between fit and bootstrapped data
+%         for k=1:length(alpha_fit) 
+%             Fit_error(k)=sum((ycount_GP(Idx_non_zero)/alpha_fit(k)-ycount_data(Idx_non_zero)).^2);
+%         end
+%         [~,index_alpha]=min(Fit_error);
+%         norm1=alpha_fit(index_alpha);         
         x=0:in.dx:max(peaks_roi);
-        y0 = fit_func(param_multimodal_bs,x);
-        y0 = y0/norm1; 
-        plot(ax,x,y0,'k','LineWidth',in.lw);
-        hold(ax,'on');
         A1i = param_multimodal_bs(1); 
-        A2i = param_multimodal_bs(2);
-        A3i = param_multimodal_bs(3);        
-        mui = param_multimodal_bs(4); 
-        sigmai = param_multimodal_bs(5);
+        % [amplitude; mean; st dev]         
+        if n_G > 1
+            mui = param_multimodal_bs(4); 
+            sigmai = param_multimodal_bs(5);
+            y0 = fit_func(param_multimodal_bs,x);            
+            y0 = y0/norm1; 
+        else
+            mui = param_multimodal_bs(2); 
+            sigmai = param_multimodal_bs(3);
+            y0 = SingleGaussian([abs(A1i),abs(mui),sigmai^2],x);
+            norm1 = max(y0)/max(ycount_data);
+            y0 = y0/norm1; 
+        end        
+        plot(ax,x,y0,'k','LineWidth',in.lw);                
         if in.include_sat_param
             sati = param_multimodal_bs(6);
         else
             sati = 1; 
         end
-        % [amplitude; mean; st dev] 
-        if n_G >= 1
+                
+        if n_G >= 2
+            % Plot 1st including noise component
             y1 = SingleGaussian([abs(A1i),abs(mui),estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y1,'k--','LineWidth',in.lw/1.5);
-        end
-        if n_G >= 2
+            % Plot 2nd
+            A2i = param_multimodal_bs(2);
+            mui = param_multimodal_bs(4); 
+            sigmai = param_multimodal_bs(5);
             y2 = SingleGaussian([abs(A2i),abs(mui)+sati*abs(mui),estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y2,'k--','LineWidth',in.lw/1.5);
         end
         if n_G >= 3
+            % Plot 3rd
+            A3i = param_multimodal_bs(3);                   
             y3 = SingleGaussian([abs(A3i),abs(mui)+sati*abs(mui)+sati^2*abs(mui),...
                                 estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y3,'k--','LineWidth',in.lw/1.5);
         end        
         max_y = max(ycount_data);
-        xlim(ax,[0 max_x]);
-        ylim(ax,[0 max_y]); 
-        title(sprintf('ROI %g',i));
+        xlim(ax,[0 max_x]);        
+%         ylim(ax,[0 max_y]*1.1); 
+        title(sprintf('%g: \\mu = %.2f, \\sigma = %.2f, CV = %.1f %%',i,mui,sigmai,100*sigmai/mui));
         if i > (Nrows-1)*Ncols
         xlabel(ax,'Amplitude')
         end

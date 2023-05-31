@@ -344,6 +344,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
         
         function plot(obj,col,ax,plot_current,show_labels,num_pts,lw,text_size) 
             % plot current ROIs to axis ax with num_pts points in each curve
+            % TODO: USE VARARGIN, PARSE INPUT ARGUMENTS
             if nargin < 8 
                 text_size = 12; 
             end

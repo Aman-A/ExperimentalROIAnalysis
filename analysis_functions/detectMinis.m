@@ -193,7 +193,7 @@ if in.plot_filt_output_roi_index > 0 && in.plot_figs
     sgtitle(sprintf('%s: ROI %g',in.trial_name,ii),'Interpreter','none');
     if save_figs
         printFig(fig,fig_dir,[fig_basename '_filt_output_roi' num2str(ii)],...
-            'formats','png','resolutions','-r300');        
+            'formats',{'fig','png'},'resolutions',{'','-r300'});        
     end
 end
 %% Peak detection
@@ -438,7 +438,7 @@ if in.plot_figs
     title(in.trial_name,'Interpreter','none')
     if save_figs
         printFig(fig1,fig_dir,[fig_basename '_filtF_w_minis'],...
-            'formats','png','resolutions','-r300');        
+            'formats',{'fig','png'},'resolutions',{'','-r300'});        
     end
     % Plot minis within each ROI overlaid
     if num_rois_w_mini > 0
@@ -452,7 +452,7 @@ if in.plot_figs
                                     'title',in.trial_name);        
         if save_figs
             printFig(fig2,fig_dir,[fig_basename '_minis_overlaid'],...
-                'formats','png','resolutions','-r300');
+                'formats',{'fig','png'},'resolutions',{'','-r300'});
         end
     end
 end
