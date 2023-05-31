@@ -146,6 +146,7 @@ for i = 1:num_rois
             mui = param_multimodal_bs(4); 
             sigmai = param_multimodal_bs(5);
             y0 = fit_func(param_multimodal_bs,x);            
+            norm1 = max(y0)/max(ycount_data);
             y0 = y0/norm1; 
         else
             mui = param_multimodal_bs(2); 
