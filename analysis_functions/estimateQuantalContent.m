@@ -147,24 +147,24 @@ for i = 1:num_rois
 %         [~,index_alpha]=min(Fit_error);
 %         norm1=alpha_fit(index_alpha);
 
-        x=0:in.dx:max(peaks_roi)*1.5; 
+        x=0:in.dx:max(peaks_roi)*1.02; 
 %         x=0:in.dx:0.5; 
         A1i = param_multimodal_bs(1); 
         % [amplitude; mean; st dev]         
         if n_G > 1
             mui = param_multimodal_bs(4); 
             sigmai = param_multimodal_bs(5);
-%             y0 = fit_func(param_multimodal_bs,x);            
-%             norm1 = max(y0)/max(ycount_data);
-%             y0 = y0/norm1; 
+            y0 = fit_func(param_multimodal_bs,x);            
+            norm1 = max(y0)/max(ycount_data);
+            y0 = y0/norm1; 
         else
             mui = param_multimodal_bs(2); 
-            sigmai = param_multimodal_bs(3);            
-        end       
-        % Plot first gaussian
-        y0 = SingleGaussian([abs(A1i),abs(mui),sigmai],x);
-        norm1 = max(y0)/max(ycount_data);
-        y0 = y0/norm1; 
+            sigmai = param_multimodal_bs(3);  
+            % Plot first gaussian
+            y0 = SingleGaussian([abs(A1i),abs(mui),sigmai],x);
+            norm1 = max(y0)/max(ycount_data);
+            y0 = y0/norm1; 
+        end               
         plot(ax,x,y0,'k','LineWidth',in.lw);                
         % higher modes
         if in.include_sat_param
