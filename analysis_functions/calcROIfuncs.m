@@ -41,6 +41,7 @@ function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
 in.print_level = 1;
 in.rem_pbleach = 0;
 in.rem_pbleach_method = 1; % 1 - Cohen method, smooths based on min value every interp_interval
+in.rem_pbleach_skip_initial_frames = 3; % remove frames before photobleach correction
 in.align_use_train_baseline = 1; % if num_trains > 1, in addition to 
                                  % aligning traces to trains, calcROIfuncs 
                                  % also aligns to individual stimuli. 
@@ -145,7 +146,7 @@ if in.rem_pbleach
     [mean_pb,pbleach] = removePhotoBleach(output.mean,... % also removes initial transient
                                          'method',in.rem_pbleach_method,...
                                          'interp_interval',interp_interval,...
-                                         'skip_initial_frames',3);    
+                                         'skip_initial_frames',in.rem_pbleach_skip_initial_frames);    
     output.mean_raw = output.mean; 
     output.mean = mean_pb; % replace mean with photobleach corrected values
     output.pbleach = pbleach; 

@@ -83,6 +83,7 @@ end
 if ~isempty(in.roi_func_fig_size)
     ps.roi_func_fig_size = in.roi_func_fig_size;
 end
+ps.offset_factor = 0.4;     
 Nrecs = length(rec_names); % number of recording files
 peaks_all = cell(1,Nrecs);
 peaks_rois_successes = cell(1,Nrecs);
@@ -94,10 +95,12 @@ if length(exp_settings) == 1
     exp_settings = repmat(exp_settings,1,Nrecs);
 end
 assert(length(exp_settings) == Nrecs,'Number of ExperimentSettings objects should be 1 or %g',Nrecs)
+data_all = cell(Nrecs,1);
 for i = 1:Nrecs
     reci = Recording(fullfile(in.data_dir,rec_names{i}));
 %     roisi = ROIs(fullfile(in.data_dir,roiset_files{i}));
     datai = plotTrial(reci,exp_settings(i),fullfile(in.data_dir,roiset_files{i}),[],ps);
+    data_all{i} = datai; 
     roisi = datai.rois; 
     analysis_out = analyzeStimAlignedTraces(datai.func_output.deltaF_F0_aligned,exp_settings(i),...
                                         'funcs',{'peaks'},...

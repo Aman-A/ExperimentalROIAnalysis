@@ -43,7 +43,7 @@ num_rois = length(peaks_rois);
 gauss_fit_params = zeros(3,num_rois); % 3 parameters
 % [amplitude; mean; st dev] 
 for i = 1:num_rois
-    gauss_fit_params(:,i) = fitHistSingleGaussian(deltaF_F0(:,i),10); % 10 bins per std    
+    [gauss_fit_params(:,i)] = fitHistSingleGaussian(deltaF_F0(:,i),in.num_bins_per_std_B); % 10 bins per std    
 end
 %%
 fprintf('Fitting multigaussian to ROI peaks...\n')
@@ -93,7 +93,7 @@ for i = 1:num_rois
     if n_G == 1
         param0 = [max_ycount_bs(1);                
                 loc_max_ycount_bs;
-                0.1];
+                sigmai_sig];
         fit_func = @SingleGaussian;
     else
         param0 = [max_ycount_bs(1);
@@ -110,23 +110,30 @@ for i = 1:num_rois
     end
     opts = struct(); 
     opts.MaxIter = 200;     
-    [param_multimodal_bs ,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(bins_bs,ycount_bs,fit_func,param0,opts);
+    [param_multimodal_bs ,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(bins_bs,...
+                                            ycount_bs,fit_func,param0,opts);
     rsq_adj_all(i) = calcAdjustedRsq(ycount_bs,...
                                     fit_func(param_multimodal_bs,bins_bs),...
                                     param_multimodal_bs);
-    params_gaussian_all(i,1:length(param_multimodal_bs)) = param_multimodal_bs;
+
 %     xbin_new = linspace(0,1.5*max(bins_bs),200);   
 %     distrib_fit = Multimodal_Gaussian(param_multimodal_bs,xbin_new);
+%     pd = fitdist(peaks_roi_bs,'Normal');
+%     param_multimodal_bs = [1, pd.mu,pd.sigma];
+
+    params_gaussian_all(i,1:length(param_multimodal_bs)) = param_multimodal_bs;    
     if in.plot_fits
         % Plot
         max_x = max(peaks_roi);
-        edges = 0:binsize:max_x;        
-        ax = subplot_tight(Nrows,Ncols,i,[0.08, 0.04]);
+        edges = 0:binsize:(max_x+binsize);        
+        ax = subplot_tight(Nrows,Ncols,i,[0.08, 0.06]);
 %         ax = subplot(Nrows,Ncols,i);
         h = histogram(ax,peaks_roi,edges,'FaceColor',0.6*[1 1 1],'LineStyle','none');
-        hold(ax,'on');
-        bins_limits=h.BinLimits;
-        ycount_data=h.Values;
+        hold(ax,'on');        
+        ycount_data=h.Values;        
+
+        % Find normalization factor
+%         bins_limits=h.BinLimits;
 %         x_bins = linspace(bins_limits(1),bins_limits(2),length(ycount_data)); % on average in the middle of the bin but not exactly
 %         ycount_GP = fit_func(param_multimodal_bs,x_bins);
 %         alpha_fit=1:in.alpha_fit_dx:10000;                
@@ -138,24 +145,28 @@ for i = 1:num_rois
 %             Fit_error(k)=sum((ycount_GP(Idx_non_zero)/alpha_fit(k)-ycount_data(Idx_non_zero)).^2);
 %         end
 %         [~,index_alpha]=min(Fit_error);
-%         norm1=alpha_fit(index_alpha);         
-        x=0:in.dx:max(peaks_roi);
+%         norm1=alpha_fit(index_alpha);
+
+        x=0:in.dx:max(peaks_roi)*1.5; 
+%         x=0:in.dx:0.5; 
         A1i = param_multimodal_bs(1); 
         % [amplitude; mean; st dev]         
         if n_G > 1
             mui = param_multimodal_bs(4); 
             sigmai = param_multimodal_bs(5);
-            y0 = fit_func(param_multimodal_bs,x);            
-            norm1 = max(y0)/max(ycount_data);
-            y0 = y0/norm1; 
+%             y0 = fit_func(param_multimodal_bs,x);            
+%             norm1 = max(y0)/max(ycount_data);
+%             y0 = y0/norm1; 
         else
             mui = param_multimodal_bs(2); 
-            sigmai = param_multimodal_bs(3);
-            y0 = SingleGaussian([abs(A1i),abs(mui),sigmai^2],x);
-            norm1 = max(y0)/max(ycount_data);
-            y0 = y0/norm1; 
-        end        
+            sigmai = param_multimodal_bs(3);            
+        end       
+        % Plot first gaussian
+        y0 = SingleGaussian([abs(A1i),abs(mui),sigmai],x);
+        norm1 = max(y0)/max(ycount_data);
+        y0 = y0/norm1; 
         plot(ax,x,y0,'k','LineWidth',in.lw);                
+        % higher modes
         if in.include_sat_param
             sati = param_multimodal_bs(6);
         else
@@ -164,26 +175,28 @@ for i = 1:num_rois
                 
         if n_G >= 2
             % Plot 1st including noise component
-            y1 = SingleGaussian([abs(A1i),abs(mui),estim_noise^2+sigmai^2],x)/norm1; 
+            y1 = SingleGaussianNoSquare([abs(A1i),abs(mui),estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y1,'k--','LineWidth',in.lw/1.5);
             % Plot 2nd
             A2i = param_multimodal_bs(2);
             mui = param_multimodal_bs(4); 
             sigmai = param_multimodal_bs(5);
-            y2 = SingleGaussian([abs(A2i),abs(mui)+sati*abs(mui),estim_noise^2+sigmai^2],x)/norm1; 
+            y2 = SingleGaussianNoSquare([abs(A2i),abs(mui)+sati*abs(mui),estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y2,'k--','LineWidth',in.lw/1.5);
         end
         if n_G >= 3
             % Plot 3rd
             A3i = param_multimodal_bs(3);                   
-            y3 = SingleGaussian([abs(A3i),abs(mui)+sati*abs(mui)+sati^2*abs(mui),...
+            y3 = SingleGaussianNoSquare([abs(A3i),abs(mui)+sati*abs(mui)+sati^2*abs(mui),...
                                 estim_noise^2+sigmai^2],x)/norm1; 
             plot(x,y3,'k--','LineWidth',in.lw/1.5);
         end        
-        max_y = max(ycount_data);
-        xlim(ax,[0 max_x]);        
+%         max_y = max(ycount_data);
+%         xlim(ax,[0 max(max_x,max(x))]);
+%         xlim(ax,[0 max_x]);        
 %         ylim(ax,[0 max_y]*1.1); 
-        title(sprintf('%g: \\mu = %.2f, \\sigma = %.2f, CV = %.1f %%',i,mui,sigmai,100*sigmai/mui));
+        title(sprintf('%g: \\mu = %.2f, \\sigma = %.2f, CV = %.1f %%',...
+                i,mui,sigmai,100*sigmai/mui),'FontSize',10);
         if i > (Nrows-1)*Ncols
         xlabel(ax,'Amplitude')
         end
@@ -196,6 +209,9 @@ if in.plot_fits
 end
 %% Single Gaussian function
     function y = SingleGaussian(params,x) % [amplitude; mean; st dev]
+        y=params(1).*exp(-(x-params(2)).^2/(2*params(3)^2));
+    end
+    function y = SingleGaussianNoSquare(params,x) % [amplitude; mean; st dev]
         y=params(1).*exp(-(x-params(2)).^2/(2*params(3)));
     end
 %% Multimodal Gaussian function
@@ -226,10 +242,14 @@ end
                     adj_factor = 1; 
 %                     adj_factor = (A1>=0)*(A2>=0)*(A3>=0)*(A1>A3); % adjustment factor to help fit
             end
-            y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
-                abs(A2).*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
-                abs(A3).*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
+            y = (A1.*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+                A2.*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+                A3.*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
                 *adj_factor;    
+%             y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+%                 abs(A2).*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+%                 abs(A3).*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
+%                 *adj_factor;    
     end
 % with saturation factor
     function y = Multimodal_GaussianSat(param,x) 
@@ -263,9 +283,13 @@ end
                 adj_factor = (sat>=0.5)*(sat<=1.1)*(A1>=0)*(A2>=0)*(A3>=0)*(A1>A3); % adjustment factor to help fit
         
         end
-        y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
-            abs(A2).*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
-            abs(A3).*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
-            *adj_factor;        
+         y = (A1.*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
+            A2.*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
+            A3.*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
+            *adj_factor;  
+%         y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
+%             abs(A2).*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
+%             abs(A3).*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
+%             *adj_factor;        
     end 
 end

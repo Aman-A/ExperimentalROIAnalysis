@@ -206,7 +206,7 @@ elseif regexp(func_name,'aligned','ONCE')
 elseif strcmp(func_name,'mean')
     ylabel_str = 'mean F (a.u.)';
 else
-   ylabel_str = func_name; 
+   ylabel_str = strrep(func_name,'_',' '); 
 end
 if y_flipped
     ylabel_str = ['- ' ylabel_str];
