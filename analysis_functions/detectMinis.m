@@ -390,8 +390,8 @@ end
 mini_peaks_deltaF_F_lin = cell2mat(mini_peaks_deltaF_F'); % col vector
 mini_peaks_F_filt_lin = cell2mat(mini_peaks_F_filt'); % col vector
 output = struct();
-output.t = 0:(1/sampling_rate):(size(F,1)/sampling_rate - 1/sampling_rate); 
-output.ta = (-nframes_back:nframes_forward)/sampling_rate; 
+output.t = (0:(1/sampling_rate):(size(F,1)/sampling_rate - 1/sampling_rate))'; 
+output.ta = (-nframes_back:nframes_forward)'/sampling_rate; 
 output.F = F; % Original raw traces
 output.F_filt = F_filt; % Output of all filters (bandpass + smoothing + deconv)
 output.F_filt1 = F_filt1; % Output of 1st filter (bandpass)
