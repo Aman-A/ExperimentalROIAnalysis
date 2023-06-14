@@ -18,6 +18,9 @@ in.img_stack_name = 'diffimage_stack';
 in.img_names_all = cell(size(trial_folders)); 
 in.save_sep_images = 0;
 in.sep_images_dir = 'stack';
+in.peak_mode = 'max';
+in.filt_width = 0; 
+in.indicator_dir = 1; 
 in = sl.in.processVarargin(in,varargin); 
 % Format Experiment Settings
 if length(exp_settings) == 1
@@ -49,7 +52,8 @@ full_path_to_img1 = fullfile(trial_folders{1},img_name1);
 rec1 = Recording(full_path_to_img1); rec1.load();
 assert(sum(in.include_plots > 0)  == 1,...
         'include_plots should include single plot to output')
-[img_struct,~] = diffImage(rec1,exp_settings(1),in.include_plots);
+[img_struct,~] = diffImage(rec1,exp_settings(1),in.include_plots,'peak_mode',in.peak_mode,...
+                         'filt_width',in.filt_width,'indicator_dir',in.indicator_dir);
 img_fields = fieldnames(img_struct); 
 img_field = img_fields{end}; % skip bsline_img if include_plots = 3 or 4
 img1 = img_struct.(img_field); 

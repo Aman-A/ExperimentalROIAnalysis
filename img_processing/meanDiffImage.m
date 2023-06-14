@@ -37,7 +37,7 @@ if ischar(peak_mode)
                 peakj = max(vals(:,:,stim_frames(i,j):(stim_frames(i,j)+stim_wind)),[],3); % max at each pixel for stim j within train
                 bslinej = mean(vals(:,:,(stim_frames(i,j)-baseline_wind):(stim_frames(i,j)-1)),3); % mean at each pixel
                 mean_diffi = mean_diffi + peakj - bslinej;
-            %     mean_diff = mean_diff + (peaki - bslinei)./bslinei;
+%                 mean_diff = mean_diff + (peakj - bslinej)./bslinej;
             end
             mean_diffi = mean_diffi/num_stim; % average across stimuli within train
             mean_diff = mean_diff + mean_diffi;
