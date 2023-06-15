@@ -121,7 +121,7 @@ if isempty(preset_name)
                              % (based on raw F trace). Set to 0 to skip this. 
     settings.nframes_back = round(0.15*sampling_rate); % number of frames before each mini peak to extract
     settings.nframes_forward = round(0.25*sampling_rate); % number of frames after each mini peak to extract
-    settings.min_mini_width = 1/sampling_rate; % sec - minimum peak width, 
+    settings.mini_width_range = [1/sampling_rate inf]; % sec - minimum peak width, 
                                                 % using findpeaks.m definition of width (default 'halfprom')
     settings.min_peak_distance = 0.1; % sec - min distance between mini peaks to allow
     % Filtering
@@ -134,7 +134,7 @@ if isempty(preset_name)
                                     % usually not needed, especially if using
                                     % lower sampling rate, b/c it can cause
                                     % smooth out peaks too much
-    settings.fc = [0.5]; % Hz - highpass filter cutoff frequences, gets rid 
+    settings.fc = [0.5 30]; % Hz - highpass filter cutoff frequences, gets rid 
                          % of baseline fluctuations
     settings.deconv_tau = 45e-3; % ms decay time constant for deconvolution. 
                                   % Uses single exponential decay with this
@@ -147,7 +147,8 @@ if isempty(preset_name)
     settings.stim_frames = exp_settings.stim_vals; % ignore if no stim
     settings.blank_around_stim = [exp_settings.baseline_wind,round(exp_settings.stim_wind/2)]; % ignore if no stim
     settings.find_pk_frame = round(0.025*exp_settings.sampling_rate);% look 25 ms around peak from filtered F in raw F to get actual peak time                              
-    settings.num_frames_skip_start_end = round(0.8*exp_settings.sampling_rate); % frames to remove from start/end due to filtering artifacts
+    settings.num_frames_skip_start = round(0.8*exp_settings.sampling_rate); % frames to remove from start due to filtering artifacts
+    settings.num_frames_skip_end = round(0.8*exp_settings.sampling_rate); % frames to remove from end due to filtering artifacts
     settings.use_asls_baseline = 1;  % 1  to use asymmetric least squares baseline removal
                                      % 0 uses simple average of nframes_back
                                      % frames before each peak, may be less
@@ -156,7 +157,7 @@ if isempty(preset_name)
     settings.asls_smoothness = 1000; % smoothness param for asymmetric least squares (see asLS_baseline.m for description)
     settings.asls_asym = 0.4; % asymmetry parameter for asymmetric least squares
     % plotting and file saving
-    settings.plot_filt_output_roi_index = 1; % plot example of filtering in this roi
+    settings.plot_filt_output_roi_index = 3; % plot example of filtering in this roi
     settings.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
     settings.save_figs = save_figs; % 1 to save figures, 0 to skip
     settings.save_figs_dir = fullfile(rec.filedir,'mini_analysis'); % save figures to this directory (saves to current directory if empty)

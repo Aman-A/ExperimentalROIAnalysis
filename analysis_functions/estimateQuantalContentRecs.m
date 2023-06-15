@@ -1,4 +1,5 @@
-function [params_gaussian_all,peaks_rois_successes_all,Pr] = estimateQuantalContentRecs(rec_names,roiset_files,...
+function [params_gaussian_all,peaks_rois_successes_all,Pr,peaks_all,data_all,successes_all] = ...
+                            estimateQuantalContentRecs(rec_names,roiset_files,...
                                                         exp_settings,varargin)
 %ESTIMATEQUANTALCONTENTRECS(rec_names,roiset_files,exp_settings,varargin) 
 % Fit peak histogram of single boutons to multiguassian 
@@ -38,6 +39,7 @@ in.show_diff_image = [];
 in.load_processed_data = 1; 
 in.save_processed_data = 0; 
 in.save_figs = 0; 
+in.amp_threshold = 0; % threshold for raw deltaF/F0 amplitude to consider successful release
 in.std_threshold = 3.5; % threshold to consider peak success vs. failure, 
                       % defined as multiple of std of local baseline for
                       % each stimulus, i.e. peak > 4 x std(baseline) is
@@ -62,6 +64,7 @@ in.smooth_bs_dist = 1; % smooth bootstrapped peak distributions with 5 point mov
 in.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
 in.n_G = 3;
 in.roi_func_fig_size = []; 
+in.use_prestim_baseline = 0; % use baseline window before stimuli to calculate STD for each ROI
 in = sl.in.processVarargin(in,varargin);
 %% Load recordings
 if isempty(in.data_dir)
@@ -106,8 +109,9 @@ for i = 1:Nrecs
                                         'funcs',{'peaks'},...
                                         'save_analysis',0,'load',0);
     peaksi = analysis_out.peaks; 
-    std_baselinesi = squeeze(std(datai.func_output.deltaF_F0_aligned(1:exp_settings(i).baseline_wind,:,:),0,1));
-    successesi = peaksi > in.std_threshold.*std_baselinesi; 
+    std_baselinesi = squeeze(std(datai.func_output.deltaF_F0_aligned(1:exp_settings(i).baseline_wind,:,:),0,1));    
+    successesi = peaksi > in.amp_threshold;
+    successesi = successesi & peaksi > in.std_threshold.*std_baselinesi; 
     peaks_all{i} = peaksi;
     % Extract successful peaks within each ROI (remove failures)
     peaks_rois_successes{i} = cell(roisi.num_rois,1);
@@ -122,7 +126,8 @@ for i = 1:Nrecs
                                          exp_settings(i).baseline_wind+1,0.5,0);
             end
             successesij = successesij & widthsij > in.min_width(1) & widthsij < in.min_width(2);
-        end        
+        end       
+        successesi(j,:) = successesij; 
         peaks_rois_successes{i}{j} = peaksi(j,successesij);
     end    
     successes_all{i} = successesi; 
@@ -153,5 +158,14 @@ opts.dx = in.dx;
 opts.smooth_bs_dist = in.smooth_bs_dist;
 opts.include_sat_param = in.include_sat_param;
 opts.n_G = in.n_G;
+if in.use_prestim_baseline
+    bsline_std_rois = nan(1,size(deltaF_F0,2));
+    % Use baseline variability from last trial
+    for i = 1:length(bsline_std_rois)
+        F_roi = squeeze(datai.func_output.deltaF_F0_aligned(:,i,:));
+        bsline_std_rois(i) = std(F_roi(1:exp_settings(end).baseline_wind,:),0,'all','omitnan');
+    end
+    opts.bsline_std_rois = bsline_std_rois; 
+end
 [params_gaussian_all] = estimateQuantalContent(peaks_rois_successes_all,deltaF_F0,opts); 
 end

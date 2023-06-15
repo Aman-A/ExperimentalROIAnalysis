@@ -11,7 +11,7 @@ function saveMiniOutput(mini_output,rec,rois,exp_settings,varargin)
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-in.mini_output_folder = fullfile(rec.filedir,'mini_analysis'); % default save to folder recording is in
+in.mini_output_folder = fullfile(rec.filedir,sprintf('mini_analysis_%s',rois.roiset_filename)); % default save to folder recording is in
 in = sl.in.processVarargin(in,varargin);
 rec_name = rec.img_name; 
 

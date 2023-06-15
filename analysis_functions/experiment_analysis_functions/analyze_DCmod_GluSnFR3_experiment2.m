@@ -40,6 +40,7 @@ in.dc_conds = {'Before','DC on','After'};
 in.norm_to_cont = 1; % normalize responses to control (DC off) within trial/ROI
 in.data_file_suffix = 'train';
 in.roi_func_mode = 'separate';
+in.roi_pol_slopes = []; % polarization (% deltaF/F0) per mA in each ROI
 % plot settings
 in.cols = []; 
 in.fig_size = [0.97 0.88]; % in 'normalized' units
@@ -397,7 +398,9 @@ peaks_per_change_sem_rois = peaks_per_change_sem_rois(sort_rois,:);
 % normalized peaks to mean control
 mean_peaks_rois_norm = mean_peaks_rois_norm(sort_rois,:,:);
 sem_peaks_rois_norm = sem_peaks_rois_norm(sort_rois,:,:);
-
+if ~isempty(in.roi_pol_slopes)
+    in.roi_pol_slopes = in.roi_pol_slopes(sort_rois);
+end
 %% Analyze ROI specific modulation
 % peaks : [num_trains x num_rois x num_stim x num_trials]
 if isempty(cols)
@@ -485,6 +488,13 @@ if any(in.plot_figs == 5)
     fig.Position = [0.001 0.03 in.fig_size];       
     for j = 1:num_rois
         xj = linspace(j-0.4,j+0.4,num_conditions)';
+        if ~isempty(in.roi_pol_slopes)
+            if ~isnan(in.roi_pol_slopes(j)) && in.roi_pol_slopes(j) < 0
+                xj = flipud(xj); % assign positive current to depolarizing direction for this ROI
+            elseif isnan(in.roi_pol_slopes(j))
+                continue; 
+            end
+        end
         mean_peaksj = squeeze(100*(mean_peaks_rois_norm(j,2,:)-1)); % percent change
         sem_peaksj = squeeze(100*sem_peaks_rois_norm(j,2,:));
 %         mean_peaksj = squeeze(peaks_per_change_rois(j,:))';

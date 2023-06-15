@@ -299,8 +299,9 @@ for i = 1:num_rois
         % Filter out spurious events by SNR
         if in.use_asls_baseline
             % raw
-            std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 
-%             std_baselinesi = std(baselinesi(1:nframes_back,:),0,1,'omitnan');  % use smoothed baseline trace
+%             std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 
+            % baseline smoothed
+            std_baselinesi = std(baselinesi(1:nframes_back,:),0,1,'omitnan');  % use smoothed baseline trace
             mean_baselinesi = mean(baselinesi(1:nframes_back-est_rise_time_frames,:),1,'omitnan');                    
             % filtered 
             std_baselinesi_filt = std(mini_tracesi_filt(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 

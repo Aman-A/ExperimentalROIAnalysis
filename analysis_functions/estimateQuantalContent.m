@@ -36,9 +36,14 @@ in.dx = 0.001; % fit function x step
 in.smooth_bs_dist = 0; % smooth bootstrapped peak distributions with 5 point moving average
 in.include_sat_param = 1; % include parameter for saturation of indicator at higher quanta
 in.n_G = 3; % # of Gaussians to fit
+in.bsline_std_rois = []; % precalculated STD of baseline signal in each ROI
 in = sl.in.processVarargin(in,varargin);
 %% Get baseline variability
-std_all = std(deltaF_F0,0,1);
+if isempty(in.bsline_std_rois)
+    std_all = std(deltaF_F0,0,1);
+else
+    std_all = in.bsline_std_rois;
+end
 num_rois = length(peaks_rois);
 gauss_fit_params = zeros(3,num_rois); % 3 parameters
 % [amplitude; mean; st dev] 
@@ -59,14 +64,16 @@ else
 end
 params_gaussian_all = zeros(num_rois,num_params);
 rsq_adj_all = zeros(num_rois,1);
-for i = 1:num_rois
+for i = 1:num_rois    
     roi_tracei = deltaF_F0(:,i); % use last recording (temporary)
     peaks_roi = peaks_rois{i};
 %     peaks_roi = mini_out.mini_peaks_deltaF_F{i}; 
     std_tracei = std_all(i);
-    sigmai_sig = gauss_fit_params(3,i);
-    noisei = in.alpha*sigmai_sig;          
-    if length(peaks_roi) <= 5
+    sigmai_sig = std_all(i);
+%     sigmai_sig = gauss_fit_params(3,i);
+%     noisei = in.alpha*sigmai_sig;          
+    noisei = in.alpha*std_tracei; 
+    if length(peaks_roi) <= 2
         fprintf('Only %g events in ROI %g, skipping...\n',length(peaks_roi),i)
         continue;
     elseif length(peaks_roi) < in.Multi_Gauss_threshold
@@ -74,6 +81,7 @@ for i = 1:num_rois
     else
         n_G=in.n_G;
     end
+    fprintf('Fitting ROI %g\n',i);
     % Bootstrap peaks
     peaks_roi_bs = bootstrapEvents(peaks_roi,in.N_bootstrap,noisei);
     % Find peaks of bootstrapped distribution
@@ -109,9 +117,14 @@ for i = 1:num_rois
         end
     end
     opts = struct(); 
-    opts.MaxIter = 200;     
+    opts.MaxIter = 200;  
+    try
     [param_multimodal_bs ,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(bins_bs,...
                                             ycount_bs,fit_func,param0,opts);
+    catch
+        fprintf('Fitting for ROI %g produced error, skipping\n',i)
+        continue; 
+    end
     rsq_adj_all(i) = calcAdjustedRsq(ycount_bs,...
                                     fit_func(param_multimodal_bs,bins_bs),...
                                     param_multimodal_bs);
@@ -124,9 +137,9 @@ for i = 1:num_rois
     params_gaussian_all(i,1:length(param_multimodal_bs)) = param_multimodal_bs;    
     if in.plot_fits
         % Plot
-        max_x = max(peaks_roi);
+        max_x = max(max(peaks_roi),quantile(peaks_roi_bs,0.98));
         edges = 0:binsize:(max_x+binsize);        
-        ax = subplot_tight(Nrows,Ncols,i,[0.08, 0.06]);
+        ax = subplot_tight(Nrows,Ncols,i,[0.06, 0.04]);
 %         ax = subplot(Nrows,Ncols,i);
         h = histogram(ax,peaks_roi,edges,'FaceColor',0.6*[1 1 1],'LineStyle','none');
         hold(ax,'on');        
@@ -147,7 +160,7 @@ for i = 1:num_rois
 %         [~,index_alpha]=min(Fit_error);
 %         norm1=alpha_fit(index_alpha);
 
-        x=0:in.dx:max(peaks_roi)*1.02; 
+        x=0:in.dx:max_x; 
 %         x=0:in.dx:0.5; 
         A1i = param_multimodal_bs(1); 
         % [amplitude; mean; st dev]         
@@ -201,6 +214,7 @@ for i = 1:num_rois
         xlabel(ax,'Amplitude')
         end
         box(ax,'off');
+        drawnow; 
     end
 end
 fprintf('Done\n')
@@ -242,14 +256,14 @@ end
                     adj_factor = 1; 
 %                     adj_factor = (A1>=0)*(A2>=0)*(A3>=0)*(A1>A3); % adjustment factor to help fit
             end
-            y = (A1.*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
-                A2.*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
-                A3.*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
-                *adj_factor;    
-%             y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
-%                 abs(A2).*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
-%                 abs(A3).*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
+%             y = (A1.*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+%                 A2.*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+%                 A3.*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
 %                 *adj_factor;    
+            y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+                abs(A2).*exp(-(x - 2*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2)))+...
+                abs(A3).*exp(-(x - 3*abs(mu)).^2/(2*(estim_noise^2 + sigma.^2))))...
+                *adj_factor;    
     end
 % with saturation factor
     function y = Multimodal_GaussianSat(param,x) 
@@ -283,13 +297,13 @@ end
                 adj_factor = (sat>=0.5)*(sat<=1.1)*(A1>=0)*(A2>=0)*(A3>=0)*(A1>A3); % adjustment factor to help fit
         
         end
-         y = (A1.*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
-            A2.*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
-            A3.*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
-            *adj_factor;  
-%         y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
-%             abs(A2).*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
-%             abs(A3).*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
-%             *adj_factor;        
+%          y = (A1.*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
+%             A2.*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
+%             A3.*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
+%             *adj_factor;  
+        y = (abs(A1).*exp(-(x - abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2)))+...
+            abs(A2).*exp(-(x - abs(mu) - sat*abs(mu)).^2/(2*(estim_noise^2 + 1*sigma.^2)))+...
+            abs(A3).*exp(-(x - abs(mu) - sat*abs(mu) - sat^2*abs(mu)).^2/(2*(estim_noise^2+1*sigma.^2))))...
+            *adj_factor;        
     end 
 end
