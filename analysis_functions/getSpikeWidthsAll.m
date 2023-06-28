@@ -22,7 +22,7 @@ in.train_spike_width_mode = 1; % 1 - Cho 2020 method for nFWHM, use half
 in.fwhm_spline_interp = 0; % cubic spline interpolation for FWHM calculation
 in = sl.in.processVarargin(in,varargin);
 if length(exp_settings) == 1
-    exp_settings = repmat(exp_settings,num_conditions,1); % convert to object array
+    exp_settings = repmat(exp_settings,length(traces),1); % convert to object array
 else
     if iscell(exp_settings) % cell array of ExperimentSettings objects
         % convert to object array
