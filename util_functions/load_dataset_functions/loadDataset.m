@@ -20,14 +20,14 @@ if nargin < 3 || isempty(mode_str)
 end
 % def = loadDatasetDefinition(dataset_def_filename);
 if ~isempty(regexp(reporter,'GluSnFR3','ONCE'))
-    [data,def,norm_data,train_data] = loadDefaultDataset(dataset_def_filename,...
+    [data,def,extra_data] = loadDefaultDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin{:});
-    varargout = {norm_data,train_data};    
+    varargout = extra_data;    
 elseif ~isempty(regexp(reporter,'Archon','ONCE'))
     if strcmp(reporter,'Archon') && strcmp(mode_str,'default')
-        [data,def,norm_data,train_data] = loadDefaultDataset(dataset_def_filename,...
+        [data,def,extra_data] = loadDefaultDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin{:});
-        varargout = {norm_data,train_data};
+        varargout = extra_data;
     else % for paired pulse experiments with or without LGIphmScarlet indicator
         [data,def,AP_data,lgi1_data] = loadArchonLGI1pHmScarletDataset(dataset_def_filename,...
                                                        roi_func_mode,varargin{:});

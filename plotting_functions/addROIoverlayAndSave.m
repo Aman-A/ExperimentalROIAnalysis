@@ -4,7 +4,7 @@ for i = 1:length(fig_hands)
     ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
     if ax.CLim(1) < 0        
-        rois.plot('k',ax,1,show_roi_labels,30,2,24); % plot current after shift    
+        rois.plot('k',ax,1,show_roi_labels,30,2,28); % plot current after shift    
     else        
         rois.plot('g',ax,1,show_roi_labels); % plot current after shift    
     end

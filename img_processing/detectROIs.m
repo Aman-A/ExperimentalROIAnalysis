@@ -3,13 +3,19 @@ function rois = detectROIs(recording,intens_thresh,area_thresh,roi_radius,vararg
 % default intens_thresh = 2.9e3, area_thresh = 4 (in microns)
 % if intens_thresh < 1, uses as quantile cutoff based on values in image
 % area_thresh = [min_area] or [min_area max_area]
+% TODO: add mode using FastPeakFind
 in.center_mode = 2; % 0 - off, 1 - cetner based on points, 2 - center based on peak value
 in.plot_figs = 1;
 in.save_figs = 0;
 in.min_distance = 3.2; % microns, set to 0 to skip (3.2 = 8 pixel diam ROI on ixon 897 with 40x)
 in.min_distance_to_edge = 2; % microns
+in.mov_ave_filt_width  = 0; % moving average filter applied to time course in each pixel
+in.bandpass_filt_fc = []; % bandpass gaussian filter applied to time course in each pixel
+in.fs = []; % sampling rate (Hz), required for bandpass filter
 in.filt_width = 0; % gaussian filter window (pixels), set to 0 for no filter
 in.filt_type = 'gaussian'; % 'gaussian' or 'log' (inputs to fspecial.m)
+in.z_proj = 'mean';% z projection type, 'mean', 'max', or 'min'
+in.skip_time_start_end = 1; % time in sec to skip at beginning and end for z projection
 in = sl.in.processVarargin(in,varargin);
 
 if ischar(recording) % path to recording file
@@ -23,6 +29,7 @@ elseif isa(recording,'Recording')
     vals = recording.vals;
     pixel_size = recording.pixel_size;
     imsize = recording.imsize; 
+    vals0 = mean(recording.vals,3); 
 else
     vals = recording;
     vals0 = vals; % original, unfiltered image
@@ -37,25 +44,79 @@ else
     use_circ_rois = 1; 
 end
 
-% vals = max(vals,[],3); % max Z projection if recording is image stack 
-vals = mean(vals,3); % mean Z projection if recording is image stack 
+% Apply moving average temporal filter to each pixel
+if in.mov_ave_filt_width > 0 && size(vals,3) > in.mov_ave_filt_width
+    for i = 1:size(vals,1)
+        for j = 1:size(vals,2)
+            vals(i,j,:) = smooth(squeeze(vals(i,j,:)),in.mov_ave_filt_width);
+        end
+    end
+    fprintf('Applied moving average filter with width %g pixels\n',in.mov_ave_filt_width)
+end
+
+% Apply bandpass temporal filter to each pixel
+if ~isempty(in.bandpass_filt_fc) 
+    fc = in.bandpass_filt_fc; 
+    fs = in.fs; 
+    assert(~isempty(in.fs),'Need to input sampling frequency to apply bandpass filter')
+    for i = 1:size(vals,1)
+        for j = 1:size(vals,2)
+            F = squeeze(vals(i,j,:));
+            F_filt1 = gaussfilter(F,fs,fc(2)); % low pass
+            F_filt1 = F_filt1 - gaussfilter(F_filt1,fs,fc(1)); % hi pass            
+            vals(i,j,:)= F_filt1; 
+        end
+    end    
+    fprintf('Applied band pass gaussian filter with %g to %g Hz cutoffs\n',...
+                fc(1),fc(2));
+end
+
+% Skip beginning/end frames (filtering/imaging artifacts)
+if ~isempty(in.skip_time_start_end) && in.skip_time_start_end ~= 0
+    ind1 = in.skip_time_start_end*in.fs;
+    ind2 = size(vals,3) - in.skip_time_start_end*in.fs;
+else
+    ind1 = 1; 
+    ind2 = size(vals,3);
+end
+
+% Apply spatial filter
 if in.filt_width > 0
 %     vals = imgaussfilt(vals,in.filt_width); 
 %     fprintf('Applied gaussian filter with width = %g pixels\n',in.filt_width); 
-    hsize = 2*ceil(2*in.filt_width)+1;  % default imgaussfilt def of filter size
-    h = fspecial(in.filt_type,hsize,in.filt_width);
-    vals = imfilter(vals,h,'replicate');
-    if strcmp(in.filt_type,'log')
-        vals = -vals;
+    if strcmp(in.filt_type,'median')
+        for i = ind1:ind2
+            vals(:,:,i) = medfilt2(vals(:,:,i),[in.filt_width in.filt_width]); 
+        end
+    else
+        hsize = 2*ceil(2*in.filt_width)+1;  % default imgaussfilt def of filter size
+        h = fspecial(in.filt_type,hsize,in.filt_width);
+        for i = ind1:ind2
+            vals = imfilter(vals,h,'replicate');
+        end
+        if strcmp(in.filt_type,'log')
+            vals = -vals;
+        end
     end
     fprintf('Applied %s filter with width %g pixels\n',in.filt_type,in.filt_width)
 end
+
+% Take z projection
+if strcmp(in.z_proj,'mean')
+    vals = mean(vals(:,:,ind1:ind2),3); % mean Z projection if recording is image stack 
+elseif strcmp(in.z_proj,'max')
+    vals = max(vals(:,:,ind1:ind2),[],3); % max Z projection if recording is image stack 
+elseif strcmp(in.z_proj,'min')
+    vals = min(vals(:,:,ind1:ind2),[],3); % max Z projection if recording is image stack 
+end
+
 % Binarize using threshold
 if intens_thresh < 1
     intens_thresh_val = quantile(vals(:),intens_thresh);
 else
     intens_thresh_val = intens_thresh;     
 end
+
 vals_bin = zeros(size(vals)); 
 vals_bin(vals>=intens_thresh_val) = 1;
 vals_bin = logical(vals_bin); 
@@ -121,6 +182,7 @@ if use_circ_rois
 else % polygons
     rois = ROIs(B4); % use boundaries to make ROIs
 end
+
 fprintf('Detected %g ROIs!\n',rois.num_rois)
 if in.plot_figs
     fig1 = figure('Units','inches');
@@ -141,7 +203,7 @@ if in.plot_figs
     fig2 = figure('Units','inches','Position',[0.1 1 20.5 5.2]); 
     ax = gca;
     if isa(recording,'Recording')
-        recording.plot(); 
+        recording.plot(100); 
         caxis(ax,quantile(recording.vals(:),[0.6 0.999]))
     else
         imagesc(vals0)
