@@ -293,11 +293,12 @@ end
 if any(strcmp(in.funcs,'mean_fwhm')) % Mean FWHM of stim and trial-averaged APs
     % Stim and trial averaged traces
 %     mean_traces = squeeze(mean(traces,[3 4 5])); % Average across stim within train across trials
-    if ndims(traces) == 4 % single ROI
-        mean_traces = squeeze(mean(traces,[3])); 
-    else % multiple ROIs
-        mean_traces = squeeze(mean(traces,[3 4])); 
-    end
+    mean_traces = squeeze(mean(traces,[4 5]));
+%     if ndims(traces) == 4 
+%         mean_traces = squeeze(mean(traces,[3])); 
+%     else % multiple ROIs
+%         mean_traces = squeeze(mean(traces,[3 4])); 
+%     end
     mean_trace_dims = size(mean_traces,[1 2]);
     t = exp_settings.getTimeVector(size(traces,1));          
     frac_amp = in.frac_amp;

@@ -44,7 +44,11 @@ if ~isempty(ahp_ind)
     ahp_ind = ahp_ind(min_ind) + peak_ind - 1;
 %     ahp_val = ahp_val(1)*peak_amp;
 %     ahp_ind = ahp_ind(1) + peak_ind - 1; 
-    ahp_val = y(ahp_ind);
+    if in.smooth_trace
+        ahp_val = y_smooth(ahp_ind);
+    else
+        ahp_val = y(ahp_ind);
+    end
     ahp_amp = ahp_val - bsline; 
 else
     ahp_val = nan; 

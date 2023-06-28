@@ -1,4 +1,4 @@
-function plotTracesOverlaid(t,traces,varargin)
+function lhands = plotTracesOverlaid(t,traces,varargin)
 %PLOTTRACESOVERLAID ... 
 %  
 %   Inputs 
@@ -25,6 +25,7 @@ in.x_sbar_len2 = 0.01;
 in.y_sbar_len2 = 0.2; 
 in.units = 'sec';
 in.plot_peak_times = 0;
+in.add_xlabel = 1; 
 in = sl.in.processVarargin(in,varargin);
 if ~iscell(in.cols)
     cols = mat2cell(in.cols,ones(1,size(traces,2)),3);
@@ -82,5 +83,7 @@ if ~isempty(in.inset_pos)
     end
     axis(ax2,'off'); 
 end
-xlabel(ax,sprintf('time (%s)',in.units)); 
+if in.add_xlabel
+    xlabel(ax,sprintf('time (%s)',in.units)); 
+end
 end
