@@ -30,6 +30,7 @@ in.E_per_mA = 87; % V/m per mA
 in.spline_interp = 0; 
 in.spline_sampling_factor = 5; 
 in.plot_width = 0.5; 
+in.indicator_dir = 1;
 in = sl.in.processVarargin(in,varargin);
 %% Load data if necessary
 if isfield(data_or_data_params,'AP_data')
@@ -57,13 +58,15 @@ end
 fig_fold = fullfile(exp_fold,['figs_' roiset_filename_no_ext]);
 
 %%
-meanAPs = cellfun(@(x) squeeze(mean(x,[2,4])),AP_data.deltaF_F0_aligned2_all,...
-                'UniformOutput',0);
+meanAPs = cellfun(@(x) in.indicator_dir*squeeze(mean(x,[2,4])),...
+                    AP_data.deltaF_F0_aligned2_all,...
+                    'UniformOutput',0);
 tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(meanAPs{1},1));
 tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
 
-mean_pols = cell2mat(cellfun(@(x) squeeze(mean(x,[2,3])),pol_data.deltaF_F0_aligned_all,...
-                'UniformOutput',0));
+mean_pols = cell2mat(cellfun(@(x) in.indicator_dir*squeeze(mean(x,[2,3])),...
+                    pol_data.deltaF_F0_aligned_all,...
+                    'UniformOutput',0));
 tpol = 1e3*pol_data.exp_settings(1).getTimeVector(size(mean_pols,1));
 tpol = tpol - tpol(pol_data.exp_settings(1).baseline_wind + 1);
 dF_ss_wind_inds = in.dF_ss_wind*pol_data.exp_settings(1).sampling_rate;
@@ -128,6 +131,11 @@ end
 if in.spline_interp
     AHP_inds = round((AHP_inds + in.spline_sampling_factor)/in.spline_sampling_factor);
 end
+if in.indicator_dir < 0
+    F_label = '-\Delta F/F_{0}';
+else
+    F_label = '\Delta F/F_{0}';
+end
 %% Plot Waveforms averaged within condition/amp
 stim_wind_inds = stim_index0:length(tAP);
 fig = figure('Units','inches');
@@ -136,12 +144,12 @@ for i = 1:length(amps)
     ax = subplot(length(amps),1,i);
     if in.norm_AP_peak
         yi = meanAPs{i}./max(meanAPs{i},[],1);        
-        ylabel('\Delta F/F_{0} (norm.)')
+        ylabel(sprintf('%s (norm.)',F_label))
         y_sbar_len = 0.4; % 40 % peak
     else
         yi = meanAPs{i}*100;
         y_sbar_len = 5; % 1 % deltaF/F
-        ylabel('\Delta F/F_{0} (%)')
+        ylabel(sprintf('%s (%%)',F_label))
     end
     if strcmp(in.align_AP_to,'max')        
         [~,max_inds] = max(yi(stim_wind_inds,:),[],1);
@@ -268,7 +276,7 @@ box off;
 xlabel('time (ms)') 
 xlim([-5 100])
 % xlim([-5,100]);
-ylabel('\Delta F/F_{0} (%)')
+ylabel(sprintf('%s (%%)',F_label))
 if save_figs
     printFig(fig,fig_fold,'AP_polarization_overlaid')
 end

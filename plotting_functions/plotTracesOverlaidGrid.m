@@ -140,7 +140,7 @@ for i = 1:Nax
                 ax_leg = ax; 
             else
                 ax_leg = subplot(Nrows,Ncols,i+1); % plot on next empty axis                
-                plotTracesOverlaid([0;1],nan(2,Nconds),topts)
+                plotTracesOverlaid([0;1],nan(2,Nconds),topts);
                 axis(ax_leg,'off');
             end
             if in.mode == 1

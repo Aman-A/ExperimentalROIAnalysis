@@ -15,7 +15,7 @@ in.fs = []; % sampling rate (Hz), required for bandpass filter
 in.filt_width = 0; % gaussian filter window (pixels), set to 0 for no filter
 in.filt_type = 'gaussian'; % 'gaussian' or 'log' (inputs to fspecial.m)
 in.z_proj = 'mean';% z projection type, 'mean', 'max', or 'min'
-in.skip_time_start_end = 1; % time in sec to skip at beginning and end for z projection
+in.skip_time_start_end = []; % time in sec to skip at beginning and end for z projection
 in = sl.in.processVarargin(in,varargin);
 
 if ischar(recording) % path to recording file
@@ -203,7 +203,7 @@ if in.plot_figs
     fig2 = figure('Units','inches','Position',[0.1 1 20.5 5.2]); 
     ax = gca;
     if isa(recording,'Recording')
-        recording.plot(100); 
+        recording.plot(round(recording.imsize(3)/2)); 
         caxis(ax,quantile(recording.vals(:),[0.6 0.999]))
     else
         imagesc(vals0)
