@@ -149,7 +149,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     rsquare = zeros(trace_dims(2:end)); % amplitude (a.u./%)
     fitobjs = cell(trace_dims(2:end)); 
     gofs = cell(trace_dims(2:end)); 
-    successful_spikes = zeros(trace_dims(2:end));      
+    successful_spikes = false(trace_dims(2:end));      
     n_traces = prod(trace_dims(2:end));    
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
     spike_thresh = in.spike_thresh;         

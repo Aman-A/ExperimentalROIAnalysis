@@ -470,8 +470,16 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.names(roi_inds) = [];  
                 obj.types(roi_inds) = []; 
                 obj.num_rois = size(obj.x,1);                 
+            elseif all(strcmp(obj.types,'Rectangle'))
+                error('Not implemented for Rectangle ROIs yet')
             else
-                error('Not implemented yet for shapes other than Oval')
+                obj.x0(roi_inds) = [];
+                obj.y0(roi_inds) = []; 
+                obj.x(roi_inds) = []; 
+                obj.y(roi_inds) = []; 
+                obj.names(roi_inds) = []; 
+                obj.types(roi_inds) = []; 
+                obj.num_rois = length(obj.x);
             end
             obj.updateRoiObjs(); 
         end

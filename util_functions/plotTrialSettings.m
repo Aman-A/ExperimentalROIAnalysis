@@ -55,4 +55,5 @@ settings.rem_pbleach = 0; % 1 to remove photobleaching in calcROIfuncs
 settings.fwhm_spline_interp = 0; % 1 to use cubic spline interpolation for FWHM calculation
 settings.motion_correct = 0; % 1 to use motionCorrectRecording (uses dftregistration FFT-based algorithm)
 settings.indicator_dir = 1; % 1 = positive going, -1 = negative going
+settings.spike_thresh = 3; % spike_thresh x std(baseline) for analyzeStimAlignedTraces (used with func = 'decay_fit')
 settings = sl.in.processVarargin(settings,varargin);
