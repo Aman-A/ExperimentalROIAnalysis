@@ -14,6 +14,7 @@ in.plot_figs = 1:6; % 1 - Plot Waveforms averaged within condition/amp
                     % 4 - Plot polarization trials overlaid on last AP trial
                     % 5 - Plot polarization normalized to AP peak
 in.data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
+in.fig_fold = ''; % default set below
 in.roi_func_mode = 'combine';
 in.amp_cols = {'b','r'};
 in.pol_cols = flipud([ 0.6445         0    0.1484 % for 8
@@ -65,7 +66,11 @@ else % load using fields of data_or_data_params
                                             roiset_filename_no_ext)));
     fprintf('Loaded data\n');
 end
-fig_fold = fullfile(exp_fold,['figs_' roiset_filename_no_ext]);
+if isempty(in.fig_fold)
+    fig_fold = fullfile(exp_fold,['figs_' roiset_filename_no_ext]);
+else
+    fig_fold = in.fig_fold; 
+end
 indicator_dir = AP_data.plot_settings.indicator_dir;
 fs_pol = pol_data.exp_settings(1).sampling_rate; % Hz - sampling rate of polarization trials
 pol_stim_pulse_dur_ms = 1e3*pol_data.exp_settings(1).stim_pulse_dur/fs_pol;
@@ -98,7 +103,7 @@ mean_pols = cell2mat(cellfun(@(x) indicator_dir*squeeze(mean(x,[2,3])),pol_data.
                 'UniformOutput',0));
 tpol = 1e3*pol_data.exp_settings(1).getTimeVector(size(mean_pols,1));
 tpol = tpol - tpol(pol_data.exp_settings(1).baseline_wind + 1);
-dF_ss_wind_inds = in.dF_ss_wind*fs_pol;
+dF_ss_wind_inds = pol_data.exp_settings(1).baseline_wind + in.dF_ss_wind*fs_pol;
 dF_ss = mean(mean_pols(dF_ss_wind_inds(1):dF_ss_wind_inds(2),:),1);
 
 % normalize to AP peak
@@ -359,10 +364,23 @@ end
 %% Plot modulation of fwhm, peak, and ahp
 % x_vals = amps;
 [~,amp_inds_mod,amp_inds] = intersect(amps,pol_amps); % get corresponding current amps from polarization trials
-pol_x_vals = dF_ss_norm(amp_inds);
+if isempty(amp_inds)
+%     pol_x_vals = b(1) + b(2)*amps;
+%     xlabel_str = 'Polarization (% AP peak - est)';
+    pol_x_vals = amps; 
+    amp_inds_mod = find(amps~=0);
+    xlabel_str = 'Current (mA)';
+else
+    pol_x_vals = dF_ss_norm(amp_inds);
+    xlabel_str = 'Polarization (% AP peak)';
+end
 if any(amps == 0)
     amp_inds_mod = [amp_inds_mod(amps(amp_inds_mod)<0);find(amps==0);amp_inds_mod(amps(amp_inds_mod)>0)];
-    pol_x_vals = [pol_x_vals(pol_amps(amp_inds)<0),0,pol_x_vals(pol_amps(amp_inds)>0)];
+    if isempty(amp_inds)
+        pol_x_vals = [pol_x_vals(amps<0),0,pol_x_vals(amps>0)];
+    else
+        pol_x_vals = [pol_x_vals(pol_amps(amp_inds)<0),0,pol_x_vals(pol_amps(amp_inds)>0)];
+    end
 end
 out.pol_x_vals = pol_x_vals; % polarization values normalized to AP peak (dF_ss_norm)
 out.pol_inds = amp_inds; % indices of polarization trials with amplitudes matching AP trials
@@ -396,7 +414,7 @@ if any(in.plot_figs == 3)
     ylabel('\Delta AHP amp (%)')
     sgtitle('Modulation of AP width, amplitude, and AHP by DC')
     % xlabel('Current amplitude (mA)')
-    xlabel('Polarization (% AP peak)')
+    xlabel(xlabel_str)
     % ylim([0.6 1.2])
     % xlim(max(abs(x_vals))*[-1 1])
     xlim([min(pol_x_vals),max(pol_x_vals)])
