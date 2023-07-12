@@ -15,6 +15,7 @@ in.smooth_trace = 0;
 in.smooth_span = 10;
 in.smooth_method = 'sgolay';
 in.max_ahp_wind = []; 
+in.ahp_ind = []; 
 in = sl.in.processVarargin(in,varargin);
 if nargin < 4
     plot_fig = 0; 
@@ -47,7 +48,14 @@ else
     peak_amp_search = peak_amp;
 end
 
-[ahp_val,ahp_ind] = findpeaks(-(y_search(peak_ind:end_ind))/peak_amp_search,'MinPeakProminence',0.05);   
+if isempty(in.ahp_ind)
+    [ahp_val,ahp_ind] = findpeaks(-(y_search(peak_ind:end_ind))/peak_amp_search,'MinPeakProminence',0.05);   
+else % extract amp at input in.ahp_ind
+    ahp_ind = in.ahp_ind; 
+    ahp_val = y_search(ahp_ind);
+    ahp_amp = ahp_val - bsline; 
+    return
+end
 
 if ~isempty(ahp_ind)
     [~,min_ind] = max(ahp_val); % flipped for findpeaks

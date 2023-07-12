@@ -34,20 +34,25 @@ for i = 1:Ntraces
         t_fit = t; 
         y_fit = Y(:,i);
         peak_y = y_fit(1); % avoid spurious peaks in trace, assume peak aligned
+%         peak_y = y_fit(1)-min(y_fit); % avoid spurious peaks in trace, assume peak aligned
     end
     t_fits{i} = t_fit; 
     if decay_fit_order == 1 % monoexponential decay
         % y = A*exp(-t/taud1)        
         fit_eqn = 'a*exp(-x/b)';
-        upper_bounds = [1.1*peak_y,in.max_taud]; % replace first element in loop
-        lower_bounds = [min(y_fit),0];
+%         upper_bounds = [1.1*peak_y,in.max_taud]; % replace first element in loop
+        upper_bounds = [1.1*abs(peak_y-min(y_fit)),in.max_taud]; % replace first element in loop
+%         lower_bounds = [min(y_fit),0];
+        lower_bounds = [min(0,min(y_fit)),0];
         start_points = [peak_y*0.8,0.5];
         print_str = 'Fitting decay to monoexponential function\n';
     elseif decay_fit_order == 2 % biexponential decay
         % y = A*(p * exp(-t/taud1) + (1-p) * exp(-t/taud2))
         fit_eqn = 'a*(b*exp(-x/c) + (1-b)*exp(-x/d))';
-        upper_bounds = [1.1*peak_y,1,in.max_taud,in.max_taud];
-        lower_bounds = [0,0,0,0];
+        upper_bounds = [1.1*abs(peak_y-min(y_fit)),1,in.max_taud,in.max_taud];
+%         lower_bounds = [min(0,peak_y - 2*abs(peak_y)),0,0,0];
+        lower_bounds = [min(0,min(y_fit)),0,0,0];
+%         lower_bounds = [0,0,0,0];
         start_points = [peak_y*0.8,0.8,0.5,0.5];
         print_str = 'Fitting decay to biexponential function\n';
     else
