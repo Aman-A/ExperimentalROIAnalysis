@@ -23,7 +23,7 @@ end
 if isempty(in.max_ahp_wind)
     end_ind = size(y,1);
 else
-    end_ind = stim_index + in.max_ahp_wind;
+    end_ind = min(size(y,1),stim_index + in.max_ahp_wind);
 end
 if nargin < 5 || isempty(peak_ind)
     [peak_val,peak_ind] = max(y(stim_index-1:end_ind),[],1,'omitnan'); % get max after stim_index (in case extraneous peak occurs before stim)

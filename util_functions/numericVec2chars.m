@@ -17,10 +17,10 @@ function char_cell_array = numericVec2chars(vec,str_pattern)
 if nargin < 2
     str_pattern = '%g'; % default just output number
 end
-assert(isvector(vec),'vec must be a 1D vector')
+% assert(isvector(vec),'vec must be a 1D vector')
 
 char_cell_array = cell(size(vec));
-for i = 1:length(vec)
+for i = 1:numel(vec)
     char_cell_array{i} = sprintf(str_pattern,vec(i));
 end
 

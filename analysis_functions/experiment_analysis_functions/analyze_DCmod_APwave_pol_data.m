@@ -36,20 +36,22 @@ in.dF_ss_wind = [0.3 0.5]; % window to compute steady state in polarization tria
 in.plot_pol_x_vals = 'polarization'; % 'polarization' or 'current', specifies which to use for x values
 in.ap_height_est = [60;120]; % mV - range of AP heights
 in.E_per_mA = 87; % V/m per mA
-in.spline_interp = 0; 
+in.spline_interp = 1; 
 in.spline_sampling_factor = 5; 
 in.AHP_mode = 1; % 0 - find AHP trough in each trace
                  % 1 - use AHP time point found in first trial for all 
                  % [2,time_point] - input time point to use for AHP as 2nd element (not implemented)
-in.plot_width = 0.5; 
-in.norm_AP_feats = 1; % 1 - plot % change in AP features, 0 - plot abs differences
+in.plot_width = 0.1; 
+in.frac_amps = 0.1:0.1:0.9;
+in.norm_AP_feats = 0; % 1 - plot % change in AP features, 0 - plot abs differences
 in.pol_smooth_wind = 30; 
-in.rise_fit_dur = 50; % duration in ms of polarization stimulus pulse to 
+in.rise_fit_dur = 100; % duration in ms of polarization stimulus pulse to 
                       % use for fitting rise time constant 
-in.decay_fit_dur = 50; % duration in ms of post-stim phase to 
+in.decay_fit_dur = 100; % duration in ms of post-stim phase to 
                       % use for fitting decay time constant                        
-in.tau_fit_order = 2; % order for rise/decay time constant fitting
+in.tau_fit_order = 1; % order for rise/decay time constant fitting
 in.tau_fit_offset_on = 0; % include y offset for tau fit
+in.tau_fit_snr_thresh = 3; % snr threshold for fitting tau from polarization trials
 in = sl.in.processVarargin(in,varargin);
 %% Load data if necessary
 if isfield(data_or_data_params,'AP_data')
@@ -156,9 +158,7 @@ out.pol_gain_mV_est = pol_gain_mV_est; % polarization sensitivity for current (m
 out.pol_gain_mV_est_E = pol_gain_mV_est_E; % polarization sensitivity for E-field (mV per V/m), using input E_per_mA for this elec pair
 out.amp_labels = amp_labels;
 %% Calculate FWHMs, peaks, and AHPs
-frac_amps = 0.1:0.1:0.9;
-% frac_amps = 0.5;
-mean_widths = zeros(2,length(amps),length(frac_amps)); % [control; dc on]
+mean_widths = zeros(2,length(amps),length(in.frac_amps)); % [control; dc on]
 % mean_fwhm = zeros(2,length(amps)); % [control; dc on]
 stim_index0 = AP_data.exp_settings(1).baseline_wind + 1; 
 AP_peaks = zeros(2,length(amps));
@@ -175,9 +175,9 @@ for j = 1:length(amps) % dc amp
             y = meanAPs{j}(:,i);
             stim_index = stim_index0; 
         end
-        for k = 1:length(frac_amps) % frac amp
-%             mean_widths(i,j,k) = 1e3*spikeWidth(tAP*1e-3,meanAPs{j}(:,i),stim_index,frac_amps(k),1);   
-            mean_widths(i,j,k) = 1e3*spikeWidth(t,y,stim_index,frac_amps(k),0);                    
+        for k = 1:length(in.frac_amps) % frac amp
+%             mean_widths(i,j,k) = 1e3*spikeWidth(tAP*1e-3,meanAPs{j}(:,i),stim_index,in.frac_amps(k),1);   
+            mean_widths(i,j,k) = 1e3*spikeWidth(t,y,stim_index,in.frac_amps(k),0);                    
         end
         AP_peaks(i,j) = 100*max(meanAPs{j}(stim_index0:end,i)); % percent deltaF/F
 %         [AHP_amps(i,j),AHP_inds(i,j)] = AHP_amp(tAP*1e-3,meanAPs{j}(:,i),stim_index0,0,[],...
@@ -185,13 +185,13 @@ for j = 1:length(amps) % dc amp
         if i == 1 && j == 1 && in.AHP_mode == 1 || in.AHP_mode == 0
             [AHP_amps_ij,AHP_inds(i,j)] = AHP_amp(t,y,stim_index,0,[],...
                                     'smooth_trace',1,...
-                                    'smooth_span',10*in.spline_sampling_factor,...
+                                    'smooth_span',20*in.spline_sampling_factor,...
                                     'max_ahp_wind',in.spline_sampling_factor*AP_data.exp_settings(1).convert2Frames(0.03)); % AHP max 30 ms
         elseif in.AHP_mode == 1
              AHP_inds(i,j) = AHP_inds(1,1); % use same time point across trials
              [AHP_amps_ij,~] = AHP_amp(t,y,stim_index,0,[],...
                                     'smooth_trace',1,...
-                                    'smooth_span',10*in.spline_sampling_factor,...
+                                    'smooth_span',20*in.spline_sampling_factor,...
                                     'max_ahp_wind',in.spline_sampling_factor*AP_data.exp_settings(1).convert2Frames(0.03),...
                                     'AHP_ind',AHP_inds(i,j)); % AHP max 30 ms
         end
@@ -203,7 +203,7 @@ if in.spline_interp
 end
 % calculate change in width, AP peak, and AHP amp normalized to before DC
 % waveform
-plot_widths = mean_widths(:,:,value2ind(in.plot_width,frac_amps));
+plot_widths = mean_widths(:,:,value2ind(in.plot_width,in.frac_amps));
 if in.norm_AP_feats
     % percent changes
     norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
@@ -216,7 +216,7 @@ else
     norm_AHP_amps = AHP_amps(2,:)-AHP_amps(1,:); % percent deltaF/F (below baseline)
 end
 
-out.frac_amps = frac_amps; 
+out.frac_amps = in.frac_amps; 
 out.mean_widths = mean_widths; 
 out.AP_peaks = AP_peaks;
 out.AHP_amps = AHP_amps;
@@ -244,9 +244,11 @@ rise_fitobjs = cell(1,length(pol_amps)); % fit objects for rise
 p_rs = zeros(1,length(pol_amps)); % proportion of rise fit given by fast time constant
 pol_rise = zeros(length(t_rise),length(pol_amps));
 pol_snrs = zeros(1,length(pol_amps));
+mean_pols_smooth = mean_pols;
 for i = 1:length(pol_amps)    
     if in.pol_smooth_wind > 0
         yi = smooth(mean_pols(:,i),in.pol_smooth_wind); 
+        mean_pols_smooth(:,i) = yi; 
     else
         yi = mean_pols(:,i);
     end
@@ -264,7 +266,7 @@ for i = 1:length(pol_amps)
 
     pol_snr = abs(dF_ss(i))/std(yi(1:pol_data.exp_settings(1).baseline_wind),0);
     pol_snrs(i) = pol_snr;
-    if pol_snr > 3
+    if pol_snr > in.tau_fit_snr_thresh
         % fit decay (flip if hyperpolarized)
         decay_fit = fitExpDecay(t_decay,yi_decay,in.tau_fit_order,...
                                 'max_taud',1e3,'align_traces',0,...
@@ -295,7 +297,7 @@ for i = 1:length(pol_amps)
         rsq_rs(i) = nan;
         p_ds(i) = nan;
         p_rs(i) = nan; 
-        fprintf('SNR of %g (<3) for %g mA, skipping fit \n',pol_snr,pol_amps(i))
+        fprintf('SNR of %g (<%g) for %g mA, skipping fit \n',pol_snr,pol_amps(i),in.tau_fit_snr_thresh)
     end 
 end
 % decay data
@@ -314,6 +316,13 @@ out.rsq_rs = rsq_rs;
 out.p_rs = p_rs; 
 out.rise_fitobjs = rise_fitobjs;
 out.pol_snrs = pol_snrs; 
+out.mean_pols_smooth = mean_pols_smooth; % only differs from mean_pols if pol_smooth_wind > 0
+
+% get peak from smoothed polarization waveforms to calculate sag ratio
+% [peak_dF_pols,peak_dF_pol_inds] = max(mean_pols_smooth(pol_data.exp_settings(1).baseline_wind:dF_ss_wind_inds(1),:),...
+%                                         [],1,'ComparisonMethod','abs'); % get abs peak
+% peak_dF_pol_inds  = peak_dF_pol_inds - 1 + pol_data.exp_settings(1).baseline_wind;
+
 %% Plot Waveforms averaged within condition/amp
 stim_wind_inds = stim_index0:length(tAP);
 if any(in.plot_figs == 1)
@@ -374,14 +383,14 @@ if any(in.plot_figs == 2)
     fig.Position = [0.5 0.5 in.ap_fig_size];
     for j = 1:length(amps)
         ax = subplot(length(amps),1,j);
-        for k = 1:length(frac_amps)
+        for k = 1:length(in.frac_amps)
             bar(k-0.1,mean_widths(1,j,k)','FaceColor','k','BarWidth',0.2); hold on;
             bar(k+0.1,mean_widths(2,j,k)','FaceColor','r','BarWidth',0.2); 
         end
         box off; 
         title(sprintf('%g mA (%s)',amps(j),amp_labels{j}))
-        ax.XTick = 1:length(frac_amps);
-        ax.XTickLabel = frac_amps; 
+        ax.XTick = 1:length(in.frac_amps);
+        ax.XTickLabel = in.frac_amps; 
         ylabel('Width (ms)')
     end
     xlabel('Fraction of amplitude')
