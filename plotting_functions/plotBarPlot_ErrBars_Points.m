@@ -3,6 +3,8 @@ function plotBarPlot_ErrBars_Points(data,varargin)
 %  
 %   Inputs 
 %   ------ 
+%   data : cell array or matrix
+%         If matrix, should be number of pts x number of conditions
 %   Optional Inputs 
 %   --------------- 
 %   Outputs 
@@ -20,6 +22,8 @@ in.font_size = 16;
 in.jitter_amount = 0.05; 
 in.pt_size = 24; 
 in.pt_cols = []; % color data for scatter plot
+in.pt_marker = 'o';
+in.print_level = 0; 
 in = sl.in.processVarargin(in,varargin);
 if iscell(data)
     n_pts = cellfun(@length,data,'UniformOutput',1);
@@ -47,8 +51,14 @@ std_data = std(data_mat,0,1,'omitnan');
 sem_data = std_data./sqrt(n_pts);
 if strcmp(in.plot_err,'sem')
     err_bars = sem_data;
-else
+elseif strcmp(in.plot_err,'std')
     err_bars = std_data;
+end
+if in.print_level > 0
+    fprintf('Mean +/- %s:\n',in.plot_err);
+    for i = 1:length(mean_data)
+        fprintf('  %g: %.2f +/- %.2f\n',i,mean_data(i),err_bars(i))
+    end
 end
 if ~isempty(in.bar_cols)
     if ~iscell(in.bar_cols) && size(in.bar_cols,1) == 1 % uniform bar color
@@ -69,9 +79,9 @@ e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',3,...
             'Marker','none');
 % data points
 if isempty(in.pt_cols)
-    s = scatter(x_vals,data_mat,in.pt_size,'o','jitter','on','jitterAmount',in.jitter_amount);      
+    s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);      
 else
-    s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,'o','jitter','on','jitterAmount',in.jitter_amount);      
+    s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);      
 end
 ax.XTick = x_vals;
 if ~isempty(in.bar_labels)

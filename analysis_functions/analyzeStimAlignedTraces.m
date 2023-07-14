@@ -32,7 +32,7 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 in.funcs = {'peaks','peak_times','poststim_ints','decay_fit','fwhm','mean_fwhm'};
 in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
-in.spike_window = 0.1; % sec - peak must be within this time of stim to be considered spike
+in.spike_window = 0.02; % sec - peak must be within this time of stim to be considered spike
 in.train_peak_baseline_mode = 1; % for num_trains > 1:
                                   % 1 - use same baseline for full train
                                   % 2 - get individual baseline for each
@@ -63,6 +63,7 @@ if num_trains > 1
     min_isi = min(diff(exp_settings.stim_vals(1,:)));
     if spike_window > min_isi
         spike_window = min_isi; 
+        fprintf('Lowering spike_window to min_isi (%g)\n',min_isi);
     end
 end
 analysis_file = fullfile(in.save_dir,in.save_filename);
@@ -110,7 +111,7 @@ if any(strcmp(in.funcs,'peaks'))
         
     else
         [peaks,pk_inds] = max(traces((stim_frame+1):(stim_frame+spike_window),:,:,:,:),[],1);    
-        pk_inds = pk_inds + stim_frame + 1; % reference to full time vector
+        pk_inds = pk_inds + stim_frame; % reference to full time vector
         peaks = squeeze(peaks);
         pk_inds = squeeze(pk_inds);
         peak_times = exp_settings.convert2Time(pk_inds-stim_frame);
