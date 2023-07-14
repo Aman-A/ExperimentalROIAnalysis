@@ -17,6 +17,7 @@ in.plot_figs = 1:6; % 1 - Plot Waveforms averaged within condition/amp
 in.data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
 in.fig_fold = ''; % default set below
 in.roi_func_mode = 'combine';
+in.roi_ind = 1; % only relevant if roi_func_mode 'separate'
 in.amp_cols = {'b','r'};
 in.pol_cols = flipud([ 0.6445         0    0.1484 % for 8
 %             0.8398    0.1875    0.1523
@@ -32,14 +33,18 @@ in.inset_size = [0.4 0.2]; % works for 2 panels, AP figure
 in.inset_y_scale_factor = 0.3; % works for 2 panels, AP figure
 in.ap_fig_size = [7.2 6]; % inches, AP figure
 in.dF_ss_wind = [0.3 0.5]; % window to compute steady state in polarization trials
+in.plot_pol_x_vals = 'polarization'; % 'polarization' or 'current', specifies which to use for x values
 in.ap_height_est = [60;120]; % mV - range of AP heights
 in.E_per_mA = 87; % V/m per mA
 in.spline_interp = 0; 
 in.spline_sampling_factor = 5; 
+in.AHP_mode = 1; % 0 - find AHP trough in each trace
+                 % 1 - use AHP time point found in first trial for all 
+                 % [2,time_point] - input time point to use for AHP as 2nd element (not implemented)
 in.plot_width = 0.5; 
 in.norm_AP_feats = 1; % 1 - plot % change in AP features, 0 - plot abs differences
 in.pol_smooth_wind = 30; 
-in.rise_fit_dur = 30; % duration in ms of polarization stimulus pulse to 
+in.rise_fit_dur = 50; % duration in ms of polarization stimulus pulse to 
                       % use for fitting rise time constant 
 in.decay_fit_dur = 50; % duration in ms of post-stim phase to 
                       % use for fitting decay time constant                        
@@ -88,10 +93,14 @@ end
 % Only average trials with successful AP 
 meanAPs = cell(1,length(AP_data.deltaF_F0_aligned2_all));
 for i = 1:length(AP_data.deltaF_F0_aligned2_all)
-    si = successful_spikes{i}; 
+    if strcmp(in.roi_func_mode,'separate')
+        si = squeeze(successful_spikes{i}(in.roi_ind,:,:)); 
+    else
+        si = successful_spikes{i}; 
+    end
     for j = 1:AP_data.exp_settings(1).num_trains
-        meanAPs{i}(:,j) = indicator_dir*mean(AP_data.deltaF_F0_aligned2_all{i}(:,1,j,logical(si(j,:))),[2,3,4]);
-        if any(~si(j,:))
+        meanAPs{i}(:,j) = indicator_dir*mean(AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,j,logical(si(j,:))),[2,3,4]);
+        if any(~si(in.roi_ind,j,:))
             fprintf('%g missed spikes for amp %g, train %g of %g\n',sum(~si(j,:),'all'),...
                     amps(i),j,AP_data.exp_settings(1).num_trains); 
         end
@@ -102,7 +111,7 @@ end
 tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(meanAPs{1},1));
 tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
 
-mean_pols = cell2mat(cellfun(@(x) indicator_dir*squeeze(mean(x,[2,3])),...
+mean_pols = cell2mat(cellfun(@(x) indicator_dir*squeeze(mean(x(:,in.roi_ind,:),3)),...
                     pol_data.deltaF_F0_aligned_all,'UniformOutput',0));
 tpol = 1e3*pol_data.exp_settings(1).getTimeVector(size(mean_pols,1));
 tpol = tpol - tpol(pol_data.exp_settings(1).baseline_wind + 1);
@@ -173,12 +182,12 @@ for j = 1:length(amps) % dc amp
         AP_peaks(i,j) = 100*max(meanAPs{j}(stim_index0:end,i)); % percent deltaF/F
 %         [AHP_amps(i,j),AHP_inds(i,j)] = AHP_amp(tAP*1e-3,meanAPs{j}(:,i),stim_index0,0,[],...
 %                                 'smooth_trace',1,'smooth_span',10);
-        if i == 1 && j == 1
+        if i == 1 && j == 1 && in.AHP_mode == 1 || in.AHP_mode == 0
             [AHP_amps_ij,AHP_inds(i,j)] = AHP_amp(t,y,stim_index,0,[],...
                                     'smooth_trace',1,...
                                     'smooth_span',10*in.spline_sampling_factor,...
                                     'max_ahp_wind',in.spline_sampling_factor*AP_data.exp_settings(1).convert2Frames(0.03)); % AHP max 30 ms
-        else
+        elseif in.AHP_mode == 1
              AHP_inds(i,j) = AHP_inds(1,1); % use same time point across trials
              [AHP_amps_ij,~] = AHP_amp(t,y,stim_index,0,[],...
                                     'smooth_trace',1,...
@@ -389,7 +398,7 @@ end
 %% Plot modulation of fwhm, peak, and ahp
 % x_vals = amps;
 [~,amp_inds_mod,amp_inds] = intersect(amps,pol_amps); % get corresponding current amps from polarization trials
-if isempty(amp_inds)
+if isempty(amp_inds) || strcmp(in.plot_pol_x_vals,'current')
 %     pol_x_vals = b(1) + b(2)*amps;
 %     xlabel_str = 'Polarization (% AP peak - est)';
     pol_x_vals = amps; 
@@ -401,7 +410,7 @@ else
 end
 if any(amps == 0)
     amp_inds_mod = [amp_inds_mod(amps(amp_inds_mod)<0);find(amps==0);amp_inds_mod(amps(amp_inds_mod)>0)];
-    if isempty(amp_inds)
+    if isempty(amp_inds) || strcmp(in.plot_pol_x_vals,'current')
         pol_x_vals = [pol_x_vals(amps<0),0,pol_x_vals(amps>0)];
     else
         pol_x_vals = [pol_x_vals(pol_amps(amp_inds)<0),0,pol_x_vals(pol_amps(amp_inds)>0)];
@@ -478,7 +487,7 @@ if any(in.plot_figs == 4)
     plot(tAP,100*normAP_trace,'Color',0.4*[1 1 1]);
     ax = gca;
     hold(ax,'on')
-    ax2 = axes('Position',[0.4 0.4 0.5 0.4]);
+    ax2 = axes('Position',[0.4 0.6 0.5 0.3]);
     % plot(ax2,tAP,100*normAP_trace,'Color',0.4*[1 1 1]);
     % fc = 100; % Hz
     % [b,a] = butter(1,fc/(fs_pol/2),'low');
