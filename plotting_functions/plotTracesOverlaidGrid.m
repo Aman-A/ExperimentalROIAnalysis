@@ -144,7 +144,8 @@ for i = 1:Nax
                 axis(ax_leg,'off');
             end
             if in.mode == 1
-                legend(ax_leg,strrep(in.leg_labels,'_',' '),'Box','off');                            
+                legend(ax_leg,strrep(in.leg_labels,'_',' '),...
+                            'Box','off','Location','Best');                            
             end
         end
     end
