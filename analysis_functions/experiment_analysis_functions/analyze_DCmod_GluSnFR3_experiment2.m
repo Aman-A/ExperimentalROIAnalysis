@@ -307,7 +307,7 @@ if any(in.plot_figs == 4)
             yij = yi(2,:,:)/mean(yi(1,:,:),'all','omitnan');
             yij = yij(:);
 %             if plot_violin
-                violin(yij,'x',xi,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
+                violin_func(yij,'x',xi,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
                     'medc','r','mc',[]);
 %             else
 %                 boxplot(yij,'Positions',xi);
@@ -316,7 +316,7 @@ if any(in.plot_figs == 4)
         else
             for j = 1:2
                 yij = yi(j,:,:); yij = yij(:);
-%                 violin(yij,'x',xi+xoffset(j),'edgecolor',stim_cols{j},'facecolor',stim_cols3{j},...
+%                 violin_func(yij,'x',xi+xoffset(j),'edgecolor',stim_cols{j},'facecolor',stim_cols3{j},...
 %                     'medc',stim_cols{j},'mc',[]);
                 hold on;
             end
@@ -330,7 +330,7 @@ if any(in.plot_figs == 4)
         peaks_before_roi = cell2mat(cellfun(@(x) squeeze(x(1,in.plot_roi_ind,:))',peaks,'UniformOutput',0));        
     end
 %     boxplot(peaks_before_roi,'Positions',0);
-    violin(peaks_before_roi,'x',0,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
+    violin_func(peaks_before_roi,'x',0,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
                     'medc','r','mc',[]);
     ax = gca;
     plot([cond_xvec_all;cond_xvec_all]+1,ax.YLim,'k');

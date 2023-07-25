@@ -9,6 +9,8 @@ in.color = 'w';
 in.show_text = 1; 
 in.sbar_lw = 4;
 in.sbar_len = []; 
+in.font_size = 16;
+in.font_name = 'Helvetica';
 in = sl.in.processVarargin(in,varargin); 
 % get integer length (µm) and convert back to pixels
 if strcmp(ax.YDir,'normal')    
@@ -47,6 +49,7 @@ if in.show_text
     text(in.x_factor*imsize(2) + sbar_pixel_len/2,...
             text_y_factor*y_factor*imsize(1),sprintf('%g \\mu m',sbar_len),...
             'VerticalAlignment',vert_align,'HorizontalAlignment','center',...
-            'Color',in.color,'FontSize',16,'FontWeight','bold'); 
+            'Color',in.color,'FontSize',in.font_size,'FontWeight','bold',...
+            'FontName',in.font_name); 
 end
 end

@@ -147,7 +147,9 @@ for k = 1:length(roi_func_modes)
             end
         end
         % currently only allow for single roiset for all trials
-        roiset_filenamei = def.roiset_filename{i};
+        roiset_filenamei = fullfile(psi_main.data_fold,psi_main.exp_date,...
+                                    psi_main.reporter,psi_main.dish,...
+                                    def.roiset_filename{i});
         out = plotTrials_multipleConditions(conditions,psi_main,exp_settingsi,...
                                       roiset_filenamei);
         % Save summary figs
