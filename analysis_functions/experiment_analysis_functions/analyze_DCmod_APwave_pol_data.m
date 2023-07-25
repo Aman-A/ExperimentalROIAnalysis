@@ -28,6 +28,7 @@ in.pol_cols = flipud([ 0.6445         0    0.1484 % for 8
 %             0.2695    0.4570    0.7031
             0.1914    0.2109    0.5820]);
 in.norm_AP_peak = 0; 
+in.mean_AP_peak_align = 0; 
 in.align_AP_to = 'none';
 in.inset_size = [0.4 0.2]; % works for 2 panels, AP figure
 in.inset_y_scale_factor = 0.3; % works for 2 panels, AP figure
@@ -92,26 +93,46 @@ if isfield(AP_data,'successful_spikes')
 else
     error('Need successful_spikes to compute averaged AP')
 end
+% time vector
+tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(AP_data.deltaF_F0_aligned2_all{1},1));
+tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
 % Only average trials with successful AP 
 meanAPs = cell(1,length(AP_data.deltaF_F0_aligned2_all));
+tAPs = cell(1,length(AP_data.deltaF_F0_aligned2_all));
 for i = 1:length(AP_data.deltaF_F0_aligned2_all)
     if strcmp(in.roi_func_mode,'separate')
         si = squeeze(successful_spikes{i}(in.roi_ind,:,:)); 
     else
         si = successful_spikes{i}; 
-    end
+    end    
+    yi = indicator_dir*AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,:,:); 
     for j = 1:AP_data.exp_settings(1).num_trains
-        meanAPs{i}(:,j) = indicator_dir*mean(AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,j,logical(si(j,:))),[2,3,4]);
+        yi(:,in.roi_ind,j,~logical(si(j,:))) = nan; % blank traces with no AP
         if any(~si(in.roi_ind,j,:))
             fprintf('%g missed spikes for amp %g, train %g of %g\n',sum(~si(j,:),'all'),...
                     amps(i),j,AP_data.exp_settings(1).num_trains); 
         end
-    end        
+    end
+    if in.mean_AP_peak_align
+        [tAPs{i},meanAPs{i}] = averagePeakAlignedTraces(tAP,AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,:,:),...
+                                     AP_data.exp_settings(1).baseline_wind + 1,4); 
+    else
+        meanAPs{i} = squeeze(mean(yi,[2 4],'omitnan'));
+    end    
+end
+if in.mean_AP_peak_align
+    % keep min shared time points across traces
+    nbefore = min(cellfun(@(x) sum(x<0),tAPs,...
+                 'UniformOutput',1),[],'all');
+    nafter = min(cellfun(@(x) sum(x>0),tAPs,...
+                    'UniformOutput',1),[],'all');
+    % make shared time base
+    tAP = tAPs{1}((find(tAPs{1}==0)-nbefore):(find(tAPs{1}==0)+nafter));
+    meanAPs = cellfun(@(x,y) x(find(y==0)-nbefore:find(y==0)+nafter,:),...
+        meanAPs,tAPs,'UniformOutput',0);
 end
 % meanAPs = cellfun(@(x) squeeze(mean(x,[2,4])),AP_data.deltaF_F0_aligned2_all,...
 %                 'UniformOutput',0);
-tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(meanAPs{1},1));
-tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
 
 mean_pols = cell2mat(cellfun(@(x) indicator_dir*squeeze(mean(x(:,in.roi_ind,:),3)),...
                     pol_data.deltaF_F0_aligned_all,'UniformOutput',0));
@@ -339,7 +360,7 @@ if any(in.plot_figs == 1)
             y_sbar_len = 5; % 5 % deltaF/F
             ylabel('\Delta F/F_{0} (%)')
         end
-        if strcmp(in.align_AP_to,'max')        
+        if strcmp(in.align_AP_to,'max') || in.mean_AP_peak_align       
             [~,max_inds] = max(yi(stim_wind_inds,:),[],1);
             ti = zeros(length(tAP),size(yi,2));
             for j = 1:size(yi,2)
@@ -418,7 +439,7 @@ else
     xlabel_str = 'Polarization (% AP peak)';
 end
 if any(amps == 0)
-    amp_inds_mod = [amp_inds_mod(amps(amp_inds_mod)<0);find(amps==0);amp_inds_mod(amps(amp_inds_mod)>0)];
+    amp_inds_mod = [amp_inds_mod(amps(amp_inds_mod)<0),find(amps==0),amp_inds_mod(amps(amp_inds_mod)>0)];
     if isempty(amp_inds) || strcmp(in.plot_pol_x_vals,'current')
         pol_x_vals = [pol_x_vals(amps<0),0,pol_x_vals(amps>0)];
     else

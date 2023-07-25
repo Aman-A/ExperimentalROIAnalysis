@@ -27,6 +27,7 @@ in.stim_pulse_dur = []; % duration of stimulus pulses, default ignore
 in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in.plot_settings = {};
+in.peak_align = 1;
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     figure;
@@ -53,40 +54,11 @@ else
     end
 end
 baseline_wind = size(func_output.baseline_wind_inds,1);
-if regexp(func_name,'aligned','ONCE') 
-%     std_y = std(y,0,ndims(y));
-    if strcmp(func_name,'deltaF_F0_aligned')
-        if strcmp(func_output.roi_func_mode,'combine')
-            y = squeeze(mean(y,3,'omitnan')); % mean across trains or stimuli
-        else
-            y = squeeze(mean(y,3:ndims(y),'omitnan')); 
-        end
-    else
-        if strcmp(func_output.roi_func_mode,'combine')
-            y = squeeze(mean(y,[2 4],'omitnan')); % mean within trains
-        else
-%             y = squeeze(mean(y,3:ndims(y),'omitnan')); 
-            y = mean(y,4,'omitnan'); 
-            % concatenate average response to each 
-            % train, plot as single trace in each ROI
-            if size(stim_frames,1) > 1
-                y_all = zeros(size(y,1)*size(stim_frames,1),size(y,2));
-                starti = 1; endi = size(y,1);
-                for i = 1:size(stim_frames,1)
-                    y_all(starti:endi,:) = y(:,:,i);
-                    starti = endi + 1; 
-                    endi = endi + size(y,1);
-                end
-            end
-            y = y_all; 
-        end
-    end
-end
 if nargin < 4 || isempty(sampling_rate)
-    x = 1:size(y,1); % frames    
+    x = (1:size(y,1))'; % frames    
     unit_str = 'frames';
 else    
-    x = (1:size(y,1))/sampling_rate; % convert frames to time in sec
+    x = (1:size(y,1))'/sampling_rate; % convert frames to time in sec
     stim_frames = stim_frames/sampling_rate; 
 %     if length(stim_frames) == 1 % set t = 0 to single stimulus time
 %         x = x - stim_frames; 
@@ -102,6 +74,51 @@ else
     end
     unit_str = 'sec'; 
 end
+
+if regexp(func_name,'aligned','ONCE') 
+%     std_y = std(y,0,ndims(y));
+    if strcmp(func_name,'deltaF_F0_aligned')
+        if strcmp(func_output.roi_func_mode,'combine')
+            if in.peak_align
+                [x,y] = averagePeakAlignedTraces(x,y,baseline_wind+1,3);
+            else
+                y = squeeze(mean(y,3,'omitnan')); % mean across trains or stimuli
+            end
+        else
+            y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+        end
+    else
+        if strcmp(func_output.roi_func_mode,'combine')
+            if in.peak_align
+                [x,y] = averagePeakAlignedTraces(x,y,baseline_wind+1,4);
+            else
+                y = squeeze(mean(y,[2 4],'omitnan')); % mean within trains
+            end
+        else
+%             y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+            if in.peak_align
+                [x,y] = averagePeakAlignedTraces(x,y,baseline_wind+1,4);
+            else
+                y = mean(y,4,'omitnan'); 
+            end
+            % concatenate average response to each 
+            % train, plot as single trace in each ROI
+            if size(stim_frames,1) > 1
+                y_all = zeros(size(y,1)*size(stim_frames,1),size(y,2));
+                starti = 1; endi = size(y,1);
+                for i = 1:size(stim_frames,1)
+                    y_all(starti:endi,:) = y(:,:,i);
+                    starti = endi + 1; 
+                    endi = endi + size(y,1);
+                end
+                y = y_all; 
+                x = (1:size(y,1))'/sampling_rate; % convert frames to time in sec
+                x = x - x(baseline_wind+1); 
+            end            
+        end
+    end
+end
+
 if isempty(in.rois)
     num_rois = length(func_output.roi_inds);    
     roi_names = numericVec2chars(func_output.roi_inds,'ROI%g');    
