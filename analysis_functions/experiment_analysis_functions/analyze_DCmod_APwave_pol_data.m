@@ -225,11 +225,20 @@ end
 % calculate change in width, AP peak, and AHP amp normalized to before DC
 % waveform
 plot_widths = mean_widths(:,:,value2ind(in.plot_width,in.frac_amps));
-if in.norm_AP_feats
+if in.norm_AP_feats == 1
     % percent changes
     norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
     norm_AP_peaks = 100*(AP_peaks(2,:)-AP_peaks(1,:))./AP_peaks(1,:);
     norm_AHP_amps = 100*(AHP_amps(2,:)-AHP_amps(1,:))./abs(AHP_amps(1,:));
+elseif in.norm_AP_feats == 2 % requires 0 mA control trial
+    norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
+    norm_AP_peaks = 100*(AP_peaks(2,:)-AP_peaks(1,:))./AP_peaks(1,:);
+    norm_AHP_amps = 100*(AHP_amps(2,:)-AHP_amps(1,:))./abs(AHP_amps(1,:));
+    % subtract from 0 mA control trial
+    cont_ind = amps == 0; 
+    norm_widths = norm_widths - norm_widths(cont_ind);
+    norm_AP_peaks = norm_AP_peaks - norm_AP_peaks(cont_ind);
+    norm_AHP_amps = norm_AHP_amps - norm_AHP_amps(cont_ind);
 else
     % abs differences
     norm_widths = plot_widths(2,:)-plot_widths(1,:); % ms
