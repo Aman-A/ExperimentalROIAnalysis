@@ -327,7 +327,7 @@ if any(in.plot_figs == 4)
                             squeeze(x(1,in.plot_roi_ind,:))'/mean(x(1,in.plot_roi_ind,:),'all'),...
                             peaks,'UniformOutput',0))';
     else
-        peaks_before_roi = cell2mat(cellfun(@(x) squeeze(x(1,in.plot_roi_ind,:))',peaks,'UniformOutput',0));        
+        peaks_before_roi = cell2mat(cellfun(@(x) squeeze(x(1,in.plot_roi_ind,:))',peaks,'UniformOutput',0))';        
     end
 %     boxplot(peaks_before_roi,'Positions',0);
     violin_func(peaks_before_roi,'x',0,'edgecolor',0*[1 1 1],'facecolor',0.5*[1 1 1],...
@@ -385,8 +385,12 @@ peaks_per_change_sem_rois = peaks_per_change_std_rois./sqrt(num_stim*num_trials)
 mean_peaks_rois_norm = mean_peaks_rois./mean_peaks_rois(:,1,:);
 sem_peaks_rois_norm = sem_peaks_rois./mean_peaks_rois(:,1,:);
 % sort arrays by ROIs with highest percent modulation 
-[~,sort_rois] = sort(abs(peaks_per_change_rois(:,sort_amp_ind)),'descend');
 roi_inds = 1:num_rois;
+if sort_amp_ind ~= 0
+    [~,sort_rois] = sort(abs(peaks_per_change_rois(:,sort_amp_ind)),'descend');
+else
+    sort_rois = roi_inds; 
+end
 roi_inds1 = roi_inds(sort_rois);
 mean_peaks_rois = mean_peaks_rois(sort_rois,:,:);
 std_peaks_rois = std_peaks_rois(sort_rois,:,:);
@@ -452,8 +456,13 @@ if any(in.plot_figs == 5)
     ylabel('Mean peak \Delta F/F_{0} ')
     box off; grid on;
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
-    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-            mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    if sort_amp_ind > 0
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
+                mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    else
+         title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
+                mode(num_stim*num_trials)));    
+    end
     ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
@@ -473,9 +482,14 @@ if any(in.plot_figs == 5)
     xlabel('ROI index');
     ylabel('Mean peak \Delta F/F_{0} (norm. to 0 mA)')
     box off; grid on;
-    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
-    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-            mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')  
+    if sort_amp_ind > 0
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
+            mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+    else
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
+            mode(num_stim*num_trials)));
+    end
     ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
@@ -521,8 +535,13 @@ if any(in.plot_figs == 5)
     ylabel('Change in mean peak \Delta F/F_{0} (%)')
     box off; grid on;
 %     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
-    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-        mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+    if sort_amp_ind > 0
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
+            mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+    else
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
+            mode(num_stim*num_trials)));
+    end
     ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;    
@@ -544,8 +563,13 @@ if any(in.plot_figs == 5)
     ylabel('Change in mean peak \Delta F/F_{0} (%)')
     box off; grid on;
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
-    title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-            mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+    if sort_amp_ind > 0
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
+            mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+    else
+        title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
+            mode(num_stim*num_trials)));
+    end
     ax.XLim = [0 num_rois + 1];
     ax.XTick = 1:num_rois;
     ax.XTickLabel = roi_inds1;
