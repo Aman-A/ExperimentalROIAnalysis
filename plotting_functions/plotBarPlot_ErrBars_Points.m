@@ -17,6 +17,7 @@ in.x_vals = [];
 in.plot_err = 'sem'; % 'std' or 'sem' to use st dev or standard error for error bars
 in.bar_labels = {}; % cell array of string labels for bars
 in.bar_cols = {}; 
+in.bar_alphas = {};
 in.font_name = 'Arial';
 in.font_size = 16; 
 in.jitter_amount = 0.05; 
@@ -24,6 +25,7 @@ in.pt_size = 24;
 in.pt_cols = []; % color data for scatter plot
 in.pt_marker = 'o';
 in.print_level = 0; 
+in.connect_pts = 0; 
 in = sl.in.processVarargin(in,varargin);
 if iscell(data)
     n_pts = cellfun(@length,data,'UniformOutput',1);
@@ -71,18 +73,30 @@ for i = 1:n_bars
     if ~isempty(in.bar_cols)
         b.FaceColor = in.bar_cols{i}; 
     end
+    if ~isempty(in.bar_alphas)
+        b.FaceAlpha = in.bar_alphas{i}; 
+    end
 end
 ax = gca; 
 box(ax,'off');
-% error bars
-e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',3,...
-            'Marker','none');
 % data points
-if isempty(in.pt_cols)
-    s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);      
+if in.connect_pts
+    l = plot(x_vals,data_mat,'-o','LineWidth',0.5);
+    if ~isempty(in.pt_cols)
+        for i = 1:n_pts
+            l(i).Color = in.pt_cols(i,:);
+        end
+    end
 else
-    s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);      
+    if isempty(in.pt_cols)
+        s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+    else
+        s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+    end
 end
+% error bars
+e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',4,...
+            'Marker','none');
 ax.XTick = x_vals;
 if ~isempty(in.bar_labels)
     ax.XTickLabel = in.bar_labels;

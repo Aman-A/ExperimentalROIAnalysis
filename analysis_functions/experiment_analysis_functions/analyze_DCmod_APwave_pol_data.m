@@ -448,7 +448,7 @@ else
     xlabel_str = 'Polarization (% AP peak)';
 end
 if any(amps == 0)
-    amp_inds_mod = [amp_inds_mod(amps(amp_inds_mod)<0),find(amps==0),amp_inds_mod(amps(amp_inds_mod)>0)];
+    amp_inds_mod = [amp_inds_mod(amps(amp_inds_mod)<0);find(amps==0);amp_inds_mod(amps(amp_inds_mod)>0)];   
     if isempty(amp_inds) || strcmp(in.plot_pol_x_vals,'current')
         pol_x_vals = [pol_x_vals(amps<0),0,pol_x_vals(amps>0)];
     else
