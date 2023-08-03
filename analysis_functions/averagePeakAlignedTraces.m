@@ -14,7 +14,11 @@ for i = 1:ntraces
     [indi,indj] = ind2sub(ydims(dim_inds(dim_inds~=dim)),i); % subscripts of this trace    
 %     yindsi = {indi,indj}; % build indexing array for y_all
     indsi = arrayfun(@(x) 1:x,ydims(2:end),'UniformOutput',0); % build indexing arrays
-    indsi(dim_inds~=dim) = {indi,indj};
+    if length(dim_inds) == 2
+        indsi(dim_inds~=dim) = {indi};
+    else
+        indsi(dim_inds~=dim) = {indi,indj};
+    end
     yi = squeeze(y(:,indsi{:}));
     [ti,yia,pk_indi] = peakAlignTraces(t,yi,stim_index,'stim_wind',in.stim_wind,...
                               'align_to',in.align_to);
