@@ -37,6 +37,7 @@ in.dF_ss_wind = [0.3 0.5]; % window to compute steady state in polarization tria
 in.plot_pol_x_vals = 'polarization'; % 'polarization' or 'current', specifies which to use for x values
 in.ap_height_est = [60;120]; % mV - range of AP heights
 in.E_per_mA = 87; % V/m per mA
+in.norm_AP_cond_ind = []; 
 in.spline_interp = 1; 
 in.spline_sampling_factor = 5; 
 in.AHP_mode = 1; % 0 - find AHP trough in each trace
@@ -144,7 +145,11 @@ dF_ss = mean(mean_pols(dF_ss_wind_inds(1):dF_ss_wind_inds(2),:),1);
 % normalize to AP peak
 AP_trial_times = cellfun(@(x) max(x),AP_data.trial_times_all,'UniformOutput',1); 
 pol_trial_times = cellfun(@(x) max(x),pol_data.trial_times_all,'UniformOutput',1);
-[~,last_AP_cond_ind] = min(abs(AP_trial_times-min(pol_trial_times)));
+if isempty(in.norm_AP_cond_ind)
+    [~,last_AP_cond_ind] = min(abs(AP_trial_times-min(pol_trial_times)));
+else
+    last_AP_cond_ind = in.norm_AP_cond_ind; 
+end
 % [~,last_AP_cond_ind] = max(cellfun(@(x) max(x),AP_data.rel_times_cond_starts,'UniformOutput',1));
 % last_AP_cond_ind = 2;
 normAP_trace = meanAPs{last_AP_cond_ind}(:,1); % control AP waveform of last DC mod trial
