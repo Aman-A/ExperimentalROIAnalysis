@@ -35,7 +35,7 @@ if in.load_compiled_dataset && exist(dataset_filepath,'file')
     if isfield(all_data,'extra_data')
         extra_data = all_data.extra_data;
     else
-        extra_data = []; 
+        extra_data = {}; 
     end    
     fprintf('Loaded compiled dataset from %s in %.3f sec\n',dataset_filepath, elapsed_time);
 else
