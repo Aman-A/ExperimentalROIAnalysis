@@ -193,7 +193,7 @@ elseif strcmp(in.roi_func_mode,'separate')
         mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
         std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
     end    
-    bslines = cell2mat(reshape(bslines,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
+    bslines = cell2mat(reshape(bslines,1,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = trialsCell2Mat(deltaF_F0);
     mean_deltaF_F0 = mean(deltaF_F0,[3 4],'omitnan');    
     fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
