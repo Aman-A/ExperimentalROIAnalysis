@@ -183,7 +183,7 @@ else
                 0,size(y,2));
         if strcmp(ax.YLimMode,'auto') % YLim wasn't set, set now
 %             ax.YLim = (offset(1)+max(y(:,1)))*[-0.05 1];
-            ax.YLim = [min(y(:,end)),(offset(1)+max(y(:,1)))];
+            ax.YLim = [min(y(:,end)),(offset(1)+max(y,[],'all'))];
         else
             offset = linspace(num_rois*in.offset_factor,...
                 0,size(y,2));
