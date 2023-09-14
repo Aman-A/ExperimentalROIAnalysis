@@ -1,6 +1,7 @@
 function char_cell_array = numericVec2chars(vec,str_pattern)
 %NUMERICVEC2STRINGS Convert vector of numbers to cell array of char vectors
 % using str_pattern
+% char_cell_array = numericVec2chars(vec,str_pattern)
 % Reproduces behavior of arrayfun(@(x)
 % sprintf(str_pattern,x),vec,'UniformOutput',0)
 %  
