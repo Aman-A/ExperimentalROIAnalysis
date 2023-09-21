@@ -171,6 +171,7 @@ end
 control_peak_mod = 100*(mean_peaks_cont_during-mean_peaks_cont_before)./mean_peaks_cont_before;
 drug_peak_mod = 100*(mean_peaks_drug_during-mean_peaks_drug_before)./mean_peaks_drug_before;
 fig = figure; 
+y_lim = [inf,-inf];
 for i = 1:size(control_peak_mod,1)
     ax = subplot(1,size(control_peak_mod,1),i);
     e = errorbar([1,2],[mean(control_peak_mod(i,:));mean(drug_peak_mod(i,:))],...
@@ -194,6 +195,11 @@ for i = 1:size(control_peak_mod,1)
     if h
         plot(1.5,ax.YLim(2)*0.95,'r','Marker','*');
     end
+    y_lim(1) = min(ax.YLim(1),y_lim(1));
+    y_lim(2) = max(ax.YLim(2),y_lim(2));
+end
+for i = 1:length(fig.Children)
+    fig.Children(i).YLim = y_lim; 
 end
 % legend('Control',drug_name,'Interpreter','none','Box','off')
 % xlim([0.9 2.1])
@@ -201,6 +207,7 @@ end
 if save_figs
     printFig(fig,fig_fold,sprintf('peak_mod_control_vs_%s',drug_name));
 end
+
 %% Look at ROIs with change in direction of modulation 
 
 %% Look at peaks over time
