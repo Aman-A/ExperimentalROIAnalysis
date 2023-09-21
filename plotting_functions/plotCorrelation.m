@@ -1,5 +1,6 @@
 function [p_hand,l_hand,Rsq,p,b] = plotCorrelation(x,y,varargin)
-%PLOTCORRELATION ... 
+%PLOTCORRELATION plot correlation between two variables with scatter plot
+%and regression line overlaid
 %  
 %   Inputs 
 %   ------ 

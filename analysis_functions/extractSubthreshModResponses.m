@@ -38,7 +38,7 @@ for i = 1:num_dishes
     [included_ampsi,amp_indsi,plot_amp_indsi] = intersect(subthresh_amps{i},plot_amps,'stable');            
     num_roisi = data{i}.rois_all{1}{1}.num_rois;
     num_rois(i) = num_roisi;
-    for jp = 1:length(plot_amps)  %length(amp_indsi)        
+    for jp = 1:length(plot_amps)  %length(amp_indsi)          
         if any(plot_amps(jp) == subthresh_amps{i})
             j = find(included_ampsi == plot_amps(jp));        
             peaksij = peaksi{amp_indsi(j)}; % 3 x num_rois x 20 x num_trials
@@ -46,6 +46,7 @@ for i = 1:num_dishes
             num_trials  = size(peaksij,4);       
             peak_indj = plot_amp_indsi(j); % index in final peaks array                 
             num_peaksij = prod(size(peaksij,[3 4]));
+            dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
 %             max_num_peaks = max(num_peaksij,size(peaks_before{peak_indj},2));
             if num_trials >= min_num_trials_per_amp                            
                 % add peaks from this experiment, fill with nans if fewer than
@@ -97,21 +98,21 @@ for i = 1:num_dishes
                                                     nan([size(dF_al2_afterij,...
                                                     [1,2]),max_num_peaks(jp)-size(dF_al2_afterij,3)]))];                
                 end
-                dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
+                % dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
                 
             else                                
                 peaks_before{peak_indj} = [peaks_before{jp};nan(num_roisi,max_num_peaks(jp))];
                 peaks_during{peak_indj} = [peaks_during{jp};nan(num_roisi,max_num_peaks(jp))];                
                 dF_al2_before{peak_indj} = [dF_al2_before{peak_indj},...
-                                            nan(size(dF_al2_before{peak_indj},1),...
+                                            nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))];
                 dF_al2_during{peak_indj} = [dF_al2_during{peak_indj},...
-                                            nan(size(dF_al2_before{peak_indj},1),...
+                                            nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))];
                 if include_after
                     peaks_after{peak_indj} = [peaks_after{jp};nan(num_roisi,max_num_peaks(jp))];
                     dF_al2_after{peak_indj} = [dF_al2_after{peak_indj},...
-                                            nan(size(dF_al2_before{peak_indj},1),...
+                                            nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))];                
                 end
                 fprintf('Only %g trials at %g mA in dish %g, exclude\n',...

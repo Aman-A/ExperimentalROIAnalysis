@@ -50,8 +50,8 @@ end
 % calculate mean and error bars
 mean_data = mean(data_mat,1,'omitnan');
 std_data = std(data_mat,0,1,'omitnan');
-sem_data = std_data./sqrt(n_pts);
 if strcmp(in.plot_err,'sem')
+    sem_data = std_data./sqrt(n_pts);
     err_bars = sem_data;
 elseif strcmp(in.plot_err,'std')
     err_bars = std_data;
@@ -95,7 +95,7 @@ else
     end
 end
 % error bars
-e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',4,...
+e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',2,...
             'Marker','none');
 ax.XTick = x_vals;
 if ~isempty(in.bar_labels)

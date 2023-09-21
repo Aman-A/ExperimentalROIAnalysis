@@ -161,44 +161,14 @@ else
     end
 %     title_str = [title_str sprintf(' %g ROIs',num_rois)];     
     if in.offset_factor > 0
-        % Sort traces
-        if ~all(in.sort_traces==0)
-            if length(in.sort_traces) == 1
-                peaks = max(y,[],1);
-                if in.sort_traces == 1                
-                    [~,sort_inds] = sort(peaks,2,'ascend');
-                else 
-                    [~,sort_inds] = sort(peaks,2,'descend');
-                end
-                y = y(:,sort_inds);
-                display_names = display_names(sort_inds);
-            elseif length(in.sort_traces) == size(y,2) % input indices 
-                sort_inds = in.sort_traces; 
-                y = y(:,sort_inds);
-                display_names = display_names(sort_inds);
-            end
-        end
-        % Set vertical offsets
-        offset = linspace(num_rois*in.offset_factor,...
-                0,size(y,2));
-        if strcmp(ax.YLimMode,'auto') % YLim wasn't set, set now
-%             ax.YLim = (offset(1)+max(y(:,1)))*[-0.05 1];
-            ax.YLim = [min(y(:,end)),(offset(1)+max(y,[],'all'))];
-        else
-            offset = linspace(num_rois*in.offset_factor,...
-                0,size(y,2));
-        end
-        lns = plot(ax,x,y+offset,in.plot_settings{:}); % plot trace/s
-        if in.show_y_tick_labels
-            ax.YTick = fliplr(offset);
-            ax.YTickLabel = length(offset):-1:1; 
-            ax.YAxis.FontSize = 10;
-        else
-            ax.YAxis.Visible = 'off';
-        end
-        if in.sbar_len > 0
-            sbar_hand = plot(ax,ax.XLim(1)*ones(1,2)+0.01*range(ax.XLim),[ax.YLim(2)-in.sbar_len,ax.YLim(2)],...
-                        'k','LineWidth',3,'DisplayName',sbar_str); 
+        [lns,sort_inds,sbar_hand] = plotTracesOffset(x,y,in.offset_factor,...
+                                            'ax',ax,'sort_traces',in.sort_traces,...
+                                            'show_y_tick_labels',in.show_y_tick_labels,...
+                                            'sbar_len',in.sbar_len,...
+                                            'plot_settings',in.plot_settings,...
+                                            'sbar_str',sbar_str);
+        if in.sort_traces
+            display_names = display_names(sort_inds);
         end
     else
         lns = plot(ax,x,y,in.plot_settings{:}); % plot trace/s
@@ -214,20 +184,7 @@ else
                                             ax,'stim_pulse_dur',in.stim_pulse_dur);
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
-if strcmp(func_name,'deltaF_F0')
-    ylabel_str = '\Delta F/F_{0}';
-elseif strcmp(func_name,'deltaF')
-    ylabel_str = '\Delta F';
-elseif regexp(func_name,'aligned','ONCE')
-    ylabel_str = 'Mean \Delta F/F_{0}';
-elseif strcmp(func_name,'mean')
-    ylabel_str = 'mean F (a.u.)';
-else
-   ylabel_str = strrep(func_name,'_',' '); 
-end
-if y_flipped
-    ylabel_str = ['- ' ylabel_str];
-end
+ylabel_str = funcNameToLabel(func_name,y_flipped);
 ylabel(ax,ylabel_str)
 box(ax,'off'); 
 if in.title_on
@@ -235,17 +192,16 @@ if in.title_on
 end
 % legend(ax.Children(~ind_stim_times)); 
 if in.show_legend
-    if isempty(stimpoints_hand)
-        leg_objs = [lns;sbar_hand];
-    else
-        leg_objs = [lns;stimpoints_hand(1);sbar_hand];
+    leg_objs = [lns;sbar_hand];
+    if ~isempty(stimpoints_hand)
+        leg_objs = [lns;stimpoints_hand(1);sbar_hand];           
     end
     if strcmp(func_output.roi_func_mode,'combine')    
-        legend(ax,leg_objs,'Interpreter','none',...
-            'Box','off','Location','Best');
+        leg_location = 'Best';
     else
-        legend(ax,leg_objs,'Interpreter','none',...
-            'Box','off','Location','EastOutside');
+        leg_location = 'EastOutside';
     end
+    legend(ax,leg_objs,'Interpreter','none',...
+            'Box','off','Location',leg_location);
 end
 end
