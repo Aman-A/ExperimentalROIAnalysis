@@ -28,6 +28,8 @@ in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in.plot_settings = {};
 in.peak_align = 1;
+in.stim_frames2 = []; 
+in.stim_pulse_dur2 = []; 
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     figure;
@@ -64,7 +66,7 @@ else
 %         x = x - stim_frames; 
 %         stim_frames = 0;     
 %     end
-    if ~isempty(stim_frames) && numel(stim_frames) < 50
+    if ~isempty(stim_frames) && numel(stim_frames) < 40
 %     if ~isempty(stim_frames) && ~strcmp(func_name,'deltaF_F0')
         x = x - stim_frames(1); 
         stim_frames = stim_frames - stim_frames(1); 
@@ -73,6 +75,9 @@ else
         x = x - x(baseline_wind+1); 
     end
     unit_str = 'sec'; 
+    % 2nd source
+    in.stim_frames2 = in.stim_frames2/sampling_rate; 
+    in.stim_pulse_dur2 = in.stim_pulse_dur2/sampling_rate; 
 end
 
 if regexp(func_name,'aligned','ONCE') 
@@ -178,10 +183,16 @@ set(lns,{'DisplayName'},display_names); % set legend names
 
 if isempty(regexp(func_name,'aligned','ONCE'))
     stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax,...
-                                         'stim_pulse_dur',in.stim_pulse_dur);
+                                         'stim_pulse_dur',in.stim_pulse_dur);    
+    if ~isempty(in.stim_frames2)
+        stimpoints_hand2 = addStimPointsToPlot(in.stim_frames2,3,ax,...
+                                        'stim_pulse_dur',in.stim_pulse_dur2,...
+                                        'add_more_pts',1,'color','r',...
+                                        'stim_leg_name','Stim2');
+    end
 else
     stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
-                                            ax,'stim_pulse_dur',in.stim_pulse_dur);
+                                            ax,'stim_pulse_dur',in.stim_pulse_dur);    
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 ylabel_str = funcNameToLabel(func_name,y_flipped);
@@ -196,12 +207,20 @@ if in.show_legend
     if ~isempty(stimpoints_hand)
         leg_objs = [lns;stimpoints_hand(1);sbar_hand];           
     end
+    if ~isempty(stimpoints_hand2)
+        leg_objs = [lns;stimpoints_hand(1);stimpoints_hand2(1);sbar_hand];           
+    end
     if strcmp(func_output.roi_func_mode,'combine')    
         leg_location = 'Best';
     else
         leg_location = 'EastOutside';
     end
+    if length(leg_objs) > 10
+        num_columns = 2;
+    else
+        num_columns = 1; 
+    end
     legend(ax,leg_objs,'Interpreter','none',...
-            'Box','off','Location',leg_location);
+            'Box','off','Location',leg_location,'NumColumns',num_columns);
 end
 end

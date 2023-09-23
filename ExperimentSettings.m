@@ -14,7 +14,15 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                                        % size as stim_vals with duration of
                                        % each stimulus                                        
         baseline_start_frame = 1; % start baseline from 1 frame before 
-                                  % stimulus frames               
+                                  % stimulus frames     
+        % Stimulation with second source
+        stim_vals2 {mustBeNumeric} % N stimuli x M trains array of stimulus times 
+                                  % single train is 1 x N vector, stays in
+                                  % same units as input
+        stim_pulse_dur2 {mustBeNumeric} % Stimulus pulse duration/s, scalar 
+                                       % for uniform duration, or array same
+                                       % size as stim_vals with duration of
+                                       % each stimulus                                       
     end
     properties (Dependent)
         num_stim  % number of stimuli within train
@@ -41,6 +49,8 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                                 sampling_rate,varargin)
 %             in.print_level = 0;        
               in.stim_pulse_dur = [];
+              in.stim_vals2 = [];
+              in.stim_pulse_dur2 = []; 
               in = sl.in.processVarargin(in,varargin); 
             if nargin > 0
 %                 obj.initial_units = units; 
@@ -50,7 +60,9 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                 obj.stim_wind = stim_wind;
                 obj.baseline_wind = baseline_wind;                                                        
                 obj.stim_pulse_dur = in.stim_pulse_dur; 
-                obj.stim_vals = stim_vals; % set other properties first so get method can update stim_wind_inds/baseline_inds
+                obj.stim_vals = stim_vals; % set other properties first so get method can update stim_wind_inds/baseline_inds                
+                obj.stim_pulse_dur2 = in.stim_pulse_dur2; 
+                obj.stim_vals2 = in.stim_vals2;
                 obj.convert2Frames()
             end                    
         end
@@ -62,10 +74,11 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                     obj.stim_vals = round(obj.stim_vals*obj.sampling_rate); % round to nearest frame
                     obj.stim_wind = round(obj.stim_wind*obj.sampling_rate);
                     obj.baseline_wind = round(obj.baseline_wind*obj.sampling_rate);
-                    if ~isempty(obj.stim_pulse_dur)
-                        obj.stim_pulse_dur = max(round(obj.stim_pulse_dur*obj.sampling_rate),1); % if <1 frame, set to 1
-                    end
-                    obj.units = 'frames';                    
+                    obj.stim_pulse_dur = max(round(obj.stim_pulse_dur*obj.sampling_rate),1); % if <1 frame, set to 1
+                    obj.units = 'frames';   
+                    % 2nd source
+                    obj.stim_vals2 = round(obj.stim_vals2*obj.sampling_rate); % round to nearest frame
+                    obj.stim_pulse_dur2 = max(round(obj.stim_pulse_dur2*obj.sampling_rate),1); % if <1 frame, set to 1                    
                 end            
             else
                 varargout = {ceil(varargin{1}*obj.sampling_rate)};
@@ -80,7 +93,10 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                    obj.stim_wind = obj.stim_wind/obj.sampling_rate; 
                    obj.baseline_wind = obj.baseline_wind/obj.sampling_rate;                
                    obj.stim_pulse_dur = obj.stim_pulse_dur/obj.sampling_rate; 
-                   obj.units = 'sec';                   
+                   obj.units = 'sec';  
+                   % 2nd source
+                   obj.stim_vals2 = obj.stim_vals2/obj.sampling_rate; 
+                   obj.stim_pulse_dur2 = obj.stim_pulse_dur2/obj.sampling_rate; 
                 end           
             elseif nargin == 2 % just convert input value/s
                 varargout = {frames_val/obj.sampling_rate}; 

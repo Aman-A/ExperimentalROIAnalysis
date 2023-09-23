@@ -23,6 +23,7 @@ in.plot_y_factor = 0.99;
 in.color = 'k';
 in.lw_mode3 = 1.5;
 in.point_marker_size = 8;
+in.add_more_pts = 0; % by default, only add to axes if not previously added
 in = sl.in.processVarargin(in,varargin);
 if nargin < 3
     ax = gca;
@@ -47,7 +48,7 @@ else
 end
 leg_names = {ax.Children.DisplayName};
 ind_stim_times = strcmp(leg_names,stim_leg_name);
-if ~any(ind_stim_times) % only plot if stim times don't already exist on this axis
+if ~any(ind_stim_times) || in.add_more_pts % only plot if stim times don't already exist on this axis
     hold(ax,'on');
     if stim_marker_mode == 1
         stimpoints_hand = plot(ax,stim_frames,ax.YLim(2)*in.plot_y_factor*ones(1,length(stim_frames)),...
