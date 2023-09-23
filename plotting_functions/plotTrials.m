@@ -56,6 +56,7 @@ trial_times = NaT(1,num_trials);
 bslines = cell(1,num_trials); 
 means = cell(1,num_trials); 
 rois_all = cell(1,num_trials); 
+imgs_all = cell(1,num_trials);
 % Format roi_set_filename
 if ischar(roiset_filename) || ~iscell(roiset_filename)
     roiset_filename = repmat({roiset_filename},1,num_trials);
@@ -107,14 +108,23 @@ for i = 1:num_trials
     if isfield(datai.func_output,'deltaF')
         deltaF{i} = datai.func_output.deltaF;        
     end
+    if isfield(datai,'imgs')
+        imgs_all{i} = datai.imgs; 
+    end
 end
 if isempty(in.analysis_funcs)
     if strcmp(in.reporter,'GluSnFR3') || strcmp(in.reporter,'GluSnFR3_SynmRuby')
         analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
+        if isempty(in.spike_window)
+            in.spike_window = 0.1; 
+        end
     elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
         analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
     elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon','Voltron'})))
         analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
+        if isempty(in.spike_window)
+            in.spike_window = 0.1; 
+        end
     else
         analysis_funcs = {'peaks','peak_times','poststim_ints'};
     end
@@ -160,7 +170,8 @@ if strcmp(in.roi_func_mode,'combine')
                                             'save_filename',analysis_filename,...
                                             'fwhm_spline_interp',in.fwhm_spline_interp,...
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
-                                            'spike_thresh',in.spike_thresh);          
+                                            'spike_thresh',in.spike_thresh,...
+                                            'spike_window',in.spike_window);          
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else
@@ -183,7 +194,8 @@ elseif strcmp(in.roi_func_mode,'separate')
                                             'save_filename',analysis_filename,...
                                             'fwhm_spline_interp',in.fwhm_spline_interp,...
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
-                                            'spike_thresh',in.spike_thresh);
+                                            'spike_thresh',in.spike_thresh,...
+                                            'spike_window',in.spike_window);
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else
@@ -225,6 +237,7 @@ trials_data.trial_times = trial_times;
 trials_data.bslines = bslines;
 trials_data.rois_all = rois_all; 
 trials_data.img_names = img_names; 
+trials_data.imgs = imgs_all; 
 trials_data.roiset_filename_no_ext = roiset_filename_no_ext; 
 if in.save_fig && in.overlay_trials && plot_trials
     if isfield(datai,'fig_dir') && isempty(in.data_fold)

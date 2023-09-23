@@ -56,5 +56,6 @@ settings.fwhm_spline_interp = 0; % 1 to use cubic spline interpolation for FWHM 
 settings.motion_correct = 0; % 1 to use motionCorrectRecording (uses dftregistration FFT-based algorithm)
 settings.indicator_dir = 1; % 1 = positive going, -1 = negative going
 settings.spike_thresh = 3; % spike_thresh x std(baseline) for analyzeStimAlignedTraces (used with func = 'decay_fit')
+settings.spike_window = []; % sec - window to find peak after stim for spike detection in analyzeStimAlignedTraces (used with func = 'decay_fit')
 settings.roi_func_peak_align = 0; % 1 = peak align before averaging in plotROIFunc
 settings = sl.in.processVarargin(settings,varargin);

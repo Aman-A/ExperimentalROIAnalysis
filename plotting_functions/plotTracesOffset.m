@@ -21,6 +21,7 @@ in.sbar_str = '';
 in = sl.in.processVarargin(in,varargin);
 if isempty(in.ax)
     ax = gca;
+    hold(ax,'on');
 else
     ax = in.ax; 
 end
