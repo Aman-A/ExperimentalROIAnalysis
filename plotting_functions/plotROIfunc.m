@@ -66,18 +66,23 @@ else
 %         x = x - stim_frames; 
 %         stim_frames = 0;     
 %     end
+    % 2nd source
+    if ~isempty(in.stim_frames2)
+        in.stim_frames2 = in.stim_frames2/sampling_rate;
+    end
+    in.stim_pulse_dur2 = in.stim_pulse_dur2/sampling_rate; 
+    % set t = 0 as first stim frame
     if ~isempty(stim_frames) && numel(stim_frames) < 40
 %     if ~isempty(stim_frames) && ~strcmp(func_name,'deltaF_F0')
         x = x - stim_frames(1); 
-        stim_frames = stim_frames - stim_frames(1); 
-    end    
+        in.stim_frames2 = in.stim_frames2 - stim_frames(1);
+        stim_frames = stim_frames - stim_frames(1);         
+    end       
     if regexp(func_name,'aligned','ONCE')
         x = x - x(baseline_wind+1); 
     end
     unit_str = 'sec'; 
-    % 2nd source
-    in.stim_frames2 = in.stim_frames2/sampling_rate; 
-    in.stim_pulse_dur2 = in.stim_pulse_dur2/sampling_rate; 
+   
 end
 
 if regexp(func_name,'aligned','ONCE') 
@@ -183,12 +188,14 @@ set(lns,{'DisplayName'},display_names); % set legend names
 
 if isempty(regexp(func_name,'aligned','ONCE'))
     stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,ax,...
-                                         'stim_pulse_dur',in.stim_pulse_dur);    
+                                         'stim_pulse_dur',in.stim_pulse_dur,...
+                                         'plot_y_factor',0.97);    
     if ~isempty(in.stim_frames2)
         stimpoints_hand2 = addStimPointsToPlot(in.stim_frames2,3,ax,...
                                         'stim_pulse_dur',in.stim_pulse_dur2,...
                                         'add_more_pts',1,'color','r',...
-                                        'stim_leg_name','Stim2');
+                                        'stim_leg_name','Stim2',...
+                                        'plot_y_factor',0.99);
     end
 else
     stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
