@@ -1,6 +1,6 @@
-function setAxesUniformLim(fig,x_or_y_lim)
+function setAxesUniformLim(fig,x_or_y_lim,ax_lims)
 %SETAXESUNIFORMYLIM Set all y axis limits of axes in figure to be uniform,
-%using min and max across axes
+%using min and max across axes if unset
 %  
 %   Inputs 
 %   ------ 
@@ -12,9 +12,13 @@ function setAxesUniformLim(fig,x_or_y_lim)
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-if nargin == 1
-    x_or_y_lim = 'YLim';
+if nargin == 2
+    ax_lims = []; 
 end
+if nargin == 1
+    x_or_y_lim = 'YLim';    
+end
+
 lims = [inf,-inf];
 axes_all = []; 
 for i = 1:length(fig.Children)
@@ -23,6 +27,9 @@ for i = 1:length(fig.Children)
         lims(2) = max(fig.Children(i).(x_or_y_lim)(2),lims(2));
         axes_all = [axes_all,fig.Children(i)];
     end
+end
+if ~isempty(ax_lims)
+    lims = ax_lims; 
 end
 if strcmp(x_or_y_lim,'YLim')
     ylim(axes_all,lims);

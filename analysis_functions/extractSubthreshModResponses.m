@@ -20,24 +20,25 @@ max_num_peaks = zeros(1,length(plot_amps)); % max number of peaks across all dis
 max_Nt_al2 = zeros(1,length(plot_amps)); % max number of time points for deltaF_F0_aligned2 across all dishes
 for i = 1:num_dishes    
     for j = 1:length(plot_amps)
-        if any(subthresh_amps{i} == plot_amps(j))
+        if any(subthresh_amps{i} == plot_amps(j))            
             max_num_peaks(j) = max(max_num_peaks(j),...
                 prod(size(data{i}.peaks_deltaF_F0_all{subthresh_amps{i}==plot_amps(j)},[3 4])));
             max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{subthresh_amps{i}==plot_amps(j)},1));
         end
     end
 end
-if size(data{i}.peaks_deltaF_F0_all{1},1) == 3
-    include_after = 1; 
-else
-    include_after = 0; 
-end
+max_num_peaks = repmat(max(max_num_peaks),1,num_amps);
 for i = 1:num_dishes
     peaksi = data{i}.peaks_deltaF_F0_all;
     dF_al2i = data{i}.deltaF_F0_aligned2_all; 
     [included_ampsi,amp_indsi,plot_amp_indsi] = intersect(subthresh_amps{i},plot_amps,'stable');            
     num_roisi = data{i}.rois_all{1}{1}.num_rois;
     num_rois(i) = num_roisi;
+    if size(peaksi{1},1) == 3
+        include_after = 1;
+    else
+        include_after = 0;
+    end
     for jp = 1:length(plot_amps)  %length(amp_indsi)          
         if any(plot_amps(jp) == subthresh_amps{i})
             j = find(included_ampsi == plot_amps(jp));        
@@ -64,6 +65,11 @@ for i = 1:num_dishes
                                                                             max_num_peaks(jp)-size(peaks_after{peak_indj},2))];...
                                                  [squeeze(peaksij(3,:,:)),...
                                                  nan(size(peaksij,2),max_num_peaks(jp)-num_peaksij)]];      
+                else
+                    peaks_after{peak_indj} = [[peaks_after{peak_indj},nan(size(peaks_after{peak_indj},1),...
+                                                                            max_num_peaks(jp)-size(peaks_after{peak_indj},2))];...
+                                                 [nan(size(peaksij,2),num_peaksij),...
+                                                 nan(size(peaksij,2),max_num_peaks(jp)-num_peaksij)]];      
                 end
                 % get deltaF_F0_aligned2 (individual stim-aligned traces within
                 % ROI), assumes baseline_wind and stim_wind same for all
@@ -73,10 +79,8 @@ for i = 1:num_dishes
                         nan([size(dF_al2_before{peak_indj},[1 2]),max_num_peaks(jp)-size(dF_al2_before{peak_indj},3)]));
                     dF_al2_during{peak_indj} = cat(3,dF_al2_during{peak_indj},...
                         nan([size(dF_al2_during{peak_indj},[1 2]),max_num_peaks(jp)-size(dF_al2_during{peak_indj},3)]));
-                    if include_after
-                        dF_al2_after{peak_indj} = cat(3,dF_al2_after{peak_indj},...
+                    dF_al2_after{peak_indj} = cat(3,dF_al2_after{peak_indj},...
                             nan([size(dF_al2_after{peak_indj},[1 2]),max_num_peaks(jp)-size(dF_al2_after{peak_indj},3)]));
-                    end
                 end
                 dF_al2_beforeij = reshape(dF_al2ij(:,:,1,:),...
                                     [size(dF_al2ij,[1,2]),num_peaksij]);
@@ -92,12 +96,14 @@ for i = 1:num_dishes
                                                 [1,2]),max_num_peaks(jp)-size(dF_al2_duringij,3)]))];
                 if include_after
                     dF_al2_afterij = reshape(dF_al2ij(:,:,3,:),...
-                                        [size(dF_al2ij,[1,2]),num_peaksij]);            
-                    dF_al2_after{peak_indj} = [dF_al2_after{peak_indj},...
+                                        [size(dF_al2ij,[1,2]),num_peaksij]);                                
+                else
+                    dF_al2_afterij = nan([size(dF_al2ij,[1,2]),num_peaksij]);   
+                end
+                dF_al2_after{peak_indj} = [dF_al2_after{peak_indj},...
                                                 cat(3,dF_al2_afterij,...
                                                     nan([size(dF_al2_afterij,...
                                                     [1,2]),max_num_peaks(jp)-size(dF_al2_afterij,3)]))];                
-                end
                 % dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
                 
             else                                
@@ -108,13 +114,11 @@ for i = 1:num_dishes
                                                     num_roisi,max_num_peaks(jp))];
                 dF_al2_during{peak_indj} = [dF_al2_during{peak_indj},...
                                             nan(max_Nt_al2(jp),...
-                                                    num_roisi,max_num_peaks(jp))];
-                if include_after
-                    peaks_after{peak_indj} = [peaks_after{jp};nan(num_roisi,max_num_peaks(jp))];
-                    dF_al2_after{peak_indj} = [dF_al2_after{peak_indj},...
-                                            nan(max_Nt_al2(jp),...
-                                                    num_roisi,max_num_peaks(jp))];                
-                end
+                                            num_roisi,max_num_peaks(jp))];
+                peaks_after{peak_indj} = [peaks_after{jp};nan(num_roisi,max_num_peaks(jp))];
+                dF_al2_after{peak_indj} = [dF_al2_after{peak_indj},...
+                                        nan(max_Nt_al2(jp),...
+                                        num_roisi,max_num_peaks(jp))];
                 fprintf('Only %g trials at %g mA in dish %g, exclude\n',...
                         num_trials,subthresh_amps{i}(amp_indsi(j)),i)
             end

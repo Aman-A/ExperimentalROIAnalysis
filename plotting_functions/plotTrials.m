@@ -113,7 +113,7 @@ for i = 1:num_trials
     end
 end
 if isempty(in.analysis_funcs)
-    if strcmp(in.reporter,'GluSnFR3') || strcmp(in.reporter,'GluSnFR3_SynmRuby')
+    if regexp(in.reporter,'GluSnFR3')
         analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
         if isempty(in.spike_window)
             in.spike_window = 0.1; 

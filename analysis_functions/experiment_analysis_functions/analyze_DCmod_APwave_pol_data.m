@@ -183,6 +183,7 @@ out.dF_ss_norm_mV = dF_ss_norm_mV; % steady state polarization as estimated mV u
 out.pol_gain_mV_est = pol_gain_mV_est; % polarization sensitivity for current (mV per mA)
 out.pol_gain_mV_est_E = pol_gain_mV_est_E; % polarization sensitivity for E-field (mV per V/m), using input E_per_mA for this elec pair
 out.amp_labels = amp_labels;
+out.last_AP_cond_ind = last_AP_cond_ind;
 %% Calculate FWHMs, peaks, and AHPs
 mean_widths = zeros(2,length(amps),length(in.frac_amps)); % [control; dc on]
 % mean_fwhm = zeros(2,length(amps)); % [control; dc on]

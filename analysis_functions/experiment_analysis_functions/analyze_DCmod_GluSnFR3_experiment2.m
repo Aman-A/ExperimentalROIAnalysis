@@ -179,6 +179,7 @@ if any(in.plot_figs == 1)
             legend(in.dc_conds,'Box','off');
         end
     end
+    setAxesUniformLim(fig,'YLim');    
     sgtitle('Mean response across ROIs with and without DC stimulus (+/- SEM)')
     if save_figs
         fig_name = sprintf('meanF_all_DCamp_norm%g',in.norm_to_cont);
@@ -234,7 +235,8 @@ if any(in.plot_figs == 3)
 %         yax_lims = [-1 4]; 
         yax_lims = []; 
     else
-        yax_lims = [-0.1 0.2];                 
+        % yax_lims = [-0.1 0.2];                 
+        yax_lims = []; 
     end
     if num_conditions == 8
         Nrows = 2; Ncols = 4;

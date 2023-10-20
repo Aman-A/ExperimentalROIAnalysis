@@ -1,5 +1,8 @@
 function addROIoverlayAndSave(fig_hands,rois,save_fig,fig_dir,img_name,...
                                close_after_save,show_roi_labels)
+if rois.num_rois == 1
+    show_roi_labels = 0; 
+end
 for i = 1:length(fig_hands)
     ax = fig_hands(i).Children(end);    
     rois.plot('y',ax,0); % plot starting
