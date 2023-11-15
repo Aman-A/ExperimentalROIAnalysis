@@ -1,4 +1,4 @@
-function [ranovatbl,mult_comp] = run_rm_anova(Y,alpha)
+function [ranovatbl,mult_comp,rm] = run_rm_anova(Y,alpha)
 % Y - [num_conditions x num_dishes] 
 if nargin < 2
    alpha = 0.05;  

@@ -21,6 +21,7 @@ in.bar_alphas = {};
 in.font_name = 'Arial';
 in.font_size = 16; 
 in.jitter_amount = 0.05; 
+in.plot_pts = 1; 
 in.pt_size = 24; 
 in.pt_cols = []; % color data for scatter plot
 in.pt_marker = 'o';
@@ -75,23 +76,26 @@ for i = 1:n_bars
     end
     if ~isempty(in.bar_alphas)
         b.FaceAlpha = in.bar_alphas{i}; 
+        b.EdgeColor = in.bar_cols{i};
     end
 end
 ax = gca; 
 box(ax,'off');
 % data points
-if in.connect_pts
-    l = plot(x_vals,data_mat,'-o','LineWidth',0.5);
-    if ~isempty(in.pt_cols)
-        for i = 1:n_pts
-            l(i).Color = in.pt_cols(i,:);
+if in.plot_pts 
+    if in.connect_pts
+        l = plot(x_vals,data_mat,'-o','LineWidth',0.5);
+        if ~isempty(in.pt_cols)
+            for i = 1:n_pts
+                l(i).Color = in.pt_cols(i,:);
+            end
         end
-    end
-else
-    if isempty(in.pt_cols)
-        s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
     else
-        s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+        if isempty(in.pt_cols)
+            s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+        else
+            s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+        end
     end
 end
 % error bars

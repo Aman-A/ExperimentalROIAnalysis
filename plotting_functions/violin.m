@@ -70,6 +70,7 @@ classdef Violin < handle
         ShowNotches % whether to show notch indicators
         ShowMean    % whether to show mean indicator        
         SepOutlierPoints % whether to plot outlier points in different color (in scatter plot)
+        DataMarkerSize % size of data points
     end
 
     methods
@@ -156,13 +157,13 @@ classdef Violin < handle
             if args.SepOutlierPoints
                 obj.ScatterPlot = ...
                     scatter(pos + jitter(data>lowhisker & data<hiwhisker).*jitterstrength, ...
-                            data(data>lowhisker & data<hiwhisker), 'filled','SizeData',12);
+                            data(data>lowhisker & data<hiwhisker), 'filled','SizeData',args.DataMarkerSize);
                 obj.ScatterPlotOut = ...
                     scatter(pos + jitter(data<lowhisker | data>hiwhisker).*jitterstrength,...
-                            data(data<lowhisker | data>hiwhisker), 'filled','SizeData',12);
+                            data(data<lowhisker | data>hiwhisker), 'filled','SizeData',args.DataMarkerSize);
             else
                 obj.ScatterPlot = ...
-                scatter(pos + jitter.*jitterstrength, data, 'filled','SizeData',12);                
+                scatter(pos + jitter.*jitterstrength, data, 'filled','SizeData',args.DataMarkerSize);                
             end
             % plot the violin
             
@@ -272,9 +273,9 @@ classdef Violin < handle
 
         function set.ViolinColor(obj, color)
             obj.ViolinPlot.FaceColor = color;
-%             obj.ScatterPlot.MarkerFaceColor = color;
-            obj.ScatterPlot.MarkerFaceColor = 'r';
-            obj.ScatterPlotOut.MarkerFaceColor = 'r';
+            obj.ScatterPlot.MarkerFaceColor = color;
+            % obj.ScatterPlot.MarkerFaceColor = 'r';
+            % obj.ScatterPlotOut.MarkerFaceColor = 'r';
             obj.MeanPlot.Color = color;
         end
 
@@ -370,7 +371,7 @@ classdef Violin < handle
             p = inputParser();
             p.addRequired('Data', @isnumeric);
             p.addRequired('Pos', isscalarnumber);
-            p.addParameter('Width', 0.3, isscalarnumber);
+            p.addParameter('Width', 0.3, isscalarnumber);            
             p.addParameter('Bandwidth', [], isscalarnumber);
             iscolor = @(x) (isnumeric(x) & length(x) == 3);
             p.addParameter('ViolinColor', [], iscolor);
@@ -384,6 +385,7 @@ classdef Violin < handle
             p.addParameter('ShowNotches', false, isscalarlogical);
             p.addParameter('ShowMean', false, isscalarlogical);
             p.addParameter('SepOutlierPoints',false,isscalarlogical)
+            p.addParameter('DataMarkerSize',4,isscalarnumber);
             p.parse(data, pos, varargin{:});
             results = p.Results;
         end

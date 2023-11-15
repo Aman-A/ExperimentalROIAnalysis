@@ -1,8 +1,17 @@
-function out = extractSubthreshModResponses(data,def,plot_amps,min_num_trials_per_amp)
+function out = extractSubthreshModResponses(data,def,plot_amps,...
+                                        min_num_trials_per_amp,spike_thresh,...
+                                        varargin)
 if nargin < 4
     min_num_trials_per_amp = 0; 
 end
-
+if nargin < 5
+    spike_thresh = 3; % peaks <  spike_thresh x STD are failures
+end
+% Params for spike detection
+in.spike_window = 0.03; % sec
+in.spike_min_width = [20 60]*1e-3; % sec
+in.spike_min_amp = 0.06; % deltaF/F0
+in = sl.in.processVarargin(in,varargin);
 num_amps = length(plot_amps);
 num_dishes = length(data); 
 subthresh_amps = cellfun(@(x) str2num(x),def.subthresh_amps,'UniformOutput',0); %#ok<*ST2NM> 
@@ -15,6 +24,9 @@ dish_inds = cell(1,num_amps);
 dF_al2_before = cell(1,num_amps);
 dF_al2_during = cell(1,num_amps);
 dF_al2_after = cell(1,num_amps);
+success_before = cell(1,num_amps);
+success_during = cell(1,num_amps);
+success_after = cell(1,num_amps);
 num_rois = zeros(1,num_dishes);
 max_num_peaks = zeros(1,length(plot_amps)); % max number of peaks across all dishes
 max_Nt_al2 = zeros(1,length(plot_amps)); % max number of time points for deltaF_F0_aligned2 across all dishes
@@ -51,7 +63,7 @@ for i = 1:num_dishes
 %             max_num_peaks = max(num_peaksij,size(peaks_before{peak_indj},2));
             if num_trials >= min_num_trials_per_amp                            
                 % add peaks from this experiment, fill with nans if fewer than
-                % max number of trials
+                % max number of trials                
                 peaks_before{peak_indj} = [[peaks_before{peak_indj},nan(size(peaks_before{peak_indj},1),...
                                                                         max_num_peaks(jp)-size(peaks_before{peak_indj},2))];...
                                              [squeeze(peaksij(1,:,:)),...
@@ -105,7 +117,36 @@ for i = 1:num_dishes
                                                     nan([size(dF_al2_afterij,...
                                                     [1,2]),max_num_peaks(jp)-size(dF_al2_afterij,3)]))];                
                 % dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
-                
+                exp_settingsij = data{i}.exp_settings(amp_indsi(j));
+                detectSpikesArgs = {exp_settingsij,spike_thresh,...
+                                    'spike_window',in.spike_window,...
+                                    'min_width',in.spike_min_width,...
+                                    'min_amp',in.spike_min_amp};                
+                success_beforeij = detectSpikesAlignedTraces(dF_al2_beforeij,...
+                                                             detectSpikesArgs{:}); %
+                success_before{peak_indj} = [[success_before{peak_indj},nan(size(success_before{peak_indj},1),...
+                                                                        max_num_peaks(jp)-size(success_before{peak_indj},2))];...
+                                             [success_beforeij,...
+                                             nan(size(success_beforeij,1),max_num_peaks(jp)-num_peaksij)]];
+                success_duringij = detectSpikesAlignedTraces(dF_al2_duringij,...
+                                                             detectSpikesArgs{:}); %
+                success_during{peak_indj} = [[success_during{peak_indj},nan(size(success_during{peak_indj},1),...
+                                                                        max_num_peaks(jp)-size(success_during{peak_indj},2))];...
+                                             [success_duringij,...
+                                             nan(size(success_duringij,1),max_num_peaks(jp)-num_peaksij)]];
+                if include_after
+                    success_afterij = detectSpikesAlignedTraces(dF_al2_afterij,...
+                                                             detectSpikesArgs{:}); %
+                    success_after{peak_indj} = [[success_after{peak_indj},nan(size(success_after{peak_indj},1),...
+                                                                            max_num_peaks(jp)-size(success_after{peak_indj},2))];...
+                                                 [success_afterij,...
+                                                 nan(size(success_afterij,1),max_num_peaks(jp)-num_peaksij)]];      
+                else
+                    success_after{peak_indj} = [[success_after{peak_indj},nan(size(success_after{peak_indj},1),...
+                                                                            max_num_peaks(jp)-size(success_after{peak_indj},2))];...
+                                                 [nan(size(peaksij,2),num_peaksij),...
+                                                 nan(size(peaksij,2),max_num_peaks(jp)-num_peaksij)]];      
+                end
             else                                
                 peaks_before{peak_indj} = [peaks_before{jp};nan(num_roisi,max_num_peaks(jp))];
                 peaks_during{peak_indj} = [peaks_during{jp};nan(num_roisi,max_num_peaks(jp))];                
@@ -119,6 +160,9 @@ for i = 1:num_dishes
                 dF_al2_after{peak_indj} = [dF_al2_after{peak_indj},...
                                         nan(max_Nt_al2(jp),...
                                         num_roisi,max_num_peaks(jp))];
+                success_before{peak_indj} = [success_before{jp};nan(num_roisi,max_num_peaks(jp))];
+                success_during{peak_indj} = [success_during{jp};nan(num_roisi,max_num_peaks(jp))];
+                success_after{peak_indj} = [success_after{jp};nan(num_roisi,max_num_peaks(jp))];
                 fprintf('Only %g trials at %g mA in dish %g, exclude\n',...
                         num_trials,subthresh_amps{i}(amp_indsi(j)),i)
             end
@@ -138,11 +182,14 @@ for i = 1:num_dishes
                 dF_al2_during{jp} = [dF_al2_during{jp},...
                                             nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))];
+                success_before{jp} = [success_before{jp};nan(num_roisi,max_num_peaks(jp))];
+                success_during{jp} = [success_during{jp};nan(num_roisi,max_num_peaks(jp))];
                 if include_after
                     peaks_after{jp} = [peaks_after{jp};nan(num_roisi,max_num_peaks(jp))];
                     dF_al2_after{jp} = [dF_al2_after{jp},...
                                             nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))]; 
+                    success_after{jp} = [success_after{jp};nan(num_roisi,max_num_peaks(jp))];
                 end                
                 fprintf('No recordings for dish %g, amp = %g, padding with nans\n',i,plot_amps(jp))
             end
@@ -153,6 +200,8 @@ roi_in_dish_index = [];
 for i = 1:num_dishes
     roi_in_dish_index = [roi_in_dish_index;(1:(sum(dish_inds{1}==i)))'];
 end 
+fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',num_dishes,sum(num_rois))
+
 out.peaks_before = peaks_before;
 out.peaks_during = peaks_during;
 out.peaks_after = peaks_after;
@@ -162,5 +211,15 @@ out.dF_al2_during = dF_al2_during;
 out.dF_al2_after = dF_al2_after;
 out.num_rois = num_rois; 
 out.roi_in_dish_index = roi_in_dish_index;
-fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',num_dishes,sum(num_rois))
+% [num_rois x num_stim x num_amps]
+out.peaks_before_mat = cell2mat(reshape(peaks_before,1,1,length(peaks_before)));
+out.peaks_during_mat = cell2mat(reshape(peaks_during,1,1,length(peaks_during)));
+out.peaks_after_mat = cell2mat(reshape(peaks_after,1,1,length(peaks_after)));
+out.success_before = success_before;
+out.success_during = success_during;
+out.success_after = success_after;
+out.success_before_mat = cell2mat(reshape(success_before,1,1,length(peaks_before)));
+out.success_during_mat = cell2mat(reshape(success_during,1,1,length(peaks_during)));
+out.success_after_mat = cell2mat(reshape(success_after,1,1,length(peaks_after)));
+
 end
