@@ -19,23 +19,23 @@
 % (the working directory in the left panel (default layout) should be
 %  the folder where this script is saved)
 %% First specify the file names of your image stack and ROIset
-img_file_name = 'FILENAME.fits'; % replace FILENAME with your image file name 
+img_file_name = 'test_data/20220802_GluSnFR3_SynmRuby_dish3_350mM_sucrose/350mM_sucrose.fits'; % replace FILENAME with your image file name 
                                  % if the file is in a different
                                  % folder, make sure to include
                                  % full path, e.g.
                                  % C:\Users\HoppaLab\Documents\...
                                  % Only tiff and fits currently supported
-roiset_file_name = 'ROISET_FILENAME.zip'; % Replace ROISET_FILENAME with 
+roiset_file_name = 'test_data/20220802_GluSnFR3_SynmRuby_dish3_350mM_sucrose/test_roiset.zip'; % Replace ROISET_FILENAME with 
                                           % ROI set file name. Save these 
                                           % from ImageJ in the ROI manager 
                                           % as a zip file
 %% Next specify your experimental parameters
 sampling_rate = 200; % Sampling rate (frames/sec)
-stim_vals = [600]; % Stimulation frames, either a single value or list of
+stim_vals = [3]; % Stimulation frames, either a single value or list of
                    % values enclosed in brackets [] (a MATLAB vector)
-stim_wind = 200; % Frames after stimulus frame to calculate peak of response
-baseline_wind = 30; % frames before stimulation frame to take baseline
-units = 'frames'; % the values above can also be specified in sec, in which
+stim_wind = 1; % Frames after stimulus frame to calculate peak of response
+baseline_wind = .02; % frames before stimulation frame to take baseline
+units = 'sec'; % the values above can also be specified in sec, in which
                   % case this variable would be set to 'sec'
 
 % These parameters are used to create an ExperimentSettings object that 
@@ -46,11 +46,11 @@ exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,...
                               
 %% Now that our parameters have been specified, we'll create a Recording 
 % object to hold the image stack                                          
-img = Recording(img_file_name); % Create instance of Recording object,
+rec = Recording(img_file_name); % Create instance of Recording object,
                                 % this can currently handle 'fits' or 'tiff' 
                                 % file formats                                          
 % Actually load the file into memory with the 'load' method 
-img.load(); 
+rec.load(); 
 %% Load the ROIset into an object called ROIs object
 rois = ROIs(roiset_file_name); 
 % This next part is a temporary fix for ROIs saved on windows ImageJ. For some
@@ -65,7 +65,7 @@ rois = ROIs(roiset_file_name);
 %     end
 % end
 %% Plot the mean baseline, peak response, and peak - baseline images
-include_plots = [1 2 3]; % this specifies which plots to include: 
+include_plots = [3]; % this specifies which plots to include: 
                          % 1 - mean baseline
                          % 2 - peak in stim_wind
                          % 3 - difference (peak - mean baseline images)
@@ -73,12 +73,9 @@ include_plots = [1 2 3]; % this specifies which plots to include:
                          % with include_plots = [3];
 filt_width = 0; % Specify width of 2D gaussian filter to apply, or set to 
                 % 0 for no filtering (default)
-[mean_bsline_img,peak_stim_img,diff_img,fig_hands] = diffImage(img,...
-                                                        exp_settings,...                                                        
-                                                        'include_plots',...
-                                                        include_plots,...
-                                                        'filt_width',...
-                                                        filt_width); 
+[imgs_struct,fig_hands] = diffImage(rec,exp_settings,include_plots,...
+                                    'filt_width',filt_width); 
+
 % Overlay ROIset on all images
 for i = 1:length(fig_hands)
    ax = fig_hands(i).Children(end); 
@@ -92,7 +89,7 @@ funcs = {'mean','deltaF_F0','baseline'}; % List of functions you want
                                                % enter them in any order,
                                                % or remove functions you
                                                % don't want                                               
-roi_func_mode = 'combine'; % can be 'separate' or 'combine'. 'separate' 
+roi_func_mode = 'separate'; % can be 'separate' or 'combine'. 'separate' 
                             % applies function separately within each ROI,
                             % while 'combine' applies function to pixels
                             % from all ROIs. For example, in 'combine'
@@ -101,7 +98,7 @@ roi_func_mode = 'combine'; % can be 'separate' or 'combine'. 'separate'
                             % trace), but in 'separate' mode, it computes 
                             % the mean fluorescence within each ROI in each
                             % frame (for 21 ROIs in this example, 21 traces)
-func_output = calcROIfuncs(img,rois,funcs,exp_settings,...
+func_output = calcROIfuncs(rec,rois,funcs,exp_settings,...
                            roi_func_mode,'print_level',1);
 % func_output is a structure with fields containing the output of each
 % function in 'funcs' as arrays, i.e., func_output.mean, func_output.std,
@@ -119,4 +116,4 @@ ax = gca; % grab axis handle
 plotROIfunc(func_output,plot_func,exp_settings.stim_vals,...
             exp_settings.sampling_rate,'ax',ax,'show_legend',1); 
 %% You can save function output to csv files using saveROIfuncOutput
-saveROIfuncOutput(func_output);
+saveROIfuncOutput(func_output,'test_data');

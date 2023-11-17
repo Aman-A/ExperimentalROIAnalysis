@@ -37,7 +37,7 @@ if length(save_funcs) ~= length(avail_funcs_to_save)
     end
 end
 if strcmp(func_output.roi_func_mode,'separate')
-    header = func_output.rois.names;    
+    header = numericVec2chars(func_output.roi_inds,'ROI%g');    
 elseif strcmp(func_output.roi_func_mode,'combine')
     header = {'AllROIs'};
 end
@@ -50,5 +50,8 @@ for i = 1:length(avail_funcs_to_save)
     filenamei = fullfile(output_folder,sprintf('%s_%s_%s.csv',...
         func_output.img_name,funci,func_output.roi_func_mode));
     writecell(header,filenamei);
-    writematrix(datai,filenamei,'WriteMode','append'); 
+    writematrix(datai,filenamei,'WriteMode','append');     
 end
+print_str = ['Saved data from funcs: ', strjoin(avail_funcs_to_save,', '),...
+              ' to ',output_folder,'/\n']; 
+fprintf(print_str)
