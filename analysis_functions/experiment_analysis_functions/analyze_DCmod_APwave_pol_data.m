@@ -431,6 +431,7 @@ if any(in.plot_figs == 2)
     end
     xlabel('Fraction of amplitude')
     legend('Control','DC on','Box','off')
+    setAxesUniformLim(fig,'YLim');
     if save_figs
         if in.spline_interp
             fig_name = sprintf('AP_widths_bar_spline1_fac%g',in.spline_sampling_factor); 
