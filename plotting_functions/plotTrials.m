@@ -120,10 +120,10 @@ if isempty(in.analysis_funcs)
         end
     elseif strcmp(in.reporter,'QuasAr_GluSnFR3')
         analysis_funcs = {'peaks','peak_times','poststim_ints','fwhm','mean_fwhm'};
-    elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon','Voltron'})))
+    elseif any(~cellfun(@isempty,regexp(in.reporter,{'QuasAr','Archon','Voltron','Ace2NmNeonGreen'})))
         analysis_funcs = {'peaks','peak_times','fwhm','mean_fwhm'};
         if isempty(in.spike_window)
-            in.spike_window = 0.1; 
+            in.spike_window = 0.02; 
         end
     else
         analysis_funcs = {'peaks','peak_times','poststim_ints'};

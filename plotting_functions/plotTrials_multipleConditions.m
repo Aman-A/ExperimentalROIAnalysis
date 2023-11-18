@@ -120,7 +120,12 @@ out.img_names = img_names_new;
 out.exp_settings = exp_settings;
 out.roi_set_filenames = roiset_filenames;
 out.plot_settings = plot_settings;
-out.roiset_filename_no_ext = getROIset_name(roiset_filenames{1},...
+if iscell(roiset_filenames{1})
+    roiset_filename = roiset_filenames{1}{1};
+else
+    roiset_filename = roiset_filenames{1};
+end
+out.roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                              plot_settings.transform_type,...
                                                 plot_settings.registration_rec);  
 if in.save_summary_data    
