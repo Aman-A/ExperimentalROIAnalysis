@@ -268,7 +268,7 @@ if any(in.plot_figs == 3)
             hold on;
         end
         p2 = plot(ta,mean_tracesi,'LineWidth',2);
-        set(p2,{'color'},in.stim_cols');
+        set(p2,{'color'},in.stim_cols(1:2)');
         box off; grid on;
         title(strrep(conditions{i},'_',' '));
         if i > 4
@@ -457,7 +457,7 @@ if any(in.plot_figs == 5)
     xlabel('ROI index');
     ylabel('Mean peak \Delta F/F_{0} ')
     box off; grid on;
-    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off','Interpreter','none')
     if sort_amp_ind > 0
         title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
                 mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
@@ -484,7 +484,7 @@ if any(in.plot_figs == 5)
     xlabel('ROI index');
     ylabel('Mean peak \Delta F/F_{0} (norm. to 0 mA)')
     box off; grid on;
-    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')  
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off','Interpreter','none')  
     if sort_amp_ind > 0
         title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
             mode(num_stim*num_trials),cond_names{sort_amp_ind}));
@@ -564,7 +564,7 @@ if any(in.plot_figs == 5)
     xlabel('ROI index');
     ylabel('Change in mean peak \Delta F/F_{0} (%)')
     box off; grid on;
-    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
+    legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off','Interpreter','none')
     if sort_amp_ind > 0
         title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
             mode(num_stim*num_trials),cond_names{sort_amp_ind}));
@@ -607,6 +607,7 @@ if any(in.plot_figs == 6)
     ax = gca;
     ax.XTick = 1:length(cond_names);
     ax.XTickLabel = cond_names;
+    ax.TickLabelInterpreter = 'none';
     legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');    
     ylabel('% ROIs');
     box off;
@@ -640,7 +641,7 @@ if any(in.plot_figs == 7)
         caxis(ax,[0 2])
         colormap(ax,bar_cols); % no change, decrase, increase
 %         colormap(lines(3)) % no change, decrase, increase        
-        title(ax,cond_names{i})
+        title(ax,cond_names{i},'Interpreter','none')
         if i == num_conditions
             cb = colorbar(ax);
             cb.Ticks = [0.25 1 1.75];
