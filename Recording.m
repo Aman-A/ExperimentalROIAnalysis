@@ -112,7 +112,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif') 
                        getTiffInfo(obj); 
                     else
-                        error('''%s'' file format currently not supported',obj.format)
+                        % error('''%s'' file format currently not supported',obj.format)
                     end
                 else
                    error('%s does not exist\n',obj.filepath);  
@@ -151,7 +151,13 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
 %                   obj.vals = single(tiffreadVolume(load_filepath)); 
                 obj.vals = single(loadtiff(load_filepath));                
             else
-               error('Other file formats not implemented yet');  
+                try
+                    data = bfOpen3DVolume(load_filepath);
+                    obj.vals = single(data{1}{1});  
+                    obj.imsize = size(obj.vals);
+                catch
+                    error('Other file formats not implemented yet');  
+                end
             end
             obj.loaded = true; 
             if print_status > 0                
