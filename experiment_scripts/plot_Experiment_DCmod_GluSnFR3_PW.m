@@ -1,10 +1,10 @@
 %% Script to plot single trial
 % Overlay single trails on same figure by running with different img_name
 data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
-exp_date = '231118';
+exp_date = '231117';
 reporter = 'GluSnFR3_SynmRuby';
-dish = 'dish2';
-div = 18; 
+dish = 'dish1';
+div = 17; 
 
 % roiset_filename = 'RoiSet_auto_pos2.mat';
 roiset_filename = 'RoiSet_pc_pos2.zip';
@@ -20,9 +20,8 @@ baseline_wind = 0.15; % frames before stim/s to take baseline
 units = 'sec'; % specify units 'frames' or 'sec' 
 sampling_rate = 100; % sampling rate (frames/sec)
 stim_pulse_durs2_all = [10,0.25,0.1,0.05,0.02,0.001];
-stim_vals2_all = {10.25,defineStimTrain(10.25,freq,10),...
-                defineStimTrain(10.4,freq,10),defineStimTrain(10.45,freq,10),...
-                defineStimTrain(10.48,freq,10),defineStimTrain(10.499,freq,10)}; 
+stim_vals2_all = [10.25,arrayfun(@(x) defineStimTrain(10.5 - x,freq,10),...
+                                    stim_pulse_durs2_all(2:end),'UniformOutput',0)]; 
 exp_settings = ExperimentSettings(); 
 for i = 1:length(stim_pulse_durs2_all)
     stim_pulse_dur2 = stim_pulse_durs2_all(i);
@@ -74,7 +73,7 @@ ps.roi_func_sbar_len = 0.5;
 ps.analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 ps.spike_window = 0.05; 
 %%
-pulse_ind = 1; 
+pulse_ind = 6; 
 ps.condition = sprintf('control_3mABi_1mAG_%gs',stim_pulse_durs2_all(pulse_ind));
 img_name = [ps.condition '.fits'];
 trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.4]; 
@@ -82,25 +81,22 @@ trace_axis = gca;
 datai = plotTrial(img_name,exp_settings(pulse_ind),roiset_filename,...
                    trace_axis,ps);
 %% Plot trials within each condition
-pulse_ind = 2; 
-ps.condition = sprintf('control_3mABi_1mAG_%gs',stim_pulse_durs2_all(pulse_ind));
+pulse_ind = 6; 
+ps.condition = sprintf('control_3mABi_-3mAG_%gs',stim_pulse_durs2_all(pulse_ind));
 img_names = {}; % use all images in condition folder
 trials_data = plotTrials(img_names,exp_settings(pulse_ind),roiset_filename,ps);
 %% Save summary data from all train trials as experiment output file
-ps.show_diff_image = [4]; % can include [1,2,3, 4]
+ps.show_diff_image = []; % can include [1,2,3, 4]
 ps.load_processed_data = 1;
 ps.save_fig = 2; 
-ps.plot_func = 'deltaF_F0';
+ps.plot_func = 'none';
 ps.roi_func_mode = 'separate';
 
 roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                          ps.transform_type,...
                                             ps.registration_rec);  
-% amps = [-1, -0.5,-0.1,0.1,0.5,1];
-amps = [-1 -1 -1 -1 -1 -1 1 1 1 1 1 1];
-pws = [10 0.25 0.1 0.05 0.02 0.001 10 0.25 0.1 0.05 0.02 0.001];
-% amps = [-1 -1 1 1];
-% pws = [10 0.25 10 0.25];
+pws = [10 0.25 0.1 0.05 0.02 0.001]; pws = [pws,fliplr(pws)];
+amps = [-1*ones(1,length(unique(pws))),ones(1,length(unique(pws)))];
 conditions = arrayfun(@(x,y) sprintf('control_3mABi_%gmAG_%gs',x,y),amps,pws,'UniformOutput',0);
 
 if regexp(ps.plot_func,'aligned')
@@ -117,7 +113,7 @@ summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
 summary_datafile = sprintf('%s_%s_%s_%s_%s_train',exp_date,reporter,dish,ps.roi_func_mode,...
                                     roiset_filename_no_ext);
 % set(0,'DefaultFigureVisible','off') % to avoid window taking screen focus
-out = plotTrials_multipleConditions(conditions,ps,[exp_settings,exp_settings],...
+out = plotTrials_multipleConditions(conditions,ps,[exp_settings,exp_settings(end:-1:1)],...
                                     roiset_filename,...                               
                                    'summary_fig_dir',summary_fig_dir,...
                                    'summary_datafile',summary_datafile,...
@@ -125,8 +121,8 @@ out = plotTrials_multipleConditions(conditions,ps,[exp_settings,exp_settings],..
 % set(0,'DefaultFigureVisible','on') % to avoid window taking screen focus
 %%
 cond_inds = []; 
-amps = [-1 -1 -1 -1 -1 -1 1 1 1 1 1 1];
-pws = [10 0.25 0.1 0.05 0.02 0.001 10 0.25 0.1 0.05 0.02 0.001];
+pws = [10 0.25 0.1 0.05 0.02 0.001]; pws = [pws,fliplr(pws)];
+amps = [-1*ones(1,length(unique(pws))),ones(1,length(unique(pws)))];
 cond_names = arrayfun(@(x,y) sprintf('%gmA_%gs',x,y),amps,pws,'UniformOutput',0);
 sort_amp_ind = 1;
 save_figs = 1;
