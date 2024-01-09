@@ -267,7 +267,7 @@ if any(in.plot_figs == 3)
             p = plot(ta,tracesi{j},'LineWidth',0.25,'Color',stim_cols2{j});
             hold on;
         end
-        p2 = plot(ta,mean_tracesi,'LineWidth',2);
+        p2 = plot(ta,mean_tracesi(:,1:2),'LineWidth',2);
         set(p2,{'color'},in.stim_cols(1:2)');
         box off; grid on;
         title(strrep(conditions{i},'_',' '));
