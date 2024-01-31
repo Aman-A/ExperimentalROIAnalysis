@@ -5,7 +5,7 @@ end
 in.x_factor = 0.1;
 in.y_factor = [];
 in.text_x_factor = 1.1; 
-in.text_y_factor = [];
+in.text_y_factor = []; % normalized length below top of scale bar (vert) 
 in.color = 'w';
 in.show_text = 1; 
 in.sbar_lw = 4;
@@ -54,7 +54,7 @@ elseif strcmp(in.sbar_orientation,'vert')
     plot(ax,[in.x_factor*imsize(2),in.x_factor*imsize(2)],...
             [y_factor*imsize(1),y_factor*imsize(1)-sbar_pixel_len],...
             'Color',in.color,'LineWidth',in.sbar_lw);
-    text_y = in.y_factor*imsize(1) - 0.7*sbar_pixel_len; 
+    text_y = in.y_factor*imsize(1) - text_y_factor*sbar_pixel_len; 
     text_x = in.text_x_factor*in.x_factor*imsize(2); 
 end
 if in.show_text

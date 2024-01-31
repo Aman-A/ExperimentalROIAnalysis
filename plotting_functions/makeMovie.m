@@ -27,6 +27,7 @@ in.sbar_len = 5; % microns
 in.sbar_x_factor = 0.7;
 in.sbar_y_factor = 0.2;
 in.sbar_text_x_factor = 1.2;
+in.sbar_text_y_factor = []; 
 in.rotate_movie = 0; % 
 in.stim_vals1 = [];
 in.stim_pulse_dur1 = [];
@@ -38,6 +39,7 @@ in.stim_pulse_dur2 = [];
 in.stim2_x = 0.05; 
 in.stim2_y = 0.75; 
 in.stim2_marker = 'DC on';
+in.rois = []; 
 % Plot settings
 in.colormap = 'inferno';
 in.cax_lims = []; 
@@ -121,7 +123,11 @@ for i = 1:num_frames
     if in.sbar_len > 0
         addScaleBar(recording.pixel_size,size(vals,[1 2]),ax,'sbar_len',in.sbar_len,...
                     'x_factor',in.sbar_x_factor,'y_factor',in.sbar_y_factor,...
-                    'sbar_orientation','vert','text_x_factor',in.sbar_text_x_factor);
+                    'sbar_orientation','vert','text_x_factor',in.sbar_text_x_factor,...
+                    'text_y_factor',in.sbar_text_y_factor);
+    end
+    if ~isempty(in.rois)
+        in.rois.plot('y',ax,1,0);
     end
     drawnow;
     frames(i) = getframe(ax);        

@@ -42,6 +42,8 @@ in.sbar_len = 5; % microns
 in.sbar_x_factor = 0.7;
 in.sbar_y_factor = 0.2;
 in.sbar_text_x_factor = 1.2;
+in.sbar_text_y_factor = [];
+in.sbar_orientation = 'vert';
 in.colormap = 'inferno';
 in.cax_lims = []; 
 in.fig_units = 'inches';
@@ -110,7 +112,7 @@ end
 r = sqrt(x.^2 + y.^2);
 r = r-r(end); 
 r_um = r*pixel_size; % convert to um
-%% Plot
+%% Plot kymograph
 fig = figure('Units',in.fig_units);
 if ~isempty(in.fig_size)
     fig.Position(3:4) = in.fig_size; 
@@ -119,7 +121,7 @@ imagesc('YData',r_um,'XData',t,'CData',F_all)
 ax = gca;
 ax.YDir = 'reverse';
 ax.XLim = [t(1),t(end)];
-ax.YLim = [r_um(end)-range(r_um)*0.05,r_um(1)+range(r_um)*0.05];
+ax.YLim = [min(r_um)-range(r_um)*0.05,max(r_um)+range(r_um)*0.05];
 hold on;
 xlabel('time (sec)');
 ylabel('Distance (\mu m)');
@@ -172,7 +174,8 @@ clim(ax,[quantile(vals_crop(:,:,in.show_frame),0.05,'all'),quantile(vals_crop(:,
 if in.sbar_len > 0
     addScaleBar(recording.pixel_size,size(vals_crop,[1 2]),ax,'sbar_len',in.sbar_len,...
         'x_factor',in.sbar_x_factor,'y_factor',in.sbar_y_factor,...
-        'sbar_orientation','vert','text_x_factor',in.sbar_text_x_factor);
+        'sbar_orientation',in.sbar_orientation,...
+        'text_x_factor',in.sbar_text_x_factor,'text_y_factor',in.sbar_text_y_factor);
 end
 if in.save_figs
     in.fig_name2 = sprintf('kymo_img_%s_%s_f%g',recording.img_name,...
