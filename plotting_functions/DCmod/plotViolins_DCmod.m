@@ -31,6 +31,7 @@ in.plot_xlabel = 'Current (mA)';
 in.convert_to_per = 0; 
 in.remove_neg_vals = 0; 
 in.connect_medians = 0; 
+in.violin_color = [1 0 0];
 in = sl.in.processVarargin(in,varargin);
 if ~iscell(peaks_before)
     % convert to 1 x num_amps cell array
@@ -125,8 +126,8 @@ for i = 1:num_conds
             apply_loglinlog_Violin(hV1,in.linlimit);
         end
     end
-    hV2 = Violin(peaks_duringi,i+x_vals(2),'ViolinColor',[1 0 0],'Width',in.width,...
-                   'BoxColor',[1 0 0],'BoxWidth',in.width,...
+    hV2 = Violin(peaks_duringi,i+x_vals(2),'ViolinColor',in.violin_color,'Width',in.width,...
+                   'BoxColor',in.violin_color,'BoxWidth',in.width,...
                    'ShowData',logical(in.plot_pts),'ShowNotches',false,...
                    'DataMarkerSize',in.pt_markerSize); hold on; 
     if strcmp(in.y_mode,'loglinlog')
@@ -186,7 +187,7 @@ if in.connect_medians
     if ~(in.norm_to_before && in.plot_means) && ~in.plot_diffs
         plot((1:num_conds)+x_vals(1),med_before,'k');
     end
-    plot((1:num_conds)+x_vals(2),med_during,'r');
+    plot((1:num_conds)+x_vals(2),med_during,in.violin_color);
     if in.plot_after
         plot((1:num_conds)+x_vals(3),med_after,'b');
     end
