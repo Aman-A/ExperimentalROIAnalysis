@@ -14,7 +14,7 @@ function data_out = removeROIsExpData(data,exclude_rois,varargin)
 %   ------- 
 %   Examples 
 %   --------------- 
-
+% TODO: remove data from decay_fits struct, fwhm/mean_fwhm
 % AUTHOR    : Aman Aberra 
 in.print_level = 1; 
 in = sl.in.processVarargin(in,varargin);

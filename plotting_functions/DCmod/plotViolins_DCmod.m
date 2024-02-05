@@ -68,10 +68,18 @@ if in.plot_means % take mean of all peaks within ROI
         peaks_after = cellfun(@(x) mean(x,2,'omitnan'),peaks_after,'UniformOutput',0);
     end
 end
-if in.plot_after
-    x_vals = [-0.25 0 0.25];
+if in.plot_diffs
+    if in.plot_after
+        x_vals = [-0.2 0.2];
+    else
+        x_vals = [0 0];
+    end
 else
-    x_vals = [-0.2 0.2];
+    if in.plot_after
+        x_vals = [-0.25 0 0.25];
+    else
+        x_vals = [-0.2 0.2];
+    end
 end
 fig = gcf;
 num_conds = length(peaks_before);
@@ -187,13 +195,13 @@ if in.connect_medians
     if ~(in.norm_to_before && in.plot_means) && ~in.plot_diffs
         plot((1:num_conds)+x_vals(1),med_before,'k');
     end
-    plot((1:num_conds)+x_vals(2),med_during,in.violin_color);
+    plot((1:num_conds)+x_vals(2),med_during,'Color',in.violin_color);
     if in.plot_after
         plot((1:num_conds)+x_vals(3),med_after,'b');
     end
 end
 if in.save_fig
-    fig_name = sprintf('%s_%gROIs_mean%g_norm%g_diff%g_%s',size(peaks_before{1},1),...
-                        in.fig_name_prefix,in.plot_means,in.norm_to_before,in.plot_diffs,in.y_mode);
+    fig_name = sprintf('%s_%gROIs_mean%g_norm%g_diff%g_%s',in.fig_name_prefix,...
+                        size(peaks_before{1},1),in.plot_means,in.norm_to_before,in.plot_diffs,in.y_mode);
     printFig(fig,in.fig_fold,fig_name);
 end

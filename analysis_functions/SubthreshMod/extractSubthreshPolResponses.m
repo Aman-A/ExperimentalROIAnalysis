@@ -1,4 +1,4 @@
-function out = extractSubthreshPolResponses(data,stim_amps,dF_ss_wind,varargin)
+function [out,data_out] = extractSubthreshPolResponses(data,stim_amps,dF_ss_wind,varargin)
 %EXTRACTSUBTHRESHMODRESPONSES ... 
 %  
 %   Inputs 
@@ -7,12 +7,18 @@ function out = extractSubthreshPolResponses(data,stim_amps,dF_ss_wind,varargin)
 %   --------------- 
 %   Outputs 
 %   ------- 
+%   out : struct
+%       processed data output
+%   data_out : cell array of structs
+%       original experiment data with ROIs failing SNR and R^2 criteria removed
+
 %   Examples 
 %   --------------- 
 % Note: assumes uniform sampling rate across experiments
 % AUTHOR    : Aman Aberra 
 in.min_snr = 2; % minimum SNR : peak/std(baseline)
 in.check_snr_amps = [-1 1]; % mA
+in.pol_Rsq_cutoff = 0; % cutoff for regression R^2 (default don't exclude)
 in = sl.in.processVarargin(in,varargin);
 if isstruct(data) % reformat to cell array
     data = {data};
@@ -60,7 +66,49 @@ for i = 1:num_dishes
     end
     
 end
+%% Get slopes of polarization vs. current in each ROI and determine polarity
+pol_slopes = cell(num_dishes,1);
+pol_Rsqs = cell(num_dishes,1);
+pol_pvals = cell(num_dishes,1);
+for i = 1:num_dishes
+    xi = stim_amps{i}; 
+    pol_slopes{i} = nan(1,size(pol_dF_ss_all{i},2));
+    pol_Rsqs{i} = nan(1,size(pol_dF_ss_all{i},2));
+    pol_pvals{i} = nan(1,size(pol_dF_ss_all{i},2));
+    for j = 1:size(pol_dF_ss_all{i},2)
+        yij = pol_dF_ss_all{i}(:,j);
+        [b,~,~,~,stats] = regress(yij,[ones(size(yij)),xi']);
+        Rsqij = stats(1); pij = stats(3); 
+        pol_Rsqs{i}(j) = Rsqij;
+        pol_pvals{i}(j) = pij;
+        if length(xi) > 2
+            if Rsqij > in.pol_Rsq_cutoff 
+                pol_slopes{i}(j) = 100*b(2); % percent deltaF/F0 per mA steady state polarization
+%             else
+%                 fprintf('Dish %g, pol ROI %g R^2 = %.3f, p = %.3f\n',...
+%                         i,j,Rsqij,pij)
+            end
+        else % R^2/p value can't be calculated for regression with 2 pts
+            pol_slopes{i}(j) = 100*b(2); % percent deltaF/F0 per mA steady state polarization
+        end
+    end
+    new_excluded_roisi = setdiff(find(isnan(pol_slopes{i})),find(exclude_rois_pol{i}));
+    if ~isempty(new_excluded_roisi)
+        fprintf('Dish %g, excluding %g additional ROIs with R^2 < %.2f\n',...
+                i,length(new_excluded_roisi),pol_Rsq_cutoff)
+    end
+    exclude_rois_pol{i} = exclude_rois_pol{i} | isnan(pol_slopes{i}); % exclude due to snr or weak correlation 
+    pol_dF_all{i} = pol_dF_all{i}(:,~exclude_rois_pol{i},:);
+    pol_dF_ss_all{i} = pol_dF_ss_all{i}(:,~exclude_rois_pol{i}); 
+    pol_snr_all{i} = pol_snr_all{i}(:,~exclude_rois_pol{i});     
+end
+% Remove ROIs from experiment data structures (based on SNR and R^2 of
+% regression)
+data_out = cellfun(@(x,y) removeROIsExpData(x,y,'print_level',0),...
+                            data,exclude_rois_pol,'UniformOutput',0); 
+
 out = struct(); 
 out.pol_dF_all = pol_dF_all;
 out.pol_dF_ss_all = pol_dF_ss_all; 
 out.pol_snr_all = pol_snr_all; 
+out.exclude_rois_pol = exclude_rois_pol; 

@@ -30,6 +30,7 @@ in.plot_settings = {};
 in.peak_align = 1;
 in.stim_frames2 = []; 
 in.stim_pulse_dur2 = []; 
+in.roi_colors = {}; 
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
     figure;
@@ -182,6 +183,12 @@ else
         end
     else
         lns = plot(ax,x,y,in.plot_settings{:}); % plot trace/s
+    end
+    if ~isempty(in.roi_colors)
+        if ~iscell(in.roi_colors) % num_rois x 3 RGB triplets
+            in.roi_colors = mat2cell(in.roi_colors,ones(size(in.roi_colors,1),1),3);            
+        end
+        set(lns,{'Color'},in.roi_colors)
     end
 end
 set(lns,{'DisplayName'},display_names); % set legend names

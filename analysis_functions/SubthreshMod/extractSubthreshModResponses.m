@@ -1,6 +1,10 @@
 function out = extractSubthreshModResponses(data,def,plot_vars,...
                                         min_num_trials_per_lvl,spike_thresh,...
                                         varargin)
+% EXTRACTSUBTHRESHMODRESPONSES
+% TODO: 
+% Implement quality control filter:
+% Baseline stability within trial (DC off)
 if nargin < 4
     min_num_trials_per_lvl = 0; 
 end
@@ -12,6 +16,9 @@ in.spike_window = 0.03; % sec
 in.spike_min_width = [20 60]*1e-3; % sec
 in.spike_min_amp = 0.06; % deltaF/F0
 in.plot_var = 'subthresh_amps'; % independent variable of experiment
+% Quality control criteria
+in.qc_settings = {}; % use defaults
+in.min_rois_included = 9; % need at least 9 ROIs per cell after quality control
 in = sl.in.processVarargin(in,varargin);
 num_vars = length(plot_vars);
 num_dishes = length(data); 
@@ -32,12 +39,14 @@ success_after = cell(1,num_vars);
 num_rois = zeros(1,num_dishes);
 max_num_peaks = zeros(1,length(plot_vars)); % max number of peaks across all dishes
 max_Nt_al2 = zeros(1,length(plot_vars)); % max number of time points for deltaF_F0_aligned2 across all dishes
+plot_data_inds = cell(1,num_dishes);
 for i = 1:num_dishes    
     for j = 1:length(plot_vars)
         if any(subthresh_lvls{i} == plot_vars(j))    
             data_inds = find(subthresh_lvls{i}==plot_vars(j));
             dup_plot_vars = find(plot_vars==plot_vars(j)); % 
             data_ind = data_inds(dup_plot_vars==j);
+            plot_data_inds{i} = [plot_data_inds{i};data_ind];
             max_num_peaks(j) = max(max_num_peaks(j),...
                 prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)
             max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{data_ind},1));
@@ -46,21 +55,24 @@ for i = 1:num_dishes
 end
 max_num_peaks = repmat(max(max_num_peaks),1,num_vars);
 for i = 1:num_dishes
-    peaksi = data{i}.peaks_deltaF_F0_all;
-    dF_al2i = data{i}.deltaF_F0_aligned2_all;     
-    num_roisi = data{i}.rois_all{1}{1}.num_rois;
+    % Apply quality control to ROIs
+    [datai,exclude_rois] = qualityControlROIs(data{i},in.qc_settings,plot_data_inds{i});
+    peaksi = datai.peaks_deltaF_F0_all;
+    dF_al2i = datai.deltaF_F0_aligned2_all;     
+    num_roisi = datai.rois_all{1}{1}.num_rois;
     num_rois(i) = num_roisi;
     if size(peaksi{1},1) == 3
         include_after = 1;
     else
         include_after = 0;
+    end  
+    if num_roisi < in.min_rois_included
+        fprintf('Skipping dish %g, only %g ROIs (< %g)\n',i,num_roisi,in.min_rois_included);
+        continue; % skip this dish
     end
     for jp = 1:length(plot_vars)  % index within output dataset for plotting/analysis      
         if any(plot_vars(jp) == subthresh_lvls{i})                        
-            data_inds = find(subthresh_lvls{i}==plot_vars(jp));
-            dup_plot_vars = find(plot_vars==plot_vars(jp)); % 
-            jd = data_inds(dup_plot_vars==jp); % index within dataset
-                                  
+            jd = plot_data_inds{i}(jp);                                                         
             peaksij = peaksi{jd}; % 3 x num_rois x 20 x num_trials
             dF_al2ij = dF_al2i{jd}; 
 
@@ -124,7 +136,7 @@ for i = 1:num_dishes
                                                     nan([size(dF_al2_afterij,...
                                                     [1,2]),max_num_peaks(jp)-size(dF_al2_afterij,3)]))];                
                 % dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
-                exp_settingsij = data{i}.exp_settings(jd);
+                exp_settingsij = datai.exp_settings(jd);
                 detectSpikesArgs = {exp_settingsij,spike_thresh,...
                                     'spike_window',in.spike_window,...
                                     'min_width',in.spike_min_width,...
@@ -178,7 +190,7 @@ for i = 1:num_dishes
             % correct indices 
             [included_ampsi,~,~] = intersect(subthresh_lvls{i},plot_vars,'stable');                
             if isempty(included_ampsi)
-                fprintf('No recordings at included amps in dish %g, excluding\n',i)
+                fprintf('No recordings at included amps in dish %g, excluding completely\n',i)
                 num_rois(i) = nan; 
             else
                 peaks_before{jp} = [peaks_before{jp};nan(num_roisi,max_num_peaks(jp))];
