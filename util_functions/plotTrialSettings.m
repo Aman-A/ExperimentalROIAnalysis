@@ -46,7 +46,7 @@ settings.show_roi_labels = 0;
 settings.pixel_size = 0.4; % um (pixel size on Thor camera with 40x objective)
 settings.bin_size = 1; % 1x1 binning
 settings.sort_traces = 0; % 1 to sort traces by plotROIfunc 
-settings.offset_factor = 1.01; % sets trace offset for separate ROIs in plotROIfunc 
+settings.offset_factor = 0.5; % sets trace offset for separate ROIs in plotROIfunc 
 settings.roi_func_sbar_len = 0.5; 
 settings.registration_rec_settings = []; % if necessary, separate ExperimentSettings for registration recording
 settings.analysis_funcs = {}; % for plotTrials
@@ -58,4 +58,5 @@ settings.indicator_dir = 1; % 1 = positive going, -1 = negative going
 settings.spike_thresh = 3; % spike_thresh x std(baseline) for analyzeStimAlignedTraces (used with func = 'decay_fit')
 settings.spike_window = 0.03; % sec - window to find peak after stim for spike detection in analyzeStimAlignedTraces (used with func = 'decay_fit')
 settings.roi_func_peak_align = 0; % 1 = peak align before averaging in plotROIFunc
+settings.roi_func_line_cols = {}; % default uses 'lines' colororder
 settings = sl.in.processVarargin(settings,varargin);

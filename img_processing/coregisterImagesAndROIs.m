@@ -45,23 +45,17 @@ else
 end
 fixed_imgs = diffImage(fixed_recording,exp_settings_fixed,include_plots_fixed,...                         ,...
                           'baseline_mode',in.baseline_mode);
-fixed_bsline = fixed_imgs.bsline_img;
-fixed_peak = fixed_imgs.peak_stim_img;
-fixed_diff = fixed_imgs.mean_diff_img;
 moving_imgs = diffImage(moving_recording,exp_settings_moving,include_plots_moving,...
                       'baseline_mode',in.baseline_mode);
-moving_bsline = moving_imgs.bsline_img;
-moving_peak = moving_imgs.peak_stim_img;
-moving_diff = moving_imgs.mean_diff_img;
 if strcmp(in.z_proj,'baseline')       
-    fixed_img = fixed_bsline;
-    moving_img = moving_bsline;
+    fixed_img = fixed_imgs.bsline_img;
+    moving_img = moving_imgs.bsline_img;
 elseif strcmp(in.z_proj,'peak')
-    fixed_img = fixed_peak;
-    moving_img = moving_peak;
+    fixed_img = fixed_imgs.peak_stim_img;
+    moving_img = moving_imgs.peak_stim_img;
 elseif strcmp(in.z_proj,'diff')
-    fixed_img = fixed_diff;
-    moving_img = moving_diff;
+    fixed_img = fixed_imgs.mean_diff_img;
+    moving_img = moving_imgs.mean_diff_img;
 else
    error('''%s'' is not a valid setting for z_proj',in.z_proj);  
 end

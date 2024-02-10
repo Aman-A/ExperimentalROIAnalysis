@@ -1,4 +1,4 @@
-function out = extractSubthreshModResponses(data,def,plot_amps,...
+function out = extractSubthreshModResponses(data,def,plot_vars,...
                                         min_num_trials_per_amp,spike_thresh,...
                                         varargin)
 if nargin < 4
@@ -11,39 +11,44 @@ end
 in.spike_window = 0.03; % sec
 in.spike_min_width = [20 60]*1e-3; % sec
 in.spike_min_amp = 0.06; % deltaF/F0
+in.plot_var = 'subthresh_amps'; % independent variable of experiment
 in = sl.in.processVarargin(in,varargin);
-num_amps = length(plot_amps);
+num_vars = length(plot_vars);
 num_dishes = length(data); 
-subthresh_amps = cellfun(@(x) str2num(x),def.subthresh_amps,'UniformOutput',0); %#ok<*ST2NM> 
+% independent variable, e.g., amplitude or duration 
+subthresh_lvls = cellfun(@(x) str2num(x),def.(in.plot_var),'UniformOutput',0); %#ok<*ST2NM> 
 
 % Extract amps to analyze
-peaks_before = cell(1,num_amps);
-peaks_during = cell(1,num_amps);
-peaks_after = cell(1,num_amps);
-dish_inds = cell(1,num_amps);
-dF_al2_before = cell(1,num_amps);
-dF_al2_during = cell(1,num_amps);
-dF_al2_after = cell(1,num_amps);
-success_before = cell(1,num_amps);
-success_during = cell(1,num_amps);
-success_after = cell(1,num_amps);
+peaks_before = cell(1,num_vars);
+peaks_during = cell(1,num_vars);
+peaks_after = cell(1,num_vars);
+dish_inds = cell(1,num_vars);
+dF_al2_before = cell(1,num_vars);
+dF_al2_during = cell(1,num_vars);
+dF_al2_after = cell(1,num_vars);
+success_before = cell(1,num_vars);
+success_during = cell(1,num_vars);
+success_after = cell(1,num_vars);
 num_rois = zeros(1,num_dishes);
-max_num_peaks = zeros(1,length(plot_amps)); % max number of peaks across all dishes
-max_Nt_al2 = zeros(1,length(plot_amps)); % max number of time points for deltaF_F0_aligned2 across all dishes
+max_num_peaks = zeros(1,length(plot_vars)); % max number of peaks across all dishes
+max_Nt_al2 = zeros(1,length(plot_vars)); % max number of time points for deltaF_F0_aligned2 across all dishes
 for i = 1:num_dishes    
-    for j = 1:length(plot_amps)
-        if any(subthresh_amps{i} == plot_amps(j))            
+    for j = 1:length(plot_vars)
+        if any(subthresh_lvls{i} == plot_vars(j))    
+            data_inds = find(subthresh_lvls{i}==plot_vars(j));
+            dup_plot_vars = find(plot_vars==plot_vars(j)); % 
+            data_ind = data_inds(dup_plot_vars==j);
             max_num_peaks(j) = max(max_num_peaks(j),...
-                prod(size(data{i}.peaks_deltaF_F0_all{subthresh_amps{i}==plot_amps(j)},[3 4])));
-            max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{subthresh_amps{i}==plot_amps(j)},1));
+                prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)
+            max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{data_ind},1));
         end
     end
 end
-max_num_peaks = repmat(max(max_num_peaks),1,num_amps);
+max_num_peaks = repmat(max(max_num_peaks),1,num_vars);
 for i = 1:num_dishes
     peaksi = data{i}.peaks_deltaF_F0_all;
     dF_al2i = data{i}.deltaF_F0_aligned2_all; 
-    [included_ampsi,amp_indsi,plot_amp_indsi] = intersect(subthresh_amps{i},plot_amps,'stable');            
+    [included_ampsi,amp_indsi,plot_amp_indsi] = intersect(subthresh_lvls{i},plot_vars,'stable');            
     num_roisi = data{i}.rois_all{1}{1}.num_rois;
     num_rois(i) = num_roisi;
     if size(peaksi{1},1) == 3
@@ -51,9 +56,11 @@ for i = 1:num_dishes
     else
         include_after = 0;
     end
-    for jp = 1:length(plot_amps)  %length(amp_indsi)          
-        if any(plot_amps(jp) == subthresh_amps{i})
-            j = find(included_ampsi == plot_amps(jp));        
+    for jp = 1:length(plot_vars)  %length(amp_indsi)          
+        if any(plot_vars(jp) == subthresh_lvls{i})
+            j = find(included_ampsi == plot_vars(jp));        
+            dup_plot_vars = find(plot_vars==plot_vars(j)); % 
+            j = j(dup_plot_vars == jp);
             peaksij = peaksi{amp_indsi(j)}; % 3 x num_rois x 20 x num_trials
             dF_al2ij = dF_al2i{amp_indsi(j)}; 
             num_trials  = size(peaksij,4);       
@@ -164,7 +171,7 @@ for i = 1:num_dishes
                 success_during{peak_indj} = [success_during{jp};nan(num_roisi,max_num_peaks(jp))];
                 success_after{peak_indj} = [success_after{jp};nan(num_roisi,max_num_peaks(jp))];
                 fprintf('Only %g trials at %g mA in dish %g, exclude\n',...
-                        num_trials,subthresh_amps{i}(amp_indsi(j)),i)
+                        num_trials,subthresh_lvls{i}(amp_indsi(j)),i)
             end
         else
             % fill with nans for these ROIs at this intensity to maintain
@@ -191,7 +198,7 @@ for i = 1:num_dishes
                                                     num_roisi,max_num_peaks(jp))]; 
                     success_after{jp} = [success_after{jp};nan(num_roisi,max_num_peaks(jp))];
                 end                
-                fprintf('No recordings for dish %g, amp = %g, padding with nans\n',i,plot_amps(jp))
+                fprintf('No recordings for dish %g, amp = %g, padding with nans\n',i,plot_vars(jp))
             end
         end
     end

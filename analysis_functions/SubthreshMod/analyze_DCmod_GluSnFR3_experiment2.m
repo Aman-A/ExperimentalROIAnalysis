@@ -41,6 +41,7 @@ in.norm_to_cont = 1; % normalize responses to control (DC off) within trial/ROI
 in.data_file_suffix = 'train';
 in.roi_func_mode = 'separate';
 in.roi_pol_slopes = []; % polarization (% deltaF/F0) per mA in each ROI
+in.roi_pol = []; % polarization at each stim amplitude in each ROI (num_rois x num_amps)
 % plot settings
 in.cols = []; 
 in.fig_size = [0.97 0.88]; % in 'normalized' units
@@ -210,8 +211,18 @@ if any(in.plot_figs == 2)
                 shadedErrorBar(ta,tracesij(:,k),stdij(:,k),'lineProps',in.stim_cols(k));
             end
     %         set(p,{'color'},stim_cols);
-            title(sprintf('%g',roi_i));
-            if floor(roi_i/Nrows) == Nrows
+            if ~isempty(in.roi_pol)
+                if in.roi_pol(roi_i,condj) > 0
+                    title(sprintf('%g',roi_i),'Color','r');
+                elseif in.roi_pol(roi_i,condj) < 0
+                    title(sprintf('%g',roi_i),'Color','b');
+                else
+                    title(sprintf('%g',roi_i),'Color',0.6*[1 1 1]);
+                end
+            else
+                title(sprintf('%g',roi_i));
+            end
+            if roi_i > Nrows*Ncols - Ncols
                 xlabel('time (sec)');
             end
             if mod(roi_i,Ncols) == 1 && mod(roi_i,Nrows) == round(Nrows/2)
@@ -461,7 +472,7 @@ if any(in.plot_figs == 5)
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off','Interpreter','none')
     if sort_amp_ind > 0
         title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-                mode(num_stim*num_trials),cond_names{sort_amp_ind}));    
+                mode(num_stim*num_trials),cond_names{sort_amp_ind}),'Interpreter','none');    
     else
          title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
                 mode(num_stim*num_trials)));    
@@ -488,7 +499,7 @@ if any(in.plot_figs == 5)
     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off','Interpreter','none')  
     if sort_amp_ind > 0
         title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-            mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+            mode(num_stim*num_trials),cond_names{sort_amp_ind}),'Interpreter','none');
     else
         title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
             mode(num_stim*num_trials)));
@@ -540,7 +551,7 @@ if any(in.plot_figs == 5)
 %     legend(ax.Children(end:-1:end-(num_conditions-1)),cond_names,'Box','off')
     if sort_amp_ind > 0
         title(sprintf('Mean +/- SEM (%g stimuli per ROI, sorted by %% change at %s)',...
-            mode(num_stim*num_trials),cond_names{sort_amp_ind}));
+            mode(num_stim*num_trials),cond_names{sort_amp_ind}),'Interpreter','none');
     else
         title(sprintf('Mean +/- SEM (%g stimuli per ROI)',...
             mode(num_stim*num_trials)));

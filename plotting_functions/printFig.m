@@ -13,7 +13,11 @@ function printFig(fig_handle,file_dir,file_name,varargin)
 % AUTHOR    : Aman Aberra 
 in.formats = {'fig','png'}; 
 in.resolutions = {[],'-r300'}; 
+in.background_col = [1 1 1];
+in.color_space = 'cmyk';
 in.print_level = 1; 
+in.print_level = 1; 
+in.png_opts = {}; 
 in = sl.in.processVarargin(in,varargin); 
 if ischar(in.formats)
    in.formats = {in.formats};    
@@ -36,7 +40,7 @@ for i = 1:num_files
         resi = in.resolutions{i};
         if exist('export_fig','file')
             export_fig(fig_handle,fullfile(file_dir,[file_name '.png']),...
-                    '-png',resi,'-cmyk');
+                    '-png',resi,['-',in.color_space],in.png_opts{:});
         else
 %             print(fig_handle,fullfile(file_dir,[file_name '.png']),'-dpng',resi);
             resi = str2double(resi(3:end)); % '-r300' to 300
@@ -44,7 +48,8 @@ for i = 1:num_files
                            'Resolution',resi); 
         end
     elseif strcmp(formati,'eps')
-        exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
+        exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']),...
+            'BackgroundColor',in.background_col,'ColorSpace',in.color_space);
 %         if exist('export_fig','file')        
 %             export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps','-cmyk');
 %         else

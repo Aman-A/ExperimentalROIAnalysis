@@ -1,6 +1,6 @@
 function [spike_width,width_val,start_time,end_time] = spikeWidth(t,y,stim_index,...
                                                         frac_amp,plot_fig,...
-                                                        peak_ind) %#codegen
+                                                        peak_ind,varargin) %#codegen
 %SPIKEWIDTH Computes spike width at desired fraction of spike amplitude
 % assumes single well-defined peak in trace and stim at t = 0
 %  
@@ -25,7 +25,8 @@ function [spike_width,width_val,start_time,end_time] = spikeWidth(t,y,stim_index
 %   fwhm = spikeWidth(t,y,stim_index,0.5); % default without 3rd argument is 0.5
 
 % AUTHOR    : Aman Aberra 
-max_width = 0.2; % sec - max allowed spike width 20 ms
+in.max_width = 0.2; % sec - max allowed spike width 2 sec
+in = sl.in.processVarargin(in,varargin);
 if nargin < 4
     frac_amp = 0.5; 
 end
@@ -33,7 +34,7 @@ if nargin < 5
     plot_fig = 0;
 end 
 %% Get peak amplitude
-if nargin < 6
+if nargin < 6 || isempty(peak_ind)
     [peak_val,peak_ind] = max(y(stim_index-1:end),[],1,'omitnan'); % get max after stim_index (in case extraneous peak occurs before stim)
     peak_ind = peak_ind + stim_index - 2; % re-index to full vector 
 else % input peak index (helps with noisy traces)
@@ -53,7 +54,7 @@ onset_found = 0;
 offset_found = 0;
 for i = stim_index:length(y)
     if ~onset_found 
-        if y(i) >= width_val && (t(peak_ind) - t(i)) < max_width/2
+        if y(i) >= width_val && (t(peak_ind) - t(i)) < in.max_width/2
             onset_index = i; 
             onset_found = 1;
         end
