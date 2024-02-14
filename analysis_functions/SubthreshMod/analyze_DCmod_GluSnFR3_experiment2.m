@@ -297,6 +297,7 @@ if any(in.plot_figs == 3)
         end
         ax.XLim = [ta(1),ta(end)];
     end
+    setAxesUniformLim(fig,'YLim');    
     sgtitle(sprintf('Mean and individual responses (%g APs) in ROI %g',...
             length(exp_settings(1).stim_vals(:)),in.plot_roi_ind))
     if save_figs
