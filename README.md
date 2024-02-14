@@ -18,7 +18,7 @@ ans =
     '/Users/f005dz9/Documents/ExperimentalROIAnalysis'
 ```
 
-Next, go to the `experiment_scripts` folder to see examples and useful scripts 
+Next, go to the `examples` folder to see examples and useful scripts. The `experiment_scripts` folder has specific scripts I use to analyze my experiments.
 
 # Toolbox Dependencies:
 

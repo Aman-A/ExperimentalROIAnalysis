@@ -18,7 +18,8 @@ in.spike_min_amp = 0.06; % deltaF/F0
 in.plot_var = 'subthresh_amps'; % independent variable of experiment
 % Quality control criteria
 in.qc_settings = {}; % use defaults
-in.min_rois_included = 9; % need at least 9 ROIs per cell after quality control
+in.exclude_rois = {};
+in.min_rois_included = 1; % need this many ROIs per cell after quality control
 in = sl.in.processVarargin(in,varargin);
 num_vars = length(plot_vars);
 num_dishes = length(data); 
@@ -36,7 +37,7 @@ dF_al2_after = cell(1,num_vars);
 success_before = cell(1,num_vars);
 success_during = cell(1,num_vars);
 success_after = cell(1,num_vars);
-num_rois = zeros(1,num_dishes);
+num_rois = nan(1,num_dishes);
 max_num_peaks = zeros(1,length(plot_vars)); % max number of peaks across all dishes
 max_Nt_al2 = zeros(1,length(plot_vars)); % max number of time points for deltaF_F0_aligned2 across all dishes
 plot_data_inds = cell(1,num_dishes);
@@ -54,22 +55,27 @@ for i = 1:num_dishes
     end
 end
 max_num_peaks = repmat(max(max_num_peaks),1,num_vars);
+exclude_rois = cell(1,num_dishes);
 for i = 1:num_dishes
     % Apply quality control to ROIs
-    [datai,exclude_rois] = qualityControlROIs(data{i},in.qc_settings,plot_data_inds{i});
+    if ~isempty(in.exclude_rois)
+        datai = removeROIsExpData(data{i},in.exclude_rois{i});
+    else
+        [datai,exclude_rois{i}] = qualityControlROIs(data{i},in.qc_settings,plot_data_inds{i});
+    end
     peaksi = datai.peaks_deltaF_F0_all;
     dF_al2i = datai.deltaF_F0_aligned2_all;     
-    num_roisi = datai.rois_all{1}{1}.num_rois;
+    num_roisi = datai.rois_all{1}{1}.num_rois;    
+    if num_roisi < in.min_rois_included
+        fprintf('Skipping dish %g, only %g ROIs (< %g)\n',i,num_roisi,in.min_rois_included);
+        continue; % skip this dish
+    end
     num_rois(i) = num_roisi;
     if size(peaksi{1},1) == 3
         include_after = 1;
     else
         include_after = 0;
-    end  
-    if num_roisi < in.min_rois_included
-        fprintf('Skipping dish %g, only %g ROIs (< %g)\n',i,num_roisi,in.min_rois_included);
-        continue; % skip this dish
-    end
+    end 
     for jp = 1:length(plot_vars)  % index within output dataset for plotting/analysis      
         if any(plot_vars(jp) == subthresh_lvls{i})                        
             jd = plot_data_inds{i}(jp);                                                         
@@ -239,16 +245,14 @@ out.mean_peaks_during = squeeze(mean(out.peaks_during_mat,2,'omitnan'));
 out.peak_mod_during = out.mean_peaks_during./out.mean_peaks_before; 
 out.peak_mod_during_per = 100*(out.peak_mod_during - 1); % percent change
 out.peak_mod_during_diff = out.mean_peaks_during - out.mean_peaks_before; % difference
+
+
 % average within cell
 mean_peaks_before_cell = zeros(num_dishes,length(plot_vars));
 mean_peaks_during_cell = zeros(num_dishes,length(plot_vars));
-mean_peaks_after_cell = zeros(num_dishes,length(plot_vars));
 for i = 1:num_dishes
     mean_peaks_before_cell(i,:) = squeeze(mean(out.peaks_before_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));
-    mean_peaks_during_cell(i,:) = squeeze(mean(out.peaks_during_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));    
-    if include_after
-        mean_peaks_after_cell(i,:) = squeeze(mean(out.peaks_after_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));    
-    end
+    mean_peaks_during_cell(i,:) = squeeze(mean(out.peaks_during_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));       
 end
 out.mean_peaks_before_cell = mean_peaks_before_cell;
 out.mean_peaks_during_cell = mean_peaks_during_cell;
@@ -260,20 +264,30 @@ out.success_before = success_before;
 out.success_during = success_during;
 out.success_before_mat = cell2mat(reshape(success_before,1,1,length(peaks_before)));
 out.success_during_mat = cell2mat(reshape(success_during,1,1,length(peaks_during)));
+
+out.exclude_rois = exclude_rois; 
 if include_after
     out.peaks_after = peaks_after;
     out.peaks_after_mat = cell2mat(reshape(peaks_after,1,1,length(peaks_after)));
     out.mean_peaks_after = squeeze(mean(out.peaks_after_mat,2,'omitnan'));
-    out.peak_mod_after = out.mean_peaks_after./mean_peaks_before; 
+    out.peak_mod_after = out.mean_peaks_after./out.mean_peaks_before; 
     out.peak_mod_after_per = 100*(out.peak_mod_after - 1); % percent change
-    out.peak_mod_after_diff = out.mean_peaks_after - out.mean_peaks_before; % difference
-    out.mean_peaks_after_cell = mean_peaks_after_cell;
+    out.peak_mod_after_diff = out.mean_peaks_after - out.mean_peaks_before; % difference    
     out.success_after = success_after;
     out.success_after_mat = cell2mat(reshape(success_after,1,1,length(peaks_after)));
+    mean_peaks_after_cell = zeros(num_dishes,length(plot_vars));
+    for i = 1:num_dishes
+        mean_peaks_after_cell(i,:) = squeeze(mean(out.peaks_after_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));    
+    end
+    out.mean_peaks_after_cell = mean_peaks_after_cell;
+    out.peak_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_after_cell; 
+    out.peak_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_after_cell; 
+    out.peak_mod_after_cell_per = 100*(out.peak_mod_after_cell - 1); % percent change
 else
     out.peaks_after = []; 
     out.peaks_after_mat = []; 
     out.success_after = []; 
     out.success_after_mat = []; 
+    out.mean_peaks_after_cell = []; 
 end
 end

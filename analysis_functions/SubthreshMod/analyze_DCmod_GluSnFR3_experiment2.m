@@ -42,6 +42,7 @@ in.data_file_suffix = 'train';
 in.roi_func_mode = 'separate';
 in.roi_pol_slopes = []; % polarization (% deltaF/F0) per mA in each ROI
 in.roi_pol = []; % polarization at each stim amplitude in each ROI (num_rois x num_amps)
+in.amps = []; 
 % plot settings
 in.cols = []; 
 in.fig_size = [0.97 0.88]; % in 'normalized' units
@@ -512,7 +513,7 @@ if any(in.plot_figs == 5)
     end
     % Plot norm peaks vs intensity within ROI on same axis
     fig = figure('Units','normalized');
-    fig.Position = [0.001 0.03 in.fig_size];       
+    fig.Position = [0.001 0.03 in.fig_size];           
     for j = 1:num_rois
         xj = linspace(j-0.4,j+0.4,num_conditions)';
         if ~isempty(in.roi_pol_slopes)
@@ -526,6 +527,7 @@ if any(in.plot_figs == 5)
         sem_peaksj = squeeze(100*sem_peaks_rois_norm(j,2,:));
 %         mean_peaksj = squeeze(peaks_per_change_rois(j,:))';
 %         sem_peaksj = squeeze(peaks_per_change_sem_rois(j,:))';
+        % [b,~,~,~,stats] = regress(mean_peaksj,[ones(size(xj)) xj]); % center x at 0
         [b,~,~,~,stats] = regress(mean_peaksj,[ones(size(xj)) xj-j]); % center x at 0
 %         [b,~,~,~,stats] = regress(mean_peaksj,xj-j); % center x at 0
         Rsq = stats(1); 
@@ -537,6 +539,9 @@ if any(in.plot_figs == 5)
             colj = 0.6*[1 1 1];
             lw = 0.5; 
         end
+        % errorbar(xj+j,mean_peaksj,sem_peaksj,...
+        %         'o','MarkerFaceColor',colj,'Color',colj); hold on;
+        % plot(xj+j,b(1) + b(2)*(xj),'-','Color',colj,'LineWidth',lw);
         errorbar(xj,mean_peaksj,sem_peaksj,...
                 'o','MarkerFaceColor',colj,'Color',colj); hold on;
         plot(xj,b(1) + b(2)*(xj-j),'-','Color',colj,'LineWidth',lw);

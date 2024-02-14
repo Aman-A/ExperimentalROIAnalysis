@@ -17,6 +17,10 @@ if isempty(qc_settings)
     qc_settings.qc_peak_cutoff = 0.05; % peak deltaF/F0 must be above this value
     qc_settings.qc_bsline_btwn_trial_per = -15; % baseline must stay above -10% of initial value across trials
     qc_settings.qc_mean_peaks_before_per_diff = 60; % max deviation of mean peak within a trial from mean across trials
+elseif strcmp(qc_settings,'off')
+    exclude_rois = []; 
+    % fprintf('Skipping quality control...\n')
+    return; 
 end
 peaks = data.peaks_deltaF_F0_all;
 dF_al2 = data.deltaF_F0_aligned2_all;     
@@ -57,6 +61,16 @@ trial1_times = cellfun(@(x) x(1),data.trial_times_all,'UniformOutput',1); % extr
 % [~,trial2_ind] = max(trial2_times(plot_data_inds{i}));       
 mean_bslinesi = cellfun(@(x) squeeze(mean(x,[2 3])),data.baselines_all,'UniformOutput',0);
 mean_bslinesi = mean_bslinesi(plot_inds);
+ntrials = cellfun(@(x) size(x,2),mean_bslinesi,'UniformOutput',1);
+if any(ntrials < max(ntrials))
+    for i = 1:length(mean_bslinesi)
+        if ntrials(i) < max(ntrials)
+            % Pad with nans if fewer trials
+            mean_bslinesi{i} = cat(2,mean_bslinesi{i},nan(size(mean_bslinesi{i},1),...
+                                    max(ntrials)-size(mean_bslinesi{i},2)));            
+        end
+    end
+end
 mean_bslinesi = cell2mat(reshape(mean_bslinesi,1,1,length(mean_bslinesi)));
 % change in baseline relative to first trial
 mean_bslinesi_per_diff = 100*(mean_bslinesi - mean_bslinesi(:,1,trial1_ind))./mean_bslinesi(:,1,trial1_ind);               
