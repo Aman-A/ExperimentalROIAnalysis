@@ -55,8 +55,15 @@ if strcmp(ax.YLimMode,'auto') % YLim wasn't set, set now
 end
 lns = plot(ax,x,y+offset,in.plot_settings{:}); % plot trace/s
 if in.show_y_tick_labels
-    ax.YTick = fliplr(offset);
-    ax.YTickLabel = length(offset):-1:1;
+    y_ticks = offset(end:-1:1);
+    y_tick_labels = length(offset):-1:1;
+    if length(offset) > 60   % display every other tick label                
+        y_tick_labels = numericVec2chars(y_tick_labels,'%g');
+        y_tick_labels(2:2:end) = {''};
+        % y_ticks = y_ticks(1:2:end); 
+    end
+    ax.YTick = y_ticks;
+    ax.YTickLabel = y_tick_labels;
     ax.YAxis.FontSize = in.font_size;
 else
     ax.YAxis.Visible = 'off';

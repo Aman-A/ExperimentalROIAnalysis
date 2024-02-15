@@ -36,7 +36,9 @@ function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
 %            funcs and the img_name, roi_func_mode, and roi_inds
 %   Examples 
 %   --------------- 
-
+% TODO:
+% Parallelize for loop for separate ROIs-> need to rewrite apply_func to
+% operate on matrices instead of struct
 % AUTHOR    : Aman Aberra 
 in.print_level = 1;
 in.rem_pbleach = 0;
