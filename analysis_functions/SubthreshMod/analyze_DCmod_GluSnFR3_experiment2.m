@@ -154,9 +154,9 @@ if any(in.plot_figs == 1)
     for i = 1:num_conditions
         ax = subplot(Nrows,Ncols,i);        
         if in.norm_to_cont
-            tracesi = mean_dF_F0_norm0{i};
+            tracesi = mean_dF_F0_norm0{i}/max(mean_dF_F0_norm0{i}(:,1));
     %         stdi = std_dF_F0_norm0{i}; 
-            semi = sem_dF_F0_norm0{i}; 
+            semi = sem_dF_F0_norm0{i}/max(mean_dF_F0_norm0{i}(:,1)); 
         else
             tracesi = mean_dF_F0{i};
     %         stdi = std_dF_F0{i};        
