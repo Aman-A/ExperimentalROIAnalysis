@@ -202,15 +202,19 @@ elseif strcmp(in.roi_func_mode,'separate')
         analysis = cellfun(@(x) analyzeTraces(x,exp_settings,'funcs',analysis_funcs),...
                             deltaF_F0,'UniformOutput',0);        
         analysis = [analysis{:}]; % convert to struct array    
-        mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
-        std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
+        if isfield(analysis,'peaks')
+            mean_peak_deltaF_F0 = mean(concatFieldInStructArray(analysis,'peaks'),3); % mean across trials, within roi
+            std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
+        end
     end    
     bslines = cell2mat(reshape(bslines,1,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = trialsCell2Mat(deltaF_F0);
-    mean_deltaF_F0 = mean(deltaF_F0,[3 4],'omitnan');    
-    fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
-             in.condition, mean(mean_peak_deltaF_F0(1,:,:),[2,3]),...
-             mean(std_peak_deltaF_F0(1,:,:),[2,3])); 
+    mean_deltaF_F0 = mean(deltaF_F0,[3 4],'omitnan'); 
+    if isfield(analysis,'peaks')
+        fprintf('%s: Peak deltaF_F0 across trials and ROIs (mean +/- std) = %.3f +/- %.3f\n',...
+                 in.condition, mean(mean_peak_deltaF_F0(1,:,:),[2,3]),...
+                 mean(std_peak_deltaF_F0(1,:,:),[2,3])); 
+    end
     fprintf('  Mean baseline (%g frames) across trials and ROIs = %.3f +/- %.3f\n',...
             exp_settings(1).baseline_wind,mean(bslines,'all'),std(bslines,0,'all'));
 end

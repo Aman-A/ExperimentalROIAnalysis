@@ -467,7 +467,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.y0(roi_inds) = []; 
                 obj.x(roi_inds) = []; 
                 obj.y(roi_inds) = []; 
-                obj.names(roi_inds) = [];  
+                obj.names(roi_inds) = []; 
+                obj.radius(roi_inds) = []; 
                 obj.types(roi_inds) = []; 
                 obj.num_rois = size(obj.x,1);                 
             elseif all(strcmp(obj.types,'Rectangle'))
