@@ -4,6 +4,7 @@
 % parameters specified below. 
 % Recording settings
 rec_file_base = '10Hz_50ms_PW_train_gain51x';
+rec_file_fold = 'Efield_measurements';
 stim_name = '50ms_pulse_train_var_amp';
 sweep1 = 1;
 num_sweeps = 3; 
@@ -15,5 +16,5 @@ save_figs = 0;
 %% Analyze data
 out = analyzeEtrainProt(rec_file_base,sweep1,num_sweeps,stim_name,gain,iel,...
                         amp_per_V,plot_figs,save_figs,'fig_fold','Efield_figs',...
-                        'filt_order',2); 
+                        'filt_order',2,'rec_file_fold',rec_file_fold); 
 E_slope =  out.E_slope; % V/m per mA

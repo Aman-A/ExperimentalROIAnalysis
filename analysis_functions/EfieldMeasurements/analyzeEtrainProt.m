@@ -1,5 +1,6 @@
 function out = analyzeEtrainProt(rec_file_base,sweep1,num_sweeps,stim_name,...
                                 gain,iel,amp_per_V,plot_figs,save_figs,varargin)
+in.rec_file_fold = '.';
 in.fig_fold = 'figs';
 in.filt_order = 0; 
 in.filt_cutoffs = [59 61];
@@ -7,7 +8,7 @@ in.filt_type = 'stop';
 in = sl.in.processVarargin(in,varargin);
 
 rec_file = sprintf('%s_%04d-%04d',rec_file_base,sweep1,sweep1+num_sweeps-1);
-s = ws.loadDataFile([rec_file '.h5']); 
+s = ws.loadDataFile(fullfile(in.rec_file_fold,[rec_file '.h5'])); 
 fs = s.header.AcquisitionSampleRate;
 [V0,t] = formatWaveSurferSweeps(s); 
 V = V0/gain; % actual voltage
