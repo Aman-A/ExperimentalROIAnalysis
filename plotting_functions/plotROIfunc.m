@@ -18,7 +18,7 @@ in.ax = [];
 in.rois = []; % use for labeling
 in.show_legend = 1;
 in.title_on = 1;
-in.offset_factor = 1.01; % 1.01 default 1 - offset lines by offset_factor*max(func_output) 
+in.offset_factor = []; % 1.01 default 1 - offset lines by offset_factor*max(func_output) 
                       % >1 - offset based on y axis limits - offset_factor
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
@@ -171,6 +171,9 @@ else
                                         std(func_output.baseline(:,1),0,'omitnan'))};
     end
 %     title_str = [title_str sprintf(' %g ROIs',num_rois)];     
+    if isempty(in.offset_factor)
+        in.offset_factor = max(max(y,[],1) - mean(y,1))*1.1; 
+    end
     if in.offset_factor > 0
         [lns,sort_inds,sbar_hand] = plotTracesOffset(x,y,in.offset_factor,...
                                             'ax',ax,'sort_traces',in.sort_traces,...
@@ -181,7 +184,7 @@ else
         if in.sort_traces
             display_names = display_names(sort_inds);
         end
-    else
+    else % no offset
         lns = plot(ax,x,y,in.plot_settings{:}); % plot trace/s
     end
     if ~isempty(in.roi_colors)

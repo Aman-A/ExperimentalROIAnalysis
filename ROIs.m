@@ -462,7 +462,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             obj.updateRoiObjs(); 
         end
         function removeROIs(obj,roi_inds)            
-            if all(strcmp(obj.types,'Oval'))
+            if all(strcmp(obj.types,'Oval')) || all(strcmp(obj.types,'Circle'))
                 obj.x0(roi_inds) = []; 
                 obj.y0(roi_inds) = []; 
                 obj.x(roi_inds) = []; 

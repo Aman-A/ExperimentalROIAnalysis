@@ -69,6 +69,7 @@ include_plots = [3]; % this specifies which plots to include:
                          % 1 - mean baseline
                          % 2 - peak in stim_wind
                          % 3 - difference (peak - mean baseline images)
+                         % 4 - mean of differences (peak - pre-stim baseline) for all stimuli
                          % Ex: to just plot the difference plot, replace
                          % with include_plots = [3];
 filt_width = 0; % Specify width of 2D gaussian filter to apply, or set to 
@@ -107,13 +108,19 @@ func_output = calcROIfuncs(rec,rois,funcs,exp_settings,...
 % Let's just plot the deltaF_F0
 plot_func = 'deltaF_F0'; % this specifies which function to plot 
                          % (should match names in funcs/func_output)
+                         
+offset_factor = []; % vertical offset between traces. Leave empty to set
+                    % automatically, otherwise manually set to y value
+                    % offset
 fig = figure; 
-fig.Units = 'inches'; % units of figure dimensions 
-fig.Position = [0.54 2.46 12.37 7.7]; % set figure position, 
+fig.Units = 'normalized'; % units of figure dimensions 
+fig.Position = [0.1 0.1 0.5 0.5]; % set figure position, 
                                       % [x,y,width,height] referenced 
                                       % to bottom left corner
 ax = gca; % grab axis handle
 plotROIfunc(func_output,plot_func,exp_settings.stim_vals,...
-            exp_settings.sampling_rate,'ax',ax,'show_legend',1); 
+            exp_settings.sampling_rate,'ax',ax,'show_legend',1,...
+            'offset_factor',offset_factor); 
 %% You can save function output to csv files using saveROIfuncOutput
-saveROIfuncOutput(func_output,'test_data');
+img_dir = fileparts(img_file_name);
+saveROIfuncOutput(func_output,img_dir);

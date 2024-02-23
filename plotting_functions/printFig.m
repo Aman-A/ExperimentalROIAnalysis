@@ -56,6 +56,12 @@ for i = 1:num_files
 % %             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
 %             exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
 %         end
+    elseif strcmp(formati,'tif') || strcmp(formati,'tiff')
+        exportgraphics(fig_handle,fullfile(file_dir,[file_name '.tif']),...
+          'BackgroundColor',in.background_col,'ColorSpace',in.color_space);
+    elseif strcmp(formati,'pdf')
+        exportgraphics(fig_handle,fullfile(file_dir,[file_name '.pdf']),...
+          'BackgroundColor',in.background_col,'ColorSpace',in.color_space);
     end
 end
 print_str = [sprintf('Saved %s to %s in formats: ',file_name,strrep(file_dir,'\','/')),...

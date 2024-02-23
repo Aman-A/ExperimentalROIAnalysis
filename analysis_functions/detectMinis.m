@@ -28,6 +28,7 @@ in.snr_thresh = []; % throw out minis with mini SNR (peak/std(baseline)) < this 
                     % skips this step if left empty
 in.mini_width_range = []; % sec - [min,max] of peak full width at half max, leave empty to skip
 in.min_peak_distance = 3/sampling_rate; % 3 frames by default
+in.max_mini_amp = []; % deltaF/F - max amplitude to exclude massive unknown events
 in.width_ref = 'halfheight'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
 in.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract (default 0.4 sec)
 in.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract
@@ -113,6 +114,8 @@ if in.deconv
     sigmas = gauss_fit_params(3,:);  % noise level in deconvolved trace    
     [F_blanked,F_blanked_filt,evoked_peaks,evoked_peaks_filt] = ...
         blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);
+    % baselines = mean(F_blanked_filt,1,'omitnan');
+    baselines = gauss_fit_params(2,:); % mean of gaussian in deconvolved trace
 else
     F_filt = F_filt2; 
     F_deconv = F_filt2;   
@@ -121,6 +124,7 @@ else
     [F_blanked,F_blanked_filt,evoked_peaks,evoked_peaks_filt] = ...
         blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);
     sigmas = std(F_blanked_filt,0,1,'omitnan');  % noise level in deconvolved trace (omit evoked responses)
+    baselines = mean(F_blanked_filt,1,'omitnan');
 end
 %% Plot output of filtering and deconvolution
 if in.plot_x_time % x axis is time (sec)
@@ -154,7 +158,7 @@ else
 end
 % set figure size
 fig_units = 'inches';
-fig_pos = [4.8 4.2 18.5 9];
+fig_pos = [0.6 1 18.5 9];
 if in.plot_filt_output_roi_index > 0 && in.plot_figs
     ii = in.plot_filt_output_roi_index; 
 %     x_lim = [490 530]; % roi 4
@@ -180,14 +184,14 @@ if in.plot_filt_output_roi_index > 0 && in.plot_figs
     subplot(4,1,4); % filters + deconv
     if in.refilter_deconv
         plot(x_full,F_deconv(:,ii)); hold on; plot(F_blanked_filt(:,ii)); xlim(x_lim);
-        plot([x_full(1) x_full(end)],sigmas(ii)*[1 1])
-        plot([x_full(1) x_full(end)],in.threshold*sigmas(ii)*[1 1],'--')
+        plot([x_full(1) x_full(end)],baselines(ii) + sigmas(ii)*[1 1])
+        plot([x_full(1) x_full(end)],baselines(ii) + in.threshold*sigmas(ii)*[1 1],'--')
         legend('Deconvolved','Deconvolved + refiltered',...
                 'STD',sprintf('Threshold (%.1f x STD)',in.threshold),...
                 'Box','off','Location','northeast','Orientation','horizontal')
     else
         plot(x_full,F_deconv(:,ii)); xlim(x_lim); hold on;
-        plot([x_full(1) x_full(end)],in.threshold*sigmas(ii)*[1 1])
+        plot([x_full(1) x_full(end)],baselines(ii) + in.threshold*sigmas(ii)*[1 1])
     end    
     title(sprintf('Deconv with tau_{d} = %g ms',in.deconv_tau*1e3)); box off;     
     sgtitle(sprintf('%s: ROI %g',in.trial_name,ii),'Interpreter','none');
@@ -198,13 +202,6 @@ if in.plot_filt_output_roi_index > 0 && in.plot_figs
 end
 %% Peak detection
 
-nframes_back = in.nframes_back;
-nframes_forward = in.nframes_forward;         
-thresholds = in.threshold*sigmas; 
-mini_width_range = in.mini_width_range;     
-min_peak_distance = in.min_peak_distance;
-width_ref = in.width_ref;
-est_rise_time_frames = in.est_rise_time_frames;
 F_findpks = F_blanked_filt;
 if in.num_frames_skip_start > 0
     F_findpks(1:in.num_frames_skip_start,:) = nan;    
@@ -212,6 +209,16 @@ end
 if in.num_frames_skip_end > 0
     F_findpks(end-in.num_frames_skip_end:end,:) = nan;
 end
+
+nframes_back = in.nframes_back;
+nframes_forward = in.nframes_forward;         
+thresholds = baselines + in.threshold*sigmas; 
+mini_width_range = in.mini_width_range;     
+min_peak_distance = in.min_peak_distance;
+max_mini_amp = in.max_mini_amp; 
+width_ref = in.width_ref;
+est_rise_time_frames = in.est_rise_time_frames;
+
 t_mini = (0:(nframes_back+nframes_forward))'/sampling_rate;
 t_mini = t_mini - t_mini(nframes_back+1);
 % Exclusion criteria
@@ -343,7 +350,19 @@ for i = 1:num_rois
             end
             keep_minis = keep_minis & keep_minis2; % undefined width (nan) will also fail to pass
         end
-        
+        % Filter out events with too large of amplitudes (unknown source)
+        if ~isempty(max_mini_amp) && max_mini_amp ~=0
+            peaksi0_dF_F0 = (peaksi0')./mean_baselinesi;
+            keep_minis3 = peaksi0_dF_F0 < max_mini_amp; 
+            if in.print_level > 0 && any(~keep_minis3(keep_minis))
+                % Print number of minis excluded due to FWHM criteria that
+                % passed SNR criterion and total excluded
+                fprintf('Excluded %g minis in ROI %g with max deltaF/F0 > %.1f %%  (%g total)\n',...
+                        sum(~keep_minis3(keep_minis)),i,max_mini_amp*100,...
+                        sum(~keep_minis3 | ~keep_minis))
+            end
+            keep_minis = keep_minis & keep_minis3; 
+        end
         mini_framesi = mini_framesi(keep_minis);
         mini_traces{i} = mini_tracesi(:,keep_minis);
         mini_traces_filt{i} = mini_tracesi_filt(:,keep_minis);

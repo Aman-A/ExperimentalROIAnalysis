@@ -53,5 +53,5 @@ for i = 1:length(avail_funcs_to_save)
     writematrix(datai,filenamei,'WriteMode','append');     
 end
 print_str = ['Saved data from funcs: ', strjoin(avail_funcs_to_save,', '),...
-              ' to ',output_folder,'/\n']; 
+              ' to ',strrep(output_folder,'\','\\'),'\n']; 
 fprintf(print_str)

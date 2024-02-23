@@ -55,9 +55,9 @@ for i = 1:num_rois_plot
     if ~isempty(in.y_lim)
         ylim(in.y_lim)
     else
-%         if ~isempty(in.peaks) % use peaks to set uniform y limis
-%             ylim([-max(event_peaks_lin)*0.5 1.05*max(event_peaks_lin)])
-%         end
+        if ~isempty(in.peaks) % use peaks to set uniform y limis
+            ylim([-0.05 1.05*max(event_peaks_lin(roi_inds==ii))])
+        end
     end
     xlim([t(1),t(end)]);
 end

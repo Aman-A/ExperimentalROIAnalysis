@@ -106,19 +106,23 @@ for i = 1:num_frames
     text(ax.XLim(1)+diff(ax.XLim)*in.time_text_x,ax.YLim(1) + diff(ax.YLim)*in.time_text_y,...
             sprintf('t = %.2f sec',t(i)),'Color','w',...
             'FontSize',in.font_size);
-    if any(i==stim_vals1)
-        last_stim1 = i;
+    if ~isempty(stim_vals1)
+        if any(i==stim_vals1)
+            last_stim1 = i;
+        end    
+        if i >= last_stim1 && i <= last_stim1 + stim_pulse_dur1
+            plot(ax.XLim(1)+diff(ax.XLim)*in.stim1_x,ax.YLim(1) + diff(ax.YLim)*in.stim1_y,...
+                 'wo','MarkerSize',24,'MarkerFaceColor','none');
+        end
     end
-    if any(i == stim_vals2)
-        last_stim2 = i;
-    end
-    if i >= last_stim1 && i <= last_stim1 + stim_pulse_dur1
-        plot(ax.XLim(1)+diff(ax.XLim)*in.stim1_x,ax.YLim(1) + diff(ax.YLim)*in.stim1_y,...
-             'wo','MarkerSize',24,'MarkerFaceColor','none');
-    end
-    if i >= last_stim2 && i <= last_stim2 + stim_pulse_dur2
-        text(ax.XLim(1)+diff(ax.XLim)*in.stim2_x,ax.YLim(1) + diff(ax.YLim)*in.stim2_y,...
-             in.stim2_marker,'FontSize',in.font_size,'Color','w','FontWeight','bold');
+    if ~isempty(stim_vals2)
+        if any(i == stim_vals2)
+            last_stim2 = i;
+        end
+        if i >= last_stim2 && i <= last_stim2 + stim_pulse_dur2
+            text(ax.XLim(1)+diff(ax.XLim)*in.stim2_x,ax.YLim(1) + diff(ax.YLim)*in.stim2_y,...
+                 in.stim2_marker,'FontSize',in.font_size,'Color','w','FontWeight','bold');
+        end
     end
     if in.sbar_len > 0
         addScaleBar(recording.pixel_size,size(vals,[1 2]),ax,'sbar_len',in.sbar_len,...
