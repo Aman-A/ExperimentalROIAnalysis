@@ -65,5 +65,9 @@ if any(~keep_rois)
     if in.print_level > 0
         fprintf('Removed %g ROIs from %s/%s/%s\n',sum(~keep_rois),data_out.exp_date,data_out.reporter,data_out.dish)
     end
+else
+    if in.print_level > 0
+        fprintf('No ROIs removed from %s/%s/%s\n',data_out.exp_date,data_out.reporter,data_out.dish)
+    end
 end
 end

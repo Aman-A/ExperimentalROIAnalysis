@@ -43,18 +43,18 @@ mean_snrsi = mean_snrsi(:,plot_inds);
 % peaksi_mean_dF = peaksi_mean_dF(:,plot_data_inds{i});
 % mean_snrsi_mean_dF = peaksi_mean_dF./std_bslinesi_mean_dF; 
 
-exclude_rois_snr = any(mean_snrsi < qc_settings.qc_snr_cutoff,2);
+exclude_rois_snr = all(mean_snrsi < qc_settings.qc_snr_cutoff,2);
 fprintf('%g/%g ROIs with mean SNR < %.2f\n',sum(exclude_rois_snr),...
         length(exclude_rois_snr),qc_settings.qc_snr_cutoff);    
 %% Peak amplitude with and without E-field
 mean_peaksi = cell2mat(cellfun(@(x) squeeze(mean(x,[1 3 4]))',peaks,'UniformOutput',0));
 mean_peaksi = mean_peaksi(:,plot_inds);
-exclude_rois_peak = any(mean_peaksi < qc_settings.qc_peak_cutoff,2); % ROIs failing peak quality criterion    
+exclude_rois_peak = all(mean_peaksi < qc_settings.qc_peak_cutoff,2); % ROIs failing peak quality criterion    
 fprintf('%g/%g ROIs (%g additional) with mean peak < %.2f\n',...
        sum(exclude_rois_peak),length(exclude_rois_snr),...
        sum(exclude_rois_peak & ~exclude_rois_snr),qc_settings.qc_peak_cutoff);
 exclude_rois = exclude_rois_peak | exclude_rois_snr; % ROIs failing at least 1 quality criterion
-% Baseline stability across trials    
+%% Baseline stability across trials    
 trial1_times = cellfun(@(x) x(1),data.trial_times_all,'UniformOutput',1); % extract 1st trial within condition
 [~,trial1_ind] = min(trial1_times(plot_inds)); 
 % trial2_times = cellfun(@(x) x(end),data{i}.trial_times_all,'UniformOutput',1); % extract last trial within condition
@@ -94,13 +94,12 @@ exclude_rois = exclude_rois | exclude_rois_bsline_btwn_trial;
 %         length(exclude_rois_snr),s.qc_bsline_range_win_trial);
 % exclude_rois = exclude_rois | exclude_rois_bsline_range_win_trial; 
 %% Stable peak amplitude across trials
-mean_peaks_beforei = cell2mat(cellfun(@(x) squeeze(mean(x(1,:,:,:),[1 3 4]))',...
-                                peaks,'UniformOutput',0));
-mean_peaks_beforei = mean_peaks_beforei(:,plot_inds);
+mean_peaks_beforei = cell2mat(cellfun(@(x) squeeze(mean(x(1,:,:,:),[1 3])),...
+                                peaks(plot_inds),'UniformOutput',0)); % num_rois x num_trials (all amplitudes)
 % cv_peaks_beforei = std(mean_peaks_beforei,0,2)./mean(mean_peaks_beforei,2);    
 mean_peaks_before_per_diffi = abs(100*(mean_peaks_beforei - mean(mean_peaks_beforei,2))./mean(mean_peaks_beforei,2));
 exclude_rois_peak_diff = any(mean_peaks_before_per_diffi > qc_settings.qc_mean_peaks_before_per_diff,2); % ROIs failing peak quality criterion    
-fprintf('%g/%g ROIs (%g additional) with >=1 trial mean peak before DC < %.1f %% different from mean across trials\n',...
+fprintf('%g/%g ROIs (%g additional) with >=1 trial mean peak before DC > %.1f %% different from mean across trials\n',...
         sum(exclude_rois_peak_diff),length(exclude_rois),...
         sum(exclude_rois_peak_diff & ~exclude_rois),...
         qc_settings.qc_mean_peaks_before_per_diff);

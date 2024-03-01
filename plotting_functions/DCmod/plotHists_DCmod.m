@@ -87,7 +87,7 @@ for i = 1:num_amps
             ax.XLim = [0 3];
         else
             xlabel('Peak \Delta F/F_{0}');
-            ax.XLim = [0 1];
+            ax.XLim = [0 0.4];
         end    
     end
     if strcmp(in.hist_norm,'cdf')

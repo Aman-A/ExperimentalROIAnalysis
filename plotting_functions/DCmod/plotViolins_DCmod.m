@@ -70,7 +70,7 @@ if in.plot_means % take mean of all peaks within ROI
 end
 if in.plot_diffs
     if in.plot_after
-        x_vals = [-0.2 0.2];
+        x_vals = [-0.2 -0.2 0.2];
     else
         x_vals = [0 0];
     end
@@ -199,6 +199,9 @@ if in.connect_medians
     if in.plot_after
         plot((1:num_conds)+x_vals(3),med_after,'b');
     end
+end
+if strcmp(in.y_mode,'log')
+    ax.YScale = 'log';
 end
 if in.save_fig
     fig_name = sprintf('%s_%gROIs_mean%g_norm%g_diff%g_%s',in.fig_name_prefix,...
