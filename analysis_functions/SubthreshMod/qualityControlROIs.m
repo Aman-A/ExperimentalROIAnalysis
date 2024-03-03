@@ -28,11 +28,12 @@ dF_al2 = data.deltaF_F0_aligned2_all;
 %% SNR
 bsline_windi = data.exp_settings(1).baseline_wind;
 std_bslinesi = cellfun(@(x) permute(squeeze(std(x(1:bsline_windi,:,:,:,:),0,1)),[2 1 3 4]),...
-                        dF_al2,'UniformOutput',0); % num_trains x num_rois x num_stim x num_trials
+                        dF_al2(plot_inds),'UniformOutput',0); % num_trains x num_rois x num_stim x num_trials
 % mean of raw SNRs for every stim-evoked response
-mean_snrsi = cell2mat(cellfun(@(x,y) squeeze(mean(x./y,[1 3 4]))',...
-                        peaks,std_bslinesi,'UniformOutput',0)); % num_rois x num_lvls    
-mean_snrsi = mean_snrsi(:,plot_inds);
+mean_snrsi = cell2mat(cellfun(@(x,y) squeeze(mean(x./y,[3 4]))',...
+                        peaks(plot_inds),std_bslinesi,'UniformOutput',0)); % num_rois x num_lvls    
+
+
 % SNR of mean stim-averaged dF trace
 % mean_dF_al2i = cellfun(@(x) mean(x,[3 4 5]),dF_al2i,'UniformOutput',0); % mean dF trace across all trials/stim within amp for each roi
 % std_bslinesi_mean_dF = cell2mat(cellfun(@(x) squeeze(std(x(1:bsline_windi,:)))',mean_dF_al2i,'UniformOutput',0)); %num_rois x num_lvls
@@ -44,13 +45,15 @@ mean_snrsi = mean_snrsi(:,plot_inds);
 % mean_snrsi_mean_dF = peaksi_mean_dF./std_bslinesi_mean_dF; 
 
 exclude_rois_snr = all(mean_snrsi < qc_settings.qc_snr_cutoff,2);
-fprintf('%g/%g ROIs with mean SNR < %.2f\n',sum(exclude_rois_snr),...
+fprintf('%g/%g ROIs with mean SNR < %.2f in all trials/stim trains\n',sum(exclude_rois_snr),...
         length(exclude_rois_snr),qc_settings.qc_snr_cutoff);    
 %% Peak amplitude with and without E-field
-mean_peaksi = cell2mat(cellfun(@(x) squeeze(mean(x,[1 3 4]))',peaks,'UniformOutput',0));
-mean_peaksi = mean_peaksi(:,plot_inds);
+peaksi = peaks(plot_inds);
+mean_peaksi = cell2mat(cellfun(@(x) squeeze(mean(x,[3 4]))',peaksi,'UniformOutput',0));
+% mean_peaksi = cell2mat(cellfun(@(x) squeeze(mean(x,[1 3 4]))',peaks,'UniformOutput',0));
+% mean_peaksi = mean_peaksi(:,plot_inds);
 exclude_rois_peak = all(mean_peaksi < qc_settings.qc_peak_cutoff,2); % ROIs failing peak quality criterion    
-fprintf('%g/%g ROIs (%g additional) with mean peak < %.2f\n',...
+fprintf('%g/%g ROIs (%g additional) with mean peaks in all trials/stim trains < %.2f\n',...
        sum(exclude_rois_peak),length(exclude_rois_snr),...
        sum(exclude_rois_peak & ~exclude_rois_snr),qc_settings.qc_peak_cutoff);
 exclude_rois = exclude_rois_peak | exclude_rois_snr; % ROIs failing at least 1 quality criterion
@@ -94,6 +97,7 @@ exclude_rois = exclude_rois | exclude_rois_bsline_btwn_trial;
 %         length(exclude_rois_snr),s.qc_bsline_range_win_trial);
 % exclude_rois = exclude_rois | exclude_rois_bsline_range_win_trial; 
 %% Stable peak amplitude across trials
+% NOTE: will throw error if only 1 trial in one condition
 mean_peaks_beforei = cell2mat(cellfun(@(x) squeeze(mean(x(1,:,:,:),[1 3])),...
                                 peaks(plot_inds),'UniformOutput',0)); % num_rois x num_trials (all amplitudes)
 % cv_peaks_beforei = std(mean_peaks_beforei,0,2)./mean(mean_peaks_beforei,2);    
