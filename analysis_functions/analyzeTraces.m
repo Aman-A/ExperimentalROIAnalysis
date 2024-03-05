@@ -32,6 +32,7 @@ baseline_wind_inds = exp_settings.baseline_wind_inds;
 num_stim = length(stim_frames); 
 num_traces = size(traces,2); 
 output = struct();
+if isempty(in.funcs) || (ischar(in.funcs) && strcmp(in.funcs,'none')); return; end
 %% Analyze traces
 if any(strcmp(in.funcs,'peaks'))
     if num_stim > 0

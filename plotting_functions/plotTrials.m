@@ -199,7 +199,7 @@ elseif strcmp(in.roi_func_mode,'separate')
         mean_peak_deltaF_F0 = analysis.mean_peak;
         std_peak_deltaF_F0 = analysis.std_peak; 
     else
-        analysis = cellfun(@(x) analyzeTraces(x,exp_settings,'funcs',analysis_funcs),...
+        analysis = cellfun(@(x) analyzeTraces(x,exp_settings(1),'funcs',analysis_funcs),...
                             deltaF_F0,'UniformOutput',0);        
         analysis = [analysis{:}]; % convert to struct array    
         if isfield(analysis,'peaks')

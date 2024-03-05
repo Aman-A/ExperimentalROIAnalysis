@@ -5,6 +5,9 @@ in.fig_fold = 'figs';
 in.filt_order = 0; 
 in.filt_cutoffs = [59 61];
 in.filt_type = 'stop';
+in.ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
+                       % value, e.g. 0.5 is last half of stimulus pulse, 0
+                       % is full pulse duration
 in = sl.in.processVarargin(in,varargin);
 
 rec_file = sprintf('%s_%04d-%04d',rec_file_base,sweep1,sweep1+num_sweeps-1);
@@ -38,9 +41,11 @@ bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1);
 V_aligned_bs = V_aligned - bslines; % baseline subtracted voltage traces  
 ta = 0:(1/fs):((size(V_aligned,1)-1)/fs);
 ta = ta-ta(exp_settings.baseline_wind+1);
-meanV = mean(V_aligned_bs(:,:,1:5),3,'omitnan');
+meanV = mean(V_aligned_bs,3,'omitnan');
 % meanE = meanV/(iel*1e-3); % V/m  - Efield amplitude
-ss_wind = exp_settings.baseline_wind + 1:(exp_settings.baseline_wind + exp_settings.stim_pulse_dur + 1);
+% use 2nd half of pulse
+ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*in.ss_wind_frac) + 1):...
+         (exp_settings.baseline_wind + exp_settings.stim_pulse_dur + 1);
 ss_V = mean(meanV(ss_wind,:),1)';
 % ss_E = mean(meanE(ss_wind,:),1);
 ss_E = ss_V/(iel*1e-3); % V/m steady state E-field
@@ -53,6 +58,7 @@ out.V = V;
 out.ta = ta;
 out.meanV = meanV;
 out.ss_wind = ss_wind;
+out.amps_mA = amps_mA; 
 out.ss_V = ss_V;
 out.ss_E = ss_E;
 out.E_slope = b(2); 

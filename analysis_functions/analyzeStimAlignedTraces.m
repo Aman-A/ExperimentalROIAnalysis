@@ -83,7 +83,7 @@ if in.load
 end
 fwhm_spline_interp = in.fwhm_spline_interp; % avoid broadcasting below
 output = struct();
-if isempty(in.funcs); return; end
+if isempty(in.funcs) || (ischar(in.funcs) && strcmp(in.funcs,'none')); return; end
 %% Analyze traces
 % Calculate post-stimulus peaks
 if any(strcmp(in.funcs,'peaks'))

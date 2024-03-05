@@ -23,7 +23,7 @@ if strcmp(ax.YDir,'normal')
         y_factor = in.y_factor; 
     end
     if isempty(in.text_y_factor)
-        text_y_factor = 0.87;
+        text_y_factor = 0.95;
     else
         text_y_factor = in.text_y_factor;
     end
