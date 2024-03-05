@@ -68,6 +68,11 @@ if ~isempty(in.bar_cols)
         in.bar_cols = repmat({in.bar_cols},n_bars,1);
     end
 end
+if ~isempty(in.bar_alphas)
+    if length(in.bar_alphas) == 1 % uniform bar alpha
+        in.bar_alphas = repmat(in.bar_alphas,n_bars,1);
+    end
+end
 for i = 1:n_bars
     % plot mean as bar
     b = bar(x_vals(i),mean_data(i),'EdgeColor','none'); hold on;       
@@ -75,7 +80,7 @@ for i = 1:n_bars
         b.FaceColor = in.bar_cols{i}; 
     end
     if ~isempty(in.bar_alphas)
-        b.FaceAlpha = in.bar_alphas{i}; 
+        b.FaceAlpha = in.bar_alphas(i); 
         b.EdgeColor = in.bar_cols{i};
     end
 end
@@ -86,7 +91,8 @@ if in.plot_pts
     if in.connect_pts
         l = plot(x_vals,data_mat,'-o','LineWidth',0.5);
         if ~isempty(in.pt_cols)
-            for i = 1:n_pts
+            if size(in.pt_cols,1) == 1; in.pt_cols = repmat(in.pt_cols,length(l),1); end;                 
+            for i = 1:length(l)
                 l(i).Color = in.pt_cols(i,:);
             end
         end

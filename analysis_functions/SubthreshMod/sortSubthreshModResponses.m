@@ -18,7 +18,6 @@ else
 end
 num_rois_per_dish = out.num_rois; 
 num_rois_total = sum(num_rois_per_dish,'omitnan');
-num_dishes = length(unique(out.dish_inds{1}));
 %% Remove non bdirectional modulated ROIs
 if isscalar(in.remove_nonbi_mod) && in.remove_nonbi_mod == 1 % TODO, MAKE SURE THIS WORKS FOR SORT_BY_MODE = 3 (INPUT ROIS TO FLIP)
     remove_rois = false(num_rois_total,1);
@@ -139,8 +138,10 @@ for i = 1:num_rois_total
         flipped_amp_rois(i) = true;
     end
 end
+num_dishes = length(out.num_rois);
 flipped_amp_cells = false(num_dishes,1);
 for i = 1:num_dishes    
+    if isnan(out.num_rois(i)); continue; end 
     if in.sort_by_mode == 1
         [~,max_ind] = max(abs(out.peak_mod_during_cell_per(i,:)));
         flip_cell = ( (out.peak_mod_during_cell_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates

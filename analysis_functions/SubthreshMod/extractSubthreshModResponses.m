@@ -222,9 +222,15 @@ for i = 1:num_dishes
         end
     end
 end
-roi_in_dish_index = [];
+roi_in_dish_index = []; % numbering of ROIs after removing ROIs not passing QC
+roi_in_dish_index_id = []; % original index of ROIs within their respective dish
 for i = 1:num_dishes
-    roi_in_dish_index = [roi_in_dish_index;(1:(sum(dish_inds{1}==i)))'];
+    if ~isnan(num_rois(i))
+        roi_in_dish_index = [roi_in_dish_index;(1:(sum(dish_inds{1}==i)))'];
+        num_rois0 = sum(dish_inds{1}==i)+ sum(exclude_rois{i});% original number of ROIs
+        roi_ids0 = 1:num_rois0;     
+        roi_in_dish_index_id = [roi_in_dish_index_id;roi_ids0(~exclude_rois{i})'];
+    end
 end 
 fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',num_dishes,sum(num_rois))
 
@@ -236,6 +242,7 @@ out.dF_al2_before = dF_al2_before;
 out.dF_al2_during = dF_al2_during;
 out.dF_al2_after = dF_al2_after;
 out.num_rois = num_rois; 
+out.roi_in_dish_index_id = roi_in_dish_index_id;
 out.roi_in_dish_index = roi_in_dish_index;
 % [num_rois x num_stim x num_amps]
 out.peaks_before_mat = cell2mat(reshape(peaks_before,1,1,length(peaks_before)));
