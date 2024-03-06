@@ -11,13 +11,13 @@ if nargin == 0
 end
 in.rec_file_fold = '.';
 in.fig_fold = 'figs';
-in.fig_fold = 'figs';
 in.filt_order = 0; 
 in.filt_cutoffs = [59 61];
 in.filt_type = 'stop';
 in.ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
                        % value, e.g. 0.5 is last half of stimulus pulse, 0
                        % is full pulse duration
+in = sl.in.processVarargin(in,varargin);
 
 rec_file = sprintf('%s_%04d',rec_file_base,sweep_num);
 s = ws.loadDataFile(fullfile(in.rec_file_fold,[rec_file '.h5'])); 
