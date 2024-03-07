@@ -80,6 +80,7 @@ for i = 1:num_rois_total
         flip_roi = in.flipped_amp_rois(i); 
     end
     if flip_roi
+        out.peak_mod_during(i,:) = fliplr(out.peak_mod_during(i,:)); % flip polarity
         out.peak_mod_during_per(i,:) = fliplr(out.peak_mod_during_per(i,:)); % flip polarity
         out.peak_mod_during_diff(i,:) = fliplr(out.peak_mod_during_diff(i,:));        
         out.mean_peaks_before(i,:) = fliplr(out.mean_peaks_before(i,:));
@@ -89,6 +90,7 @@ for i = 1:num_rois_total
         out.success_before_mat(i,:,:) = out.success_before_mat(i,:,num_vars:-1:1);
         out.success_during_mat(i,:,:) = out.success_during_mat(i,:,num_vars:-1:1);
         if include_after
+            out.peak_mod_after(i,:) = fliplr(out.peak_mod_after(i,:));
             out.peak_mod_after_per(i,:) = fliplr(out.peak_mod_after_per(i,:));
             out.peak_mod_after_diff(i,:) = fliplr(out.peak_mod_after_diff(i,:));        
             out.mean_peaks_after(i,:) = fliplr(out.mean_peaks_after(i,:));
@@ -155,12 +157,14 @@ for i = 1:num_dishes
         flip_cell = in.flipped_amp_cells(i); 
     end
     if flip_cell
+        out.peak_mod_during_cell(i,:) = fliplr(out.peak_mod_during_cell(i,:)); % flip polarity
         out.peak_mod_during_cell_per(i,:) = fliplr(out.peak_mod_during_cell_per(i,:)); % flip polarity
         out.peak_mod_during_cell_diff(i,:) = fliplr(out.peak_mod_during_cell_diff(i,:)); % flip polarity
         out.mean_peaks_before_cell(i,:) = fliplr(out.mean_peaks_before_cell(i,:));
         out.mean_peaks_during_cell(i,:) = fliplr(out.mean_peaks_during_cell(i,:));
         flipped_amp_cells(i) = true;
         if include_after
+            out.peak_mod_after_cell(i,:) = fliplr(out.peak_mod_after_cell(i,:)); % flip polarity
             out.peak_mod_after_cell_per(i,:) = fliplr(out.peak_mod_after_cell_per(i,:)); % flip polarity
             out.peak_mod_after_cell_diff(i,:) = fliplr(out.peak_mod_after_cell_diff(i,:)); % flip polarity
             out.mean_peaks_after_cell(i,:) = fliplr(out.mean_peaks_after_cell(i,:));

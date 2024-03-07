@@ -1,4 +1,4 @@
-function out = extractSubthreshModResponses(data,def,plot_vars,...
+function [out,data_out] = extractSubthreshModResponses(data,def,plot_vars,...
                                         min_num_trials_per_lvl,spike_thresh,...
                                         varargin)
 % EXTRACTSUBTHRESHMODRESPONSES
@@ -12,8 +12,8 @@ if nargin < 5
     spike_thresh = 3; % peaks <  spike_thresh x STD are failures
 end
 % Params for spike detection
-in.spike_window = 0.03; % sec
-in.spike_min_width = [20 60]*1e-3; % sec
+in.spike_window = 60*1e-3; % sec
+in.spike_min_width = [20 80]*1e-3; % sec
 in.spike_min_amp = 0.06; % deltaF/F0
 in.plot_var = 'subthresh_amps'; % independent variable of experiment
 % Quality control criteria
@@ -56,6 +56,7 @@ for i = 1:num_dishes
 end
 max_num_peaks = repmat(max(max_num_peaks),1,num_vars);
 exclude_rois = cell(1,num_dishes);
+data_out = cell(size(data));
 for i = 1:num_dishes
     % Apply quality control to ROIs
     if ~isempty(in.exclude_rois)
@@ -63,6 +64,7 @@ for i = 1:num_dishes
     else
         [datai,exclude_rois{i}] = qualityControlROIs(data{i},in.qc_settings,plot_data_inds{i});
     end
+    data_out{i} = datai; 
     peaksi = datai.peaks_deltaF_F0_all;
     dF_al2i = datai.deltaF_F0_aligned2_all;     
     num_roisi = datai.rois_all{1}{1}.num_rois;    
