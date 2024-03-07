@@ -172,15 +172,21 @@ if strcmp(in.roi_func_mode,'combine')
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
                                             'spike_thresh',in.spike_thresh,...
                                             'spike_window',in.spike_window);          
-        mean_peak_deltaF_F0 = analysis.mean_peak;
-        std_peak_deltaF_F0 = analysis.std_peak; 
+        if isfield(analysis,'peaks')
+            mean_peak_deltaF_F0 = analysis.mean_peak;
+            std_peak_deltaF_F0 = analysis.std_peak; 
+        end
     else
         analysis = analyzeTraces(deltaF_F0,exp_settings(1),'funcs',analysis_funcs);    
-        mean_peak_deltaF_F0 = mean(analysis.mean_peak); 
-        std_peak_deltaF_F0 = std(analysis.peaks,0);
+        if isfield(analysis,'peaks')
+            mean_peak_deltaF_F0 = mean(analysis.mean_peak); 
+            std_peak_deltaF_F0 = std(analysis.peaks,0);
+        end
     end
-    fprintf('%s: Peak deltaF_F0 across stimuli and trials (mean +/- std) = %.3f +/- %.3f\n',...
-             in.condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
+    if isfield(analysis,'peaks')
+        fprintf('%s: Peak deltaF_F0 across stimuli and trials (mean +/- std) = %.3f +/- %.3f\n',...
+                 in.condition, mean_peak_deltaF_F0,std_peak_deltaF_F0); 
+    end
     fprintf('  Mean baseline (%g frames, 1st stim) across trials = %.3f +/- %.3f\n',...
             exp_settings(1).baseline_wind,mean(bslines(1,:)),std(bslines(1,:),0));
 elseif strcmp(in.roi_func_mode,'separate') 
@@ -196,8 +202,10 @@ elseif strcmp(in.roi_func_mode,'separate')
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
                                             'spike_thresh',in.spike_thresh,...
                                             'spike_window',in.spike_window);
-        mean_peak_deltaF_F0 = analysis.mean_peak;
-        std_peak_deltaF_F0 = analysis.std_peak; 
+        if isfield(analysis,'peaks')
+            mean_peak_deltaF_F0 = analysis.mean_peak;
+            std_peak_deltaF_F0 = analysis.std_peak; 
+        end
     else
         analysis = cellfun(@(x) analyzeTraces(x,exp_settings(1),'funcs',analysis_funcs),...
                             deltaF_F0,'UniformOutput',0);        

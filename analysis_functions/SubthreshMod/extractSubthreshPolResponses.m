@@ -43,28 +43,29 @@ for i = 1:num_dishes
     dF_ss = squeeze(indicator_dir*mean(dFi(dF_ss_wind_inds(1):dF_ss_wind_inds(2),:,:),1))';    
     std_bsline = squeeze(std(dFi(1:data{i}.exp_settings(1).baseline_wind,:,:),0,1))';
     snri = abs(dF_ss)./std_bsline;
-    if data{i}.rois_all{1}{1}.num_rois == 1
+    if data{i}.rois_all{1}{1}.num_rois == 1 || strcmp(data{i}.plot_settings.roi_func_mode,'combine')
         dF_ss = dF_ss'; % transpose to [num_amps x num_rois]
         snri = snri'; 
     end  
     pol_dF_all{i} = dFi;
     pol_dF_ss_all{i} = dF_ss;
     pol_snr_all{i} = snri; 
-    % exclude rois with SNR < min_snr    
-    [~,~,check_amp_inds] = intersect(in.check_snr_amps,stim_amps{i});
-    if isempty(check_amp_inds) % use highest amplitudes available from this dish
-        [~,min_ind] = min(stim_amps{i});
-        [~,max_ind] = max(stim_amps{i});
-        check_amp_inds = [min_ind,max_ind];
-        fprintf('Dish %g: Using %g and %g mA for SNR check\n',...
-                i,stim_amps{i}(min_ind),stim_amps{i}(max_ind));
+    if in.min_snr > 0
+        % exclude rois with SNR < min_snr    
+        [~,~,check_amp_inds] = intersect(in.check_snr_amps,stim_amps{i});
+        if isempty(check_amp_inds) % use highest amplitudes available from this dish
+            [~,min_ind] = min(stim_amps{i});
+            [~,max_ind] = max(stim_amps{i});
+            check_amp_inds = [min_ind,max_ind];
+            fprintf('Dish %g: Using %g and %g mA for SNR check\n',...
+                    i,stim_amps{i}(min_ind),stim_amps{i}(max_ind));
+        end
+        exclude_rois_pol{i} = all(snri(check_amp_inds,:) < in.min_snr,1);     
+        if any(exclude_rois_pol{i})
+            fprintf('dish %g: excluding %g of %g polarization ROIs with all SNR < %g\n',...
+                    i,sum(exclude_rois_pol{i}),length(exclude_rois_pol{i}),in.min_snr);
+        end
     end
-    exclude_rois_pol{i} = all(snri(check_amp_inds,:) < in.min_snr,1);     
-    if any(exclude_rois_pol{i})
-        fprintf('dish %g: excluding %g of %g polarization ROIs with all SNR < %g\n',...
-                i,sum(exclude_rois_pol{i}),length(exclude_rois_pol{i}),in.min_snr);
-    end
-    
 end
 %% Get slopes of polarization vs. current in each ROI and determine polarity
 pol_slopes = cell(num_dishes,1);

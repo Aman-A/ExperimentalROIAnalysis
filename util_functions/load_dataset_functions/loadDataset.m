@@ -19,7 +19,8 @@ if nargin < 3 || isempty(mode_str)
    mode_str = 'default';
 end
 % def = loadDatasetDefinition(dataset_def_filename);
-if ~isempty(regexp(reporter,'GluSnFR3','ONCE')) || ~isempty(regexp(reporter,'GCaMP','ONCE'))
+if ~isempty(regexp(reporter,'GluSnFR3','ONCE')) || ~isempty(regexp(reporter,'GCaMP','ONCE')) ...
+        || ~isempty(regexp(reporter,'vGlut-pHluorin','ONCE'))
     [data,def,extra_data] = loadDefaultDataset(dataset_def_filename,...
                                                    roi_func_mode,varargin{:});
     varargout = extra_data;    
