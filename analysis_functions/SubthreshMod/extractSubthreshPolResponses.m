@@ -39,8 +39,8 @@ exclude_rois_pol = cell(num_dishes,1); % rois to exclude from polarization rois
 % Get polarization data and exclude ROIs with low SNR
 for i = 1:num_dishes
     % mean deltaF/F traces: num_timepoints x num_rois x num_amps
-    dFi = cell2mat(reshape(mean_deltaF_F0_aligned_all{i},1,1,[]));     
-    dF_ss = squeeze(indicator_dir*mean(dFi(dF_ss_wind_inds(1):dF_ss_wind_inds(2),:,:),1))';    
+    dFi = indicator_dir*cell2mat(reshape(mean_deltaF_F0_aligned_all{i},1,1,[]));     
+    dF_ss = squeeze(mean(dFi(dF_ss_wind_inds(1):dF_ss_wind_inds(2),:,:),1))';    
     std_bsline = squeeze(std(dFi(1:data{i}.exp_settings(1).baseline_wind,:,:),0,1))';
     snri = abs(dF_ss)./std_bsline;
     if data{i}.rois_all{1}{1}.num_rois == 1 || strcmp(data{i}.plot_settings.roi_func_mode,'combine')
@@ -60,9 +60,9 @@ for i = 1:num_dishes
             fprintf('Dish %g: Using %g and %g mA for SNR check\n',...
                     i,stim_amps{i}(min_ind),stim_amps{i}(max_ind));
         end
-        exclude_rois_pol{i} = all(snri(check_amp_inds,:) < in.min_snr,1);     
+        exclude_rois_pol{i} = any(snri(check_amp_inds,:) < in.min_snr,1);     
         if any(exclude_rois_pol{i})
-            fprintf('dish %g: excluding %g of %g polarization ROIs with all SNR < %g\n',...
+            fprintf('dish %g: excluding %g of %g polarization ROIs with any SNR < %g\n',...
                     i,sum(exclude_rois_pol{i}),length(exclude_rois_pol{i}),in.min_snr);
         end
     end
@@ -71,6 +71,7 @@ end
 pol_slopes = cell(num_dishes,1);
 pol_Rsqs = cell(num_dishes,1);
 pol_pvals = cell(num_dishes,1);
+
 for i = 1:num_dishes
     xi = stim_amps{i}; 
     pol_slopes{i} = nan(1,size(pol_dF_ss_all{i},2));
@@ -85,9 +86,9 @@ for i = 1:num_dishes
         if length(xi) > 2
             if Rsqij > in.pol_Rsq_cutoff 
                 pol_slopes{i}(j) = 100*b(2); % percent deltaF/F0 per mA steady state polarization
-%             else
-%                 fprintf('Dish %g, pol ROI %g R^2 = %.3f, p = %.3f\n',...
-%                         i,j,Rsqij,pij)
+            else               
+                % fprintf('Dish %g, pol ROI %g R^2 = %.3f, p = %.3f\n',...
+                %         i,j,Rsqij,pij)
             end
         else % R^2/p value can't be calculated for regression with 2 pts
             pol_slopes{i}(j) = 100*b(2); % percent deltaF/F0 per mA steady state polarization
@@ -96,12 +97,15 @@ for i = 1:num_dishes
     new_excluded_roisi = setdiff(find(isnan(pol_slopes{i})),find(exclude_rois_pol{i}));
     if ~isempty(new_excluded_roisi)
         fprintf('Dish %g, excluding %g additional ROIs with R^2 < %.2f\n',...
-                i,length(new_excluded_roisi),pol_Rsq_cutoff)
+                i,length(new_excluded_roisi),in.pol_Rsq_cutoff)
     end
     exclude_rois_pol{i} = exclude_rois_pol{i} | isnan(pol_slopes{i}); % exclude due to snr or weak correlation 
     pol_dF_all{i} = pol_dF_all{i}(:,~exclude_rois_pol{i},:);
     pol_dF_ss_all{i} = pol_dF_ss_all{i}(:,~exclude_rois_pol{i}); 
-    pol_snr_all{i} = pol_snr_all{i}(:,~exclude_rois_pol{i});     
+    pol_snr_all{i} = pol_snr_all{i}(:,~exclude_rois_pol{i});   
+    pol_slopes{i} = pol_slopes{i}(~exclude_rois_pol{i});   
+    pol_Rsqs{i} = pol_Rsqs{i}(~exclude_rois_pol{i});
+    pol_pvals{i} = pol_pvals{i}(~exclude_rois_pol{i});   
 end
 % Remove ROIs from experiment data structures (based on SNR and R^2 of
 % regression)
@@ -113,3 +117,6 @@ out.pol_dF_all = pol_dF_all;
 out.pol_dF_ss_all = pol_dF_ss_all; 
 out.pol_snr_all = pol_snr_all; 
 out.exclude_rois_pol = exclude_rois_pol; 
+out.pol_slopes = pol_slopes; 
+out.pol_Rsqs = pol_Rsqs;
+out.pol_p_vals = pol_pvals;

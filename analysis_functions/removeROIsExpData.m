@@ -63,7 +63,9 @@ if any(~keep_rois)
         end
     end
     if in.print_level > 0
-        fprintf('Removed %g ROIs from %s/%s/%s\n',sum(~keep_rois),data_out.exp_date,data_out.reporter,data_out.dish)
+        fprintf('Removed %g ROIs from %s/%s/%s (%g remaining)\n',...
+                sum(~keep_rois),data_out.exp_date,data_out.reporter,data_out.dish,...
+                sum(keep_rois));
     end
 else
     if in.print_level > 0

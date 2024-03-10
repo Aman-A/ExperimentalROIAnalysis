@@ -55,14 +55,21 @@ for i = 1:num_dishes
     end
 end
 max_num_peaks = repmat(max(max_num_peaks),1,num_vars);
-exclude_rois = cell(1,num_dishes);
+if isempty(in.exclude_rois)
+    exclude_rois = cell(1,num_dishes);
+else
+    exclude_rois = in.exclude_rois;
+end
 data_out = cell(size(data));
 for i = 1:num_dishes
     % Apply quality control to ROIs
-    if ~isempty(in.exclude_rois)
+    if strcmp(in.qc_settings,'off')
         datai = removeROIsExpData(data{i},in.exclude_rois{i});
     else
-        [datai,exclude_rois{i}] = qualityControlROIs(data{i},in.qc_settings,plot_data_inds{i});
+        fprintf('***dish %g***\n',i);
+        [datai,exclude_rois{i}] = qualityControlROIs(data{i},in.qc_settings,...
+                                                     plot_data_inds{i},...
+                                                     'exclude_rois',exclude_rois{i});
     end
     data_out{i} = datai; 
     peaksi = datai.peaks_deltaF_F0_all;

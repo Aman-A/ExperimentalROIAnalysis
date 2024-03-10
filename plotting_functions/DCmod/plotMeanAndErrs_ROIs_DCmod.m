@@ -29,6 +29,8 @@ in.save_fig = 0;
 in.fig_fold = '.';
 in.dish_inds = []; 
 in.ax_titles = {}; 
+in.cell_lines_on = 0; 
+in.num_rois_per_dish = []; 
 in = sl.in.processVarargin(in,varargin);
 
 num_amps = length(peaks_before);
@@ -42,22 +44,38 @@ if in.plot_after
 else
     x_vals = [-0.2 0.2];
 end
+if isempty(peaks_after) || all(isnan(peaks_after{1}))
+    include_after = 0; 
+else
+    include_after = 1; 
+end
+if in.cell_lines_on && ~isempty(in.num_rois_per_dish)
+    dish_roi_borders = [0,cumsum(in.num_rois_per_dish)];
+end
 fig = gcf;
 for i=1:num_amps
     % 
     peaks_beforei = peaks_before{i};
     peaks_duringi = peaks_during{i};
-    peaks_afteri = peaks_after{i};
+    if include_after
+        peaks_afteri = peaks_after{i};
+    end
     % Means
     mean_peaks_beforei = mean(peaks_beforei,2,'omitnan');
     mean_peaks_duringi = mean(peaks_duringi,2,'omitnan');
-    mean_peaks_afteri = mean(peaks_afteri,2,'omitnan');
+    if include_after
+        mean_peaks_afteri = mean(peaks_afteri,2,'omitnan');
+    end
     if in.plot_diffs % 
         mean_peaks_duringi = mean_peaks_duringi-mean_peaks_beforei;
-        mean_peaks_afteri = mean_peaks_afteri-mean_peaks_beforei;        
+        if include_after
+            mean_peaks_afteri = mean_peaks_afteri-mean_peaks_beforei;        
+        end
         if in.per_diff
             mean_peaks_duringi = 100*mean_peaks_duringi./mean_peaks_beforei;
-            mean_peaks_afteri = 100*mean_peaks_afteri./mean_peaks_beforei;
+            if include_after
+                mean_peaks_afteri = 100*mean_peaks_afteri./mean_peaks_beforei;
+            end
             ylabel_str = 'Mean change in peak \Delta F/F_{0} (%)';
         else
             ylabel_str = 'Mean change in peak \Delta F/F_{0}';
@@ -70,18 +88,36 @@ for i=1:num_amps
             if ~all(isnan(peaks_before{i}(j,:)))
                 peaks_beforeij = peaks_beforei(j,~isnan(peaks_beforei(j,:)));
                 peaks_duringij = peaks_duringi(j,~isnan(peaks_duringi(j,:)));
-                peaks_afterij = peaks_afteri(j,~isnan(peaks_afteri(j,:)));  
+                if include_after
+                    peaks_afterij = peaks_afteri(j,~isnan(peaks_afteri(j,:)));  
+                end
                 if in.plot_diffs % 95% CI of difference of means
-                    ci_during(j,i,:) = bootci(in.M,@(x,y) mean(x)-mean(y),...
-                                    peaks_duringij',peaks_beforeij');
-                    ci_after(j,i,:) = bootci(in.M,@(x,y) mean(x)-mean(y),...
-                                    peaks_afterij',peaks_beforeij');
+                    if in.per_diff % percent differences
+                        ci_during(j,i,:) = bootci(in.M,@(x,y) 100*(mean(x)-mean(y))/mean(y),...
+                                        peaks_duringij',peaks_beforeij');
+                        if include_after
+                            ci_after(j,i,:) = bootci(in.M,@(x,y) 100*(mean(x)-mean(y))/mean(y),...
+                                            peaks_afterij',peaks_beforeij');
+                        end
+                    else % abs differences
+                        ci_during(j,i,:) = bootci(in.M,@(x,y) mean(x)-mean(y),...
+                                        peaks_duringij',peaks_beforeij');
+                        if include_after
+                            ci_after(j,i,:) = bootci(in.M,@(x,y) mean(x)-mean(y),...
+                                            peaks_afterij',peaks_beforeij');
+                        end
+                    end
                 else
-                    peak_cij = bootci(in.M,@mean,...
-                        [peaks_beforeij',peaks_duringij',peaks_afterij']);
+                    if include_after
+                        peak_cij = bootci(in.M,@mean,...
+                            [peaks_beforeij',peaks_duringij',peaks_afterij']);
+                        ci_after(j,i,:) = peak_cij(:,3);
+                    else
+                        peak_cij = bootci(in.M,@mean,...
+                            [peaks_beforeij',peaks_duringij']);                        
+                    end
                     ci_before(j,i,:) = peak_cij(:,1);
-                    ci_during(j,i,:) = peak_cij(:,2);
-                    ci_after(j,i,:) = peak_cij(:,3);
+                    ci_during(j,i,:) = peak_cij(:,2);                    
                 end                
             end
         end
@@ -118,20 +154,25 @@ for i=1:num_amps
                 'LineStyle','none','Marker',in.sig_marker,'Color',in.sig_color,...
                 'MarkerFaceColor','r','CapSize',0,'MarkerSize',in.mean_marker_size)
     end
-    if in.plot_after
+    if in.plot_after && include_after
         errorbar(roi_inds + x_vals(2),mean_peaks_afteri,...
                 squeeze(ci_after(:,i,1)),squeeze(ci_before(:,i,2)),...
                 'LineStyle','none','Marker','o','Color','b',...
                 'MarkerFaceColor','b','CapSize',0,'MarkerSize',in.mean_marker_size)
     end
     box(ax,'off')
-    if i == round(num_amps/2)
+    if i == round(num_amps/2) || num_amps == 2
         ylabel(ax,ylabel_str);
     end
     if ~isempty(in.ax_titles{i})
         title(ax,in.ax_titles{i});
     end
     ax.XLim = [0.5,num_rois+0.5];
+    for j = 1:(length(dish_roi_borders)-1)
+        if in.cell_lines_on && ~isempty(in.num_rois_per_dish)
+            plot(ax,dish_roi_borders(j+1)*[1 1],ax.YLim,'k-');        
+        end
+    end
 end
 xlabel(ax,'Synapse number');
 if in.save_fig
@@ -139,8 +180,7 @@ if in.save_fig
         fig_name = sprintf('peaks_%s_%gROIs_per_diff%g',in.err_bar,num_rois,...
                             in.per_diff);
     else
-        fig_name = sprintf('peaks_%s_%gROIs',in.err_bar,num_rois,...
-                            in.plot_diffs);
+        fig_name = sprintf('peaks_%s_%gROIs',in.err_bar,num_rois);
     end
     printFig(fig,in.fig_fold,fig_name);
 end

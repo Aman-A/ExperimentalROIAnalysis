@@ -32,6 +32,8 @@ in.convert_to_per = 0;
 in.remove_neg_vals = 0; 
 in.connect_medians = 0; 
 in.violin_color = [1 0 0];
+in.font_name = 'Arial';
+in.font_size = 18; 
 in = sl.in.processVarargin(in,varargin);
 if ~iscell(peaks_before)
     % convert to 1 x num_amps cell array
@@ -158,7 +160,7 @@ if ~isempty(in.plot_conds)
     ax.XTickLabel = in.plot_conds;
     xlabel(in.plot_xlabel);
 end
-ax.XLim = [ax.XTick(1) + x_vals(1) - in.width,ax.XTick(end) + x_vals(end) + in.width];
+ax.XLim = [ax.XTick(1) + x_vals(1) - in.width*2,ax.XTick(end) + x_vals(end) + in.width*2];
 % if ~in.plot_diffs
 %     ax.YLim(1) = 0; 
 % end
@@ -171,7 +173,7 @@ if strcmp(in.y_mode,'loglinlog')
     if isempty(in.y_lim)
         y_lim = 10.^(y_lim);        
     end
-    set_ytick_loglinlog(y_lim,y_lim(2),in.linlimit,ax); 
+    set_ytick_loglinlog(y_lim,y_lim(2),in.linlimit,ax);     
 end
 if in.plot_diffs
     ylabel(ax,sprintf('Change in peak \\Delta F/F_{0}%s',y_unit))
@@ -202,9 +204,20 @@ if in.connect_medians
 end
 if strcmp(in.y_mode,'log')
     ax.YScale = 'log';
+    if in.convert_to_per
+        ax.YTickLabel = numericVec2chars(ax.YTick,'%g');
+    end
+    % ax.YGrid = 'on';
+    % ax.YMinorGrid = 'off';
 end
+ax.FontName = in.font_name;
+ax.FontSize =  in.font_size;
+ax.YColor = 'k';
+ax.XColor = 'k';
 if in.save_fig
-    fig_name = sprintf('%s_%gROIs_mean%g_norm%g_diff%g_%s',in.fig_name_prefix,...
-                        size(peaks_before{1},1),in.plot_means,in.norm_to_before,in.plot_diffs,in.y_mode);
+    fig_name = sprintf('%s_%gROIs_mean%g_norm%g_diff%g_perdiff_%g_%s',...
+                        in.fig_name_prefix,size(peaks_before{1},1),...
+                        in.plot_means,in.norm_to_before,in.plot_diffs,...
+                        in.per_diff,in.y_mode);
     printFig(fig,in.fig_fold,fig_name);
 end
