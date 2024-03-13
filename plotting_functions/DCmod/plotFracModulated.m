@@ -17,7 +17,7 @@ in.alpha = 0.05;
 in.adjust_fdr = 0; % 1 to adjust for false discovery rate of 5% across all tests
 in.fdr_rate = 0.05; 
 in.plot_after = 0; 
-in.plot_test = 'ranksum';
+in.plot_test = 'ranksum'; % kstest2, ranksum, or ttest2
 in.sig_mod_during = [];
 in.sig_mod_after = []; 
 in.bar_cols = [0.6,0.6,0.6;0.4023    0.6602    0.8086;0.9336    0.5391    0.3828];
@@ -25,6 +25,8 @@ in.bar_mode = 2;
 in.save_fig = 0;
 in.amp_labels = []; 
 in.fig_fold = '.';
+in.title_on = 1;
+in.add_val_labels = 0;
 in = sl.in.processVarargin(in,varargin);
 %%
 mean_peaks_before = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_before,'UniformOutput',0));
@@ -34,6 +36,8 @@ if ~isempty(peaks_after)
     mean_peaks_after = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_after,'UniformOutput',0));
     mean_peaks_after_diff = mean_peaks_after - mean_peaks_before; 
     include_after = 1; 
+else
+    include_after = 0; 
 end
 %%
 num_amps = length(peaks_before);
@@ -168,10 +172,27 @@ ax.XTick = 1:size(mean_peaks_before,2);
 if ~isempty(in.amp_labels)
     ax.XTickLabel = in.amp_labels;
 end
-legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
-ylabel('% ROIs');
+legend({'No change','Decreased','Increased'},'Box','off',...
+        'Location','northoutside','Orientation','horizontal');
+ylabel('% synapses');
 box off;
-title(sprintf('Proportion of %g ROIs modulated by DC',max(num_rois)))
+if in.title_on
+    title(sprintf('Proportion of %g ROIs modulated by DC',max(num_rois)))
+end
+if in.add_val_labels && in.bar_mode == 1
+    xt = ax.XTick;     
+    % yd = reshape([b.YData],2,[])';     
+    yd = reshape([b.YData],num_amps,[])';     
+    barbase = cumsum([zeros(1,size(yd,2)); yd(1:end-1,:)],1);
+    basepos = yd/2 + barbase;
+    for i = 1:size(yd,2)
+        val_labels = numericVec2chars(yd(:,i),'%.0f%%');
+        val_labels(yd(:,i) < 4) = {''};
+        text(xt(i)*ones(size(basepos(:,i))), basepos(:,i), val_labels, ...
+            'HorizontalAlignment','center','FontName','Arial','FontSize',18)
+    end
+end
+ax.YLim = [0 105];
 if in.save_fig
     printFig(fig,in.fig_fold,sprintf('per_change_rois_bar%g_%s',in.bar_mode,in.plot_test));
 end

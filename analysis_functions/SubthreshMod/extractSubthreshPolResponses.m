@@ -116,6 +116,7 @@ out = struct();
 out.pol_dF_all = pol_dF_all;
 out.pol_dF_ss_all = pol_dF_ss_all; 
 out.pol_snr_all = pol_snr_all; 
+out.roi_ids = cellfun(@(x) find(~x)',exclude_rois_pol,'UniformOutput',0); % original indices of remaining ROIs
 out.exclude_rois_pol = exclude_rois_pol; 
 out.pol_slopes = pol_slopes; 
 out.pol_Rsqs = pol_Rsqs;

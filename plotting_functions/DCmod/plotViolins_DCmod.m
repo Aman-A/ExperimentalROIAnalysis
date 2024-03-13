@@ -12,17 +12,18 @@ function plotViolins_DCmod(peaks_before,peaks_during,peaks_after,varargin)
 
 % AUTHOR    : Aman Aberra
 in.y_mode = 'lin'; % 'lin' for linear, 'loglinlog' for log-linear-log
+in.y_grid_on = 0; 
 in.linlimit = 0.1; % linear between +/- linlimit, log outside
 in.width = 0.1; 
 in.plot_pts = 1; 
 in.pt_markerSize = 1; 
 in.plot_means = 1; 
 in.norm_to_before = 0; 
+in.mean_rois = 0; % take mean across peaks within ROI
 in.plot_diffs = 0; 
 in.per_diff = 0; 
 in.plot_after = 1; 
 in.plot_conds = []; % conditions (e.g., amplitudes or pulse durations)
-in.num_dishes_per_amp = []; 
 in.y_lim = [];
 in.save_fig = 0; 
 in.fig_fold = '.';
@@ -43,6 +44,7 @@ if ~iscell(peaks_before)
         peaks_after = mat2cell(peaks_after,size(peaks_after,1),ones(1,size(peaks_after,2)));
     end
 end
+
 y_unit = ''; % default unitless
 if in.norm_to_before   
     % Normalize to mean of peaks before DC
@@ -168,6 +170,7 @@ if isempty(in.y_lim)
     y_lim = ax.YLim;
 else
     y_lim = in.y_lim;
+    ax.YLim = y_lim; 
 end
 if strcmp(in.y_mode,'loglinlog')
     if isempty(in.y_lim)
@@ -207,7 +210,9 @@ if strcmp(in.y_mode,'log')
     if in.convert_to_per
         ax.YTickLabel = numericVec2chars(ax.YTick,'%g');
     end
-    % ax.YGrid = 'on';
+    if in.y_grid_on
+        ax.YGrid = 'on';
+    end
     % ax.YMinorGrid = 'off';
 end
 ax.FontName = in.font_name;

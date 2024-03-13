@@ -44,13 +44,13 @@ if in.plot_after
 else
     x_vals = [-0.2 0.2];
 end
-if isempty(peaks_after) || all(isnan(peaks_after{1}))
+if isempty(peaks_after) || all(isnan(peaks_after{1}),'all')
     include_after = 0; 
 else
     include_after = 1; 
 end
 if in.cell_lines_on && ~isempty(in.num_rois_per_dish)
-    dish_roi_borders = [0,cumsum(in.num_rois_per_dish)];
+    dish_roi_borders = [0,cumsum(in.num_rois_per_dish)+0.5];
 end
 fig = gcf;
 for i=1:num_amps
@@ -167,14 +167,20 @@ for i=1:num_amps
     if ~isempty(in.ax_titles{i})
         title(ax,in.ax_titles{i});
     end
-    ax.XLim = [0.5,num_rois+0.5];
-    for j = 1:(length(dish_roi_borders)-1)
-        if in.cell_lines_on && ~isempty(in.num_rois_per_dish)
-            plot(ax,dish_roi_borders(j+1)*[1 1],ax.YLim,'k-');        
+    ax.XLim = [0.5,num_rois+0.5];    
+end
+xlabel(ax,'Synapse number');
+setAxesUniformLim(fig,'YLim');
+if in.cell_lines_on && ~isempty(in.num_rois_per_dish)
+    for k = 1:length(fig.Children)
+        ax = fig.Children(k);
+        for i = 1:num_amps
+            for j = 1:(length(dish_roi_borders)-1)           
+                plot(ax,dish_roi_borders(j+1)*[1 1],ax.YLim,'k-');                    
+            end
         end
     end
 end
-xlabel(ax,'Synapse number');
 if in.save_fig
     if in.plot_diffs
         fig_name = sprintf('peaks_%s_%gROIs_per_diff%g',in.err_bar,num_rois,...

@@ -20,6 +20,7 @@ in.plot_var = 'subthresh_amps'; % independent variable of experiment
 in.qc_settings = {}; % use defaults
 in.exclude_rois = {};
 in.min_rois_included = 1; % need this many ROIs per cell after quality control
+in.print_level = 1;
 in = sl.in.processVarargin(in,varargin);
 num_vars = length(plot_vars);
 num_dishes = length(data); 
@@ -66,10 +67,13 @@ for i = 1:num_dishes
     if strcmp(in.qc_settings,'off')
         datai = removeROIsExpData(data{i},in.exclude_rois{i});
     else
-        fprintf('***dish %g***\n',i);
+        if in.print_level > 0
+            fprintf('***dish %g***\n',i);
+        end
         [datai,exclude_rois{i}] = qualityControlROIs(data{i},in.qc_settings,...
                                                      plot_data_inds{i},...
-                                                     'exclude_rois',exclude_rois{i});
+                                                     'exclude_rois',exclude_rois{i},...
+                                                     'print_level',in.print_level);
     end
     data_out{i} = datai; 
     peaksi = datai.peaks_deltaF_F0_all;
@@ -241,7 +245,7 @@ for i = 1:num_dishes
         roi_in_dish_index_id = [roi_in_dish_index_id;roi_ids0(~exclude_rois{i})'];
     end
 end 
-fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',num_dishes,sum(num_rois))
+fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',num_dishes,sum(num_rois,'omitnan'))
 
 %% Output data
 out.peaks_before = peaks_before;
@@ -296,8 +300,8 @@ if include_after
         mean_peaks_after_cell(i,:) = squeeze(mean(out.peaks_after_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));    
     end
     out.mean_peaks_after_cell = mean_peaks_after_cell;
-    out.peak_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_after_cell; 
-    out.peak_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_after_cell; 
+    out.peak_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_before_cell; 
+    out.peak_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_before_cell; 
     out.peak_mod_after_cell_per = 100*(out.peak_mod_after_cell - 1); % percent change
 else
     out.peaks_after = []; 
