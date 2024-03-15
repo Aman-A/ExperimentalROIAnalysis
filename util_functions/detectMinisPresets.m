@@ -20,25 +20,22 @@ switch preset_name
             fprintf('Using preset sampling rate %g Hz\n',sampling_rate)
         end        
         % Peak detection
-        settings.threshold = 4; % threshold for peak detection on filtered trace. 
+        settings.threshold = 3; % threshold for peak detection on filtered trace. 
                         % Defined as multiple above noise level (std of
                         % baseline fluctations)
-        settings.snr_thresh = 3; % throw out minis with 
+        settings.snr_thresh = 5; % throw out minis with 
                                  % mini SNR (peak/std(baseline)) less than this number 
                                  % (based on raw F trace). Set to 0 to skip this. 
-        settings.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract
-        settings.nframes_forward = 12; % number of frames after each mini peak to extract        
-        settings.mini_width_range = [10e-3 inf]; % sec - range of FWHM, 
-        settings.min_peak_distance = 120e-3; % sec - min distance between mini peaks to allow
+        settings.nframes_back = round(0.2*sampling_rate); % number of frames before each mini peak to extract
+        settings.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract        
+        settings.mini_width_range = [1/sampling_rate 0.3]; % sec - range of FWHM, 
+        settings.min_peak_distance = 2/sampling_rate; % sec - min distance between mini peaks to allow
         settings.max_mini_amp = 0; % deltaF/F - max amplitude to exclude massive unknown events
+        settings.mini_peak_prominence = 0; % default off, MinPeakProminence in findpeaks
         % Filtering
-        settings.deconv = 1; % set to 1 to use deconvolution, may need to adjust threshold if turned off
-        settings.apply_filter = 1;
-        settings.filt_type = 'butter'; % filter type, 'gauss' for gaussian or 'butter' for butterworth
-        settings.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
-        settings.save_figs = 0; % 1 to save figures, 0 to skip
-        settings.save_figs_dir = ''; % save figures to this directory (or leave blank to skip)
-        settings.trial_name = ''; % for file saving
+        settings.deconv = 0; % set to 1 to use deconvolution, may need to adjust threshold if turned off
+        settings.apply_filter = 0;
+        settings.filt_type = 'butter'; % filter type, 'gauss' for gaussian or 'butter' for butterworth        
         settings.refilter_deconv = 0; % 1 to refilter deconvolved trace (usually doesn't have much effect, can skip)
         settings.smooth_filt_width = 0; % width of median smoothing filter, takes 
                                         % moving median of this number of frames,
@@ -47,6 +44,7 @@ switch preset_name
                                         % smooth out peaks too much
         settings.fc = [0.5]; % Hz - highpass filter cutoff frequences, gets rid 
                              % of baseline fluctuations
+        settings.filt_order = 1; 
         settings.deconv_tau = 100e-3; % ms decay time constant for deconvolution. 
                                       % Uses single exponential decay with this
                                       % time constant to enhance SNR of events with
@@ -57,9 +55,9 @@ switch preset_name
         % Clean up
         settings.stim_frames = []; % ignore if no stim
         settings.blank_around_stim = []; % ignore if no stim        
-        settings.find_pk_frame = 5; % number of frames around original peak to search in unfiltered traces (or 0 to use peak frame from filtered traces)
-        settings.num_frames_skip_start = 5; % frames to remove from start due to filtering artifacts
-        settings.num_frames_skip_end = 5; % frames to remove from end due to filtering artifacts
+        settings.find_pk_frame = 0; % number of frames around original peak to search in unfiltered traces (or 0 to use peak frame from filtered traces)
+        settings.num_frames_skip_start = 1; % frames to remove from start due to filtering artifacts
+        settings.num_frames_skip_end = 1; % frames to remove from end due to filtering artifacts
         settings.use_asls_baseline = 1;  % 1  to use asymmetric least squares baseline removal
                                          % 0 uses simple average of nframes_back
                                          % frames before each peak, may be less
@@ -70,7 +68,11 @@ switch preset_name
         settings.est_rise_time_frames = 1; % take baseline this many frames before peak (typical rise time of GluSnFR3 signal)
         % plotting and file saving
         settings.plot_filt_output_roi_index = 1; % plot example of filtering in this roi                                        
-        
+        settings.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
+        settings.save_figs = 0; % 1 to save figures, 0 to skip
+        settings.save_figs_dir = ''; % save figures to this directory (or leave blank to skip)
+        settings.trial_name = ''; % for file saving
+        settings.print_level = 1; 
     case {'thor_200Hz','odin_200Hz','thor_100Hz','odin_100Hz'}
         if nargin == 1
             sampling_rate = 200;
@@ -88,6 +90,7 @@ switch preset_name
         settings.mini_width_range = [25e-3 inf]; % sec - mini FWHM range
         settings.min_peak_distance = 0.1; % sec - min distance between mini peaks to allow
         settings.max_mini_amp = 0; % deltaF/F - max amplitude to exclude massive unknown events
+        settings.mini_peak_prominence = 0;
         % Filtering
         settings.deconv = 1; % set to 1 to use deconvolution, may need to adjust threshold if turned off
         settings.apply_filter = 1;

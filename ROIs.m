@@ -500,6 +500,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 obj.roiset_filedir = path_to_roiset;
             elseif nargin < 2 || isempty(roiset_filedir)
                 obj.roiset_filedir = pwd; 
+            else 
+                obj.roiset_filedir = roiset_filedir;
             end
             obj.roiset_filename = roiset_name;
             if isempty(ext)

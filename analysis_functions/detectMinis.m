@@ -28,6 +28,7 @@ in.snr_thresh = []; % throw out minis with mini SNR (peak/std(baseline)) < this 
                     % skips this step if left empty
 in.mini_width_range = []; % sec - [min,max] of peak full width at half max, leave empty to skip
 in.min_peak_distance = 3/sampling_rate; % 3 frames by default
+in.mini_peak_prominence = 0; 
 in.max_mini_amp = []; % deltaF/F - max amplitude to exclude massive unknown events
 in.width_ref = 'halfheight'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
 in.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract (default 0.4 sec)
@@ -221,6 +222,7 @@ min_peak_distance = in.min_peak_distance;
 max_mini_amp = in.max_mini_amp; 
 width_ref = in.width_ref;
 est_rise_time_frames = in.est_rise_time_frames;
+mini_peak_prominence = in.mini_peak_prominence; 
 
 t_mini = (0:(nframes_back+nframes_forward))'/sampling_rate;
 t_mini = t_mini - t_mini(nframes_back+1);
@@ -243,9 +245,10 @@ for i = 1:num_rois
     if any(F_findpks(:,i) >= thresholds(i))
         [peaksi0,mini_framesi,~] = findpeaks(F_findpks(:,i),...
                                   'MinPeakHeight',thresholds(i),...
-                                  'MinPeakDistance',min_peak_distance*sampling_rate,... 
+                                  'MinPeakDistance',min_peak_distance*sampling_rate,...  
+                                  'MinPeakProminence',mini_peak_prominence,...
                                   'WidthReference',width_ref,... % halfheight or halfprom
-                                  'Annotate','extents');                                                 
+                                  'Annotate','extents');                                % 'MinPeakProminence',10,...                 
         mini_framesi_filt = mini_framesi; 
         mini_tracesi = nan(nframes_back+nframes_forward+1,length(mini_framesi));
         mini_tracesi_filt = nan(nframes_back+nframes_forward+1,length(mini_framesi));
@@ -311,19 +314,21 @@ for i = 1:num_rois
             % raw
 %             std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 
             % baseline smoothed
-            std_baselinesi = std(baselinesi(1:nframes_back,:),0,1,'omitnan');  % use smoothed baseline trace
+            % std_baselinesi = std(baselinesi(1:nframes_back,:),0,1,'omitnan');  % use smoothed baseline trace
             mean_baselinesi = mean(baselinesi(1:nframes_back-est_rise_time_frames,:),1,'omitnan');                    
             % filtered 
-            std_baselinesi_filt = std(mini_tracesi_filt(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 
+            % std_baselinesi_filt = std(mini_tracesi_filt(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); % use raw trace to determine baseline variability 
             mean_baselinesi_filt = mean(baselinesi_filt(1:nframes_back-est_rise_time_frames,:),1,'omitnan');                    
         else
             % raw
-            std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); 
+            % std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); 
             mean_baselinesi = mean(mini_tracesi(1:nframes_back-est_rise_time_frames,:),1,'omitnan');
             % filtered 
-            std_baselinesi_filt = std(mini_tracesi_filt(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); 
+            % std_baselinesi_filt = std(mini_tracesi_filt(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); 
             mean_baselinesi_filt = mean(mini_tracesi_filt(1:nframes_back-est_rise_time_frames,:),1,'omitnan');
         end                                                 
+        std_baselinesi = std(mini_tracesi(1:nframes_back-est_rise_time_frames,:),0,1,'omitnan'); 
+        
         if in.find_pk_frame == 0
             [peaksi] = max(mini_tracesi(nframes_back-3:nframes_back+3,:),[],1,'omitnan');  % check a few frames before after expected peak (differs from filtered trace)
         end
@@ -339,7 +344,7 @@ for i = 1:num_rois
         % Filter out spurious events by width
         for j = find(keep_minis) % only check minis that pass SNR criterion
             widthsi(j) = spikeWidth(t_mini,mini_tracesi(:,j),... % set stim_index to peak frame - in.find_pk_frame
-                        nframes_back+1 - in.find_pk_frame,0.5,0,...
+                        nframes_back+1 - in.est_rise_time_frames,0.5,0,... % - in.find_pk_frame replaced with in.est_rise_time_frames
                         nframes_back+1);%  Get FWHM
         end
         if ~isempty(mini_width_range)% keep minis with width within range
@@ -347,9 +352,9 @@ for i = 1:num_rois
             if in.print_level > 0 && any(~keep_minis2(keep_minis))
                 % Print number of minis excluded due to FWHM criteria that
                 % passed SNR criterion and total excluded
-                fprintf('Excluded %g minis in ROI %g with FWHM < %.1f ms (%g total)\n',...
-                        sum(~keep_minis2(keep_minis)),i,min_mini_width*1e3,...
-                        sum(~keep_minis2 | ~keep_minis))
+                fprintf('Excluded %g minis in ROI %g with FWHM < %.1f ms and > %.1f ms (%g total)\n',...
+                        sum(~keep_minis2(keep_minis)),i,mini_width_range(1)*1e3,...
+                        mini_width_range(2)*1e3,sum(~keep_minis2 | ~keep_minis))
             end
             keep_minis = keep_minis & keep_minis2; % undefined width (nan) will also fail to pass
         end
