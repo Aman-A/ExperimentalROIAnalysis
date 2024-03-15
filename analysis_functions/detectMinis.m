@@ -112,19 +112,22 @@ if in.deconv
         F_filt = F_deconv; 
     end   
     sigmas = gauss_fit_params(3,:);  % noise level in deconvolved trace    
-    [F_blanked,F_blanked_filt,evoked_peaks,evoked_peaks_filt] = ...
-        blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);
-    % baselines = mean(F_blanked_filt,1,'omitnan');
     baselines = gauss_fit_params(2,:); % mean of gaussian in deconvolved trace
+    [F_blanked,F_blanked_filt,evoked_peaks,evoked_peaks_filt] = ...
+        blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);        
 else
     F_filt = F_filt2; 
     F_deconv = F_filt2;   
-    gauss_fit_params = []; 
-    % get sigmas below
+    % refit histogram to gaussian
     [F_blanked,F_blanked_filt,evoked_peaks,evoked_peaks_filt] = ...
         blankStimAndExtractPeaks(F,F_filt,in.stim_frames,blank_around_stim);
-    sigmas = std(F_blanked_filt,0,1,'omitnan');  % noise level in deconvolved trace (omit evoked responses)
-    baselines = mean(F_blanked_filt,1,'omitnan');
+   % get sigmas below
+    gauss_fit_params = zeros(3,num_rois); % 3 parameters - amplitude A, mean /mu, std /sigma
+    for i = 1:num_rois
+        gauss_fit_params(:,i) = fitHistSingleGaussian(F_blanked_filt(~isnan(F_blanked_filt(:,i)),i),10); % 10 bins per std
+    end
+    sigmas = gauss_fit_params(3,:);  % noise level in deconvolved trace
+    baselines = gauss_fit_params(2,:); % mean of gaussian in deconvolved trace
 end
 %% Plot output of filtering and deconvolution
 if in.plot_x_time % x axis is time (sec)
