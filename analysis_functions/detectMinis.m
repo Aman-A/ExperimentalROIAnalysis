@@ -360,7 +360,7 @@ for i = 1:num_rois
         end
         % Filter out events with too large of amplitudes (unknown source)
         if ~isempty(max_mini_amp) && max_mini_amp ~=0
-            peaksi0_dF_F0 = (peaksi0')./mean_baselinesi;
+            peaksi0_dF_F0 = (peaksi0' - mean_baselinesi)./mean_baselinesi;
             keep_minis3 = peaksi0_dF_F0 < max_mini_amp; 
             if in.print_level > 0 && any(~keep_minis3(keep_minis))
                 % Print number of minis excluded due to FWHM criteria that
