@@ -29,7 +29,7 @@ function meta=imreadBFmeta(datname)
 %modified from bfopen.m
 %christoph moehl 2011, cmohl@yahoo.com
 
-path = fullfile(fileparts(mfilename('fullpath')), 'loci_tools.jar')
+path = fullfile(fileparts(mfilename('fullpath')), 'loci_tools.jar');
 javaaddpath(path);
 
 if exist('lurawaveLicense')
@@ -72,7 +72,7 @@ r.setId(datname);
     
     
     subject = metadataList.get('parameter scale');
-    subject
+    % subject
     if ~isempty(subject)% if possible pixelsizes are added (only ics files)
     voxelsizes=str2num(subject);
     

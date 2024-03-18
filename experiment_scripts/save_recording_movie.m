@@ -56,7 +56,7 @@ inside_ROI = rois_crop.x>ms.ROI(1) & rois_crop.x<ms.ROI(2) & rois_crop.y>ms.ROI(
 rois_crop.shift([-ms.ROI(1),-ms.ROI(3)]);
 rois_crop.removeROIs(~inside_ROI)
 
-mov_name = sprintf('%s_f%g-%g_%gx',img_name,ms.start_frame,ms.end_frame,ms.movie_slow_down_factor);;
+mov_name = sprintf('%s_f%g-%g_%gx',img_name,ms.start_frame,ms.end_frame,ms.movie_slow_down_factor);
 mov_file = fullfile(exp_fold,condition,mov_name);
 makeMovie(rec,sampling_rate,mov_file,ms)
 %% Make mRuby image with same crop

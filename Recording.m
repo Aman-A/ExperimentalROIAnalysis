@@ -112,7 +112,11 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif') 
                        getTiffInfo(obj); 
                     else
-                        % error('''%s'' file format currently not supported',obj.format)
+                        try 
+                            getBFInfo(obj);
+                        catch
+                            error('''%s'' file format currently not supported',obj.format)
+                        end
                     end
                 else
                    error('%s does not exist\n',obj.filepath);  
@@ -152,9 +156,11 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 obj.vals = single(loadtiff(load_filepath));                
             else
                 try
-                    data = bfOpen3DVolume(load_filepath);
-                    obj.vals = single(data{1}{1});  
-                    obj.imsize = size(obj.vals);
+                    % data = bfOpen3DVolume(load_filepath);
+                    % obj.vals = single(data{1}{1});  
+                    data = imreadBF(load_filepath);
+                    obj.vals = squeeze(data);
+                    % obj.imsize = size(obj.vals);
                 catch
                     error('Other file formats not implemented yet');  
                 end
@@ -215,6 +221,15 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
             end
             obj.imsize = [info(1).Height,info(1).Width,length(info)];
+        end
+        function info = getBFInfo(obj)
+            info = imreadBFmeta(obj.filepath);
+            params = cellstr(char(info.parameterNames));
+            obj.imsize = [info.height,info.width,info.nframes];
+            if strcmp(obj.format,'.nd2')
+                obj.pixel_size = info.parameterValues(strcmp(params,'dCalibration'));
+                obj.exposure_time = str2double(info.parameterValues(strcmp(params,'Exposure')))*1e-3; % exposure time in secs
+            end
         end
         function plot(obj,frame)
             if nargin < 2
