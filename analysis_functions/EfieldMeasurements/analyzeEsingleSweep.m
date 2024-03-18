@@ -48,20 +48,46 @@ stim_elem = stim_elems.(stim_elem_names{stim_elem_ind});
 stim = stim_elem.Delegate;
 % stim = s.header.StimulusLibrary.Stimuli.(num2str(stim_elem,'element%g')).Delegate;
 del = str2double(stim.Delay); 
-pulse_dur = str2double(stim.Duration);
+if isfield(stim,'PulseDuration')
+    pulse_dur = str2double(stim.PulseDuration);
+else
+    pulse_dur = str2double(stim.Duration);
+end
 amp = str2double(stim.Amplitude); 
 amp_mA = amp*amp_per_V;
-exp_settings = ExperimentSettings(del,pulse_dur,del/2,'sec',fs,...
+if strcmp(stim.TypeString,'SquarePulseTrain')
+    freq = 1/str2double(stim.Period);
+    train_dur = str2double(stim.Duration); 
+    stim_vals = defineStimTrain(del,freq,train_dur);
+    exp_settings = ExperimentSettings(stim_vals,pulse_dur,pulse_dur,'sec',fs,...
                                    'stim_pulse_dur',pulse_dur);
-exp_settings.convert2Frames(); 
+    stim_train = 1;
+else
+    exp_settings = ExperimentSettings(del,pulse_dur,del/2,'sec',fs,...
+                                   'stim_pulse_dur',pulse_dur);
+    stim_train = 0; 
+end
+% exp_settings.convert2Frames(); 
 %% analyze trace
 bsline = mean(V(exp_settings.baseline_wind_inds,:),1);
-V_bs = V - bsline; % baseline subtracted voltage
-ss_wind = (exp_settings.stim_vals(1) + round(exp_settings.stim_pulse_dur*in.ss_wind_frac)):...
+V_bs = V - bsline; % baseline subtracted voltage, full trace
+if stim_train    
+    ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*in.ss_wind_frac) + 1):...
+         (exp_settings.baseline_wind + exp_settings.stim_pulse_dur + 1);
+    align_out = calcStimAlignedResponses(V,exp_settings.stim_vals,...
+                    exp_settings.baseline_wind,exp_settings.stim_wind);
+    V_aligned = align_out.mean_aligned;
+    bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1);
+    V_aligned_bs = V_aligned - bslines; % baseline subtracted voltage traces, aligned to stim
+    meanV = mean(V_aligned_bs,3,'omitnan');
+    ss_V = mean(meanV(ss_wind,:),1)';
+else    
+    ss_wind = (exp_settings.stim_vals(1) + round(exp_settings.stim_pulse_dur*in.ss_wind_frac)):...
          (exp_settings.stim_vals(1) + exp_settings.stim_pulse_dur + 1);
-ss_V = mean(V_bs(ss_wind,in.chan_ind)); % steady state voltage in channel to analyze
+    ss_V = mean(V_bs(ss_wind,in.chan_ind)); % steady state voltage in channel to analyze
+end
 ss_E = ss_V/(iel*1e-3); % V/m steady state E-field
-fprintf('|E| = %.2f V/m (%.1f V/m per mA)\n',ss_E,ss_E/amp);
+fprintf('|E| = %.2f V/m (%.1f V/m per mA)\n',ss_E(1),ss_E(1)/amp);
 out = struct(); 
 out.t = t;
 out.V = V; 
@@ -72,17 +98,22 @@ out.ss_V = ss_V;
 out.ss_E  = ss_E; 
 %% Plot
 if plot_figs
-    fig = figure('Position',[520         828        1418         454]); 
-    plot(t,V/(iel*1e-3));
+    fig = figure('Position',[535 460        1418         822]);     
+    plot(t,V(:,1)/(iel*1e-3)); hold on;   
     xlabel('time (sec)'); 
-%     label('\Delta V (V)');
     ylabel('|E| (V/m)')
     title(sprintf('E = %.2f V/m. I = %.3f mA. IEL = %g mm, gain = %gx',...
-            ss_E,amp_mA,iel,gain))
+            ss_E(1),amp_mA,iel,gain))
     box off; 
-    if size(V,2) > 1
-        legend('Subthreshold','Suprathreshold current','Box','off')
+    xlim([t(1),t(end)]);
+     if size(V,2) == 2        
+        plot(t,(V0(:,2)/max(V0(:,2)))*max(V(:,1)/(iel*1e-3))); 
+        box off; 
+        ylabel('Current (norm.)')        
     end
+    if size(V,2) > 1
+        legend('Subthreshold','Suprathreshold current','Box','off','Location','BestOutside')
+    end    
     if save_figs
         printFig(fig,in.fig_fold,sprintf('%s_V_vs_t',rec_file));
     end

@@ -94,9 +94,9 @@ if in.filt_width > 0
         for i = ind1:ind2
             vals = imfilter(vals,h,'replicate');
         end
-        if strcmp(in.filt_type,'log')
-            vals = -vals;
-        end
+%         if strcmp(in.filt_type,'log')
+%             vals = -vals;
+%         end
     end
     fprintf('Applied %s filter with width %g pixels\n',in.filt_type,in.filt_width)
 end
