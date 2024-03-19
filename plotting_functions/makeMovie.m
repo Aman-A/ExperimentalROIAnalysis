@@ -106,6 +106,7 @@ if strcmp(in.colormap,'inferno')
     cmap = inferno(1000);
 end
 fig = figure('Units',in.fig_units); 
+fig.Position(1:2) = [0.5 0.5];
 if ~isempty(in.fig_size)
     fig.Position(3:4) = in.fig_size; 
 end
@@ -128,7 +129,7 @@ for i = 1:num_frames
         end
     else
         if i == 1
-            S = surf(ax,valsi,'EdgeColor','none');
+            S = surf(ax,zeros(size(valsi)),valsi,'EdgeColor','none');
             ax.View = [0 90];
         else
             S.CData = valsi; 
