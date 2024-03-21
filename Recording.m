@@ -221,6 +221,11 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
             end
             obj.imsize = [info(1).Height,info(1).Width,length(info)];
+            if isfield(info(1),'XResolution') 
+                if ~isempty(info(1).XResolution)
+                    obj.pixel_size = 1/info(1).XResolution;
+                end
+            end
         end
         function info = getBFInfo(obj)
             info = imreadBFmeta(obj.filepath);
@@ -272,9 +277,9 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                                                   method);
                 % skip saving for now to save disk space, recreate as
                 % needed and use adjusted name for downstream processed
-                % data files
-%                 fitswrite(obj.vals,obj.filepath);
-%                 fprintf('Saved motion corrected recording to %s\n',obj.filepath)
+                % data files                
+                fitswrite(flipud(obj.vals),motcorr_filepath);
+                fprintf('Saved motion corrected recording to %s\n',obj.filepath)
                 end
                 obj.img_name = motcorr_img_name;
                 obj.format = motcorr_format; 
