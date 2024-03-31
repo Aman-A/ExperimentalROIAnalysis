@@ -78,7 +78,7 @@ if isempty(preset_name)
     settings.mini_width_range = [0.04 0.3]; % sec - minimum peak width, 
                                                 % using findpeaks.m definition of width (default 'halfprom')
     settings.min_peak_distance = 2/sampling_rate; % sec - min distance between mini peaks to allow (default 0.05 sec)
-    settings.max_mini_amp = 0; % deltaF/F - max amplitude to exclude massive unknown events
+    settings.mini_amp_range = [0 inf]; % deltaF/F - max amplitude to exclude massive unknown events
     settings.mini_peak_prominence = 10; % optional criteria, peak prominence, set to 0 to turn off
     % Filtering
     settings.deconv = 0; % set to 1 to use deconvolution, may need to adjust threshold if turned off
