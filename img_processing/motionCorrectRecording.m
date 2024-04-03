@@ -61,8 +61,8 @@ switch method
         end
         % delete(pobj);
     case 'imregtform'
-        transform_type = 'affine';
-        [optimizer,metric] = imregconfig('multimodal');
+        transform_type = 'rigid';
+        [optimizer,metric] = imregconfig('monomodal');
         parfor f = 1:size(data,3)
             if ~mod(f,400) && print_status
                 disp(['registering frame: ' int2str(f)])

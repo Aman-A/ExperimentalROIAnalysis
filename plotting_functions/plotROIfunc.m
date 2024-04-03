@@ -28,6 +28,7 @@ in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in.plot_settings = {};
 in.peak_align = 1;
+in.baseline_wind = []; 
 in.stim_frames2 = []; 
 in.stim_pulse_dur2 = []; 
 in.roi_colors = {}; 
@@ -56,7 +57,11 @@ else
         y_flipped = 0;
     end
 end
-baseline_wind = size(func_output.baseline_wind_inds,1);
+if isempty(in.baseline_wind)
+    baseline_wind = size(func_output.baseline_wind_inds,1);
+else
+    baseline_wind = in.baseline_wind;
+end
 if nargin < 4 || isempty(sampling_rate)
     x = (1:size(y,1))'; % frames    
     unit_str = 'frames';

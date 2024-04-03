@@ -27,9 +27,10 @@ in.threshold = 4; % threshold for peak detection on filtered trace.
 in.snr_thresh = []; % throw out minis with mini SNR (peak/std(baseline)) < this number (based on raw F trace)
                     % skips this step if left empty
 in.mini_width_range = []; % sec - [min,max] of peak full width at half max, leave empty to skip
+in.mini_width_frac_amp = 0.5; % 0.5 - FWHM, percent of peak to measure width at
 in.min_peak_distance = 3/sampling_rate; % 3 frames by default
 in.mini_peak_prominence = 0; 
-in.max_mini_amp = []; % deltaF/F - max amplitude to exclude massive unknown events
+in.mini_amp_range = []; % deltaF/F - range of peak amplitude to exclude
 in.width_ref = 'halfheight'; % width reference for findpeaks, eithe 'halfprom' or 'halfheight'
 in.nframes_back = round(0.4*sampling_rate); % number of frames before each mini peak to extract (default 0.4 sec)
 in.nframes_forward = round(0.4*sampling_rate); % number of frames after each mini peak to extract
@@ -41,11 +42,12 @@ in.filt_order = 3; % order of butterworth filter
 in.fc = [0.5 30]; % 0.5 to 30 Hz high pass filter cutoff
 in.smooth_filt_type = 'med'; %'med' or 'sgolay'
 in.smooth_filt_width = 5; % 5 for med or 15 for sgolay
-in.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip
+in.plot_figs = 1; % 1 to plot mini detection figures, 0 to skip, 2 to plot all traces with identified minis
 in.save_figs = 0; % 1 to save figures, 0 to skip
 in.save_figs_dir = ''; % save figures to this directory (saves to current directory if empty
 in.trial_name = ''; % for file saving
 in.plot_x_time = 0; % 1 to use time on x-axis, 0 to use frames
+in.offset_factor = 100; % for plotting raw traces (plot_figs = 2)
 in.plot_filt_output_roi_index = 4; % index of ROI to plot filter output of, leave as 0 to skip
 in.deconv = 0; 
 in.deconv_tau = 35e-3; % sec (~35 ms is mean decay time constant from my 
@@ -145,18 +147,18 @@ else % x axis is frame
     xaxis_label = 'frame';
 end
 % get file names for saving
+if isempty(in.trial_name)
+    fig_basename = 'trial';
+else
+    fig_basename = in.trial_name;
+end
 if in.save_figs
     save_figs = 1;
     if isempty(in.save_figs_dir)
         fig_dir = './mini_analysis';
     else
         fig_dir = in.save_figs_dir;
-    end
-    if isempty(in.trial_name)
-        fig_basename = 'trial';
-    else
-        fig_basename = in.trial_name;
-    end
+    end    
 else
     save_figs = 0;
 end
@@ -219,7 +221,7 @@ nframes_forward = in.nframes_forward;
 thresholds = baselines + in.threshold*sigmas; 
 mini_width_range = in.mini_width_range;     
 min_peak_distance = in.min_peak_distance;
-max_mini_amp = in.max_mini_amp; 
+mini_amp_range = in.mini_amp_range; 
 width_ref = in.width_ref;
 est_rise_time_frames = in.est_rise_time_frames;
 mini_peak_prominence = in.mini_peak_prominence; 
@@ -344,7 +346,7 @@ for i = 1:num_rois
         % Filter out spurious events by width
         for j = find(keep_minis) % only check minis that pass SNR criterion
             widthsi(j) = spikeWidth(t_mini,mini_tracesi(:,j),... % set stim_index to peak frame - in.find_pk_frame
-                        nframes_back+1 - in.est_rise_time_frames,0.5,0,... % - in.find_pk_frame replaced with in.est_rise_time_frames
+                        nframes_back+1 - in.est_rise_time_frames,in.mini_width_frac_amp,0,... % - in.find_pk_frame replaced with in.est_rise_time_frames
                         nframes_back+1);%  Get FWHM
         end
         if ~isempty(mini_width_range)% keep minis with width within range
@@ -352,22 +354,23 @@ for i = 1:num_rois
             if in.print_level > 0 && any(~keep_minis2(keep_minis))
                 % Print number of minis excluded due to FWHM criteria that
                 % passed SNR criterion and total excluded
-                fprintf('Excluded %g minis in ROI %g with FWHM < %.1f ms and > %.1f ms (%g total)\n',...
-                        sum(~keep_minis2(keep_minis)),i,mini_width_range(1)*1e3,...
-                        mini_width_range(2)*1e3,sum(~keep_minis2 | ~keep_minis))
+                fprintf('Excluded %g minis in ROI %g with width at %g %% < %.1f ms and > %.1f ms (%g total)\n',...
+                        sum(~keep_minis2(keep_minis)),i,in.mini_width_frac_amp*100,...
+                        mini_width_range(1)*1e3,mini_width_range(2)*1e3,sum(~keep_minis2 | ~keep_minis))
             end
             keep_minis = keep_minis & keep_minis2; % undefined width (nan) will also fail to pass
         end
         % Filter out events with too large of amplitudes (unknown source)
-        if ~isempty(max_mini_amp) && max_mini_amp ~=0
-            peaksi0_dF_F0 = (peaksi0' - mean_baselinesi)./mean_baselinesi;
-            keep_minis3 = peaksi0_dF_F0 < max_mini_amp; 
+        if ~isempty(mini_amp_range)
+            peaksi_dF_F0 = (peaksi-mean_baselinesi)./mean_baselinesi;
+            % peaksi0_dF_F0 = (peaksi0' - mean_baselinesi)./mean_baselinesi;
+            keep_minis3 = peaksi_dF_F0 > mini_amp_range(1) & peaksi_dF_F0 <= mini_amp_range(2); 
             if in.print_level > 0 && any(~keep_minis3(keep_minis))
                 % Print number of minis excluded due to FWHM criteria that
                 % passed SNR criterion and total excluded
-                fprintf('Excluded %g minis in ROI %g with max deltaF/F0 > %.1f %%  (%g total)\n',...
-                        sum(~keep_minis3(keep_minis)),i,max_mini_amp*100,...
-                        sum(~keep_minis3 | ~keep_minis))
+                fprintf('Excluded %g minis in ROI %g with deltaF/F0 < %.1f %% or > %.1f %%  (%g total)\n',...
+                        sum(~keep_minis3(keep_minis)),i,mini_amp_range(1)*100,...
+                        mini_amp_range(2)*100,sum(~keep_minis3 | ~keep_minis));
             end
             keep_minis = keep_minis & keep_minis3; 
         end
@@ -473,10 +476,12 @@ if in.plot_figs
 %     F_rois_plot = F_rois_plot - F_rois_plot(non_nan_frames(1),:);
     mini_frames_plot = mini_frames_filt; % switch to mini_frames if plotting unfiltered trace
     non_nan_frames = find(~isnan(F_rois_plot(:,1)));
-    if isempty(in.offset_factor)
-        in.offset_factor = quantile(max(F_rois_plot,[],1,'omitnan')-mean(F_rois_plot,1,'omitnan'),0.9)*1.1;
+    if isempty(in.offset_factor) || in.deconv
+        offset_factor = quantile(max(F_rois_plot,[],1,'omitnan')-mean(F_rois_plot,1,'omitnan'),0.9)*1.1;
+    else 
+        offset_factor = in.offset_factor; 
     end
-    offset = linspace(num_rois_plot*in.offset_factor,...
+    offset = linspace(num_rois_plot*offset_factor,...
                     0,num_rois_plot);
     % Plot full time course with minis marked
     fig1 = figure('Units',fig_units,'Position',fig_pos);
@@ -523,6 +528,36 @@ if in.plot_figs
             printFig(fig2,fig_dir,[fig_basename '_minis_overlaid'],...
                 'formats',{'fig','png'},'resolutions',{'','-r300'});
         end
+    end
+end
+% Plot all raw traces with identified minis
+if in.plot_figs > 1    
+    func_out = struct(); % dummy struct to work with plotROIfunc input
+    func_out.mean = F;
+    func_out.roi_func_mode = 'separate';
+    func_out.roi_inds = 1:num_rois; 
+    func_out.img_name = fig_basename;
+    % offset_factor = max(max(func_output.mean,[],1)-mean(func_output.mean,1))*1.1;
+    fig = figure('Units','inches','Position',[0.4479    1.3021   19.0625    8.9583]);
+    ax = gca;
+    plotROIfunc(func_out,'mean',in.stim_frames,[],'ax',ax,...
+        'show_legend',0,'offset_factor',in.offset_factor,...
+        'sbar_len',in.offset_factor/2,'title_on',0,'baseline_wind',0);
+    offset = linspace(num_rois*in.offset_factor,0,num_rois);
+    cols = lines(num_rois);
+    for i = 1:num_rois
+        Fi = F(:,i);
+        non_nan_frames = find(~isnan(Fi));
+        Fi = Fi - Fi(non_nan_frames(1),:) + offset(i); % start all traces at 0 for plot
+        if ~isempty(mini_frames{i})
+            %         mini_heightsi = max(mini_output.mini_F_traces_roi{i},[],1)' - mean(mini_output.mini_F_traces_roi{i}(1:settings.nframes_back,1))';
+
+            plot(mini_frames{i},Fi(mini_frames{i}),'o','MarkerEdgeColor',cols(i,:),...
+                'MarkerFaceColor','k','MarkerSize',6);
+        end
+    end
+    if save_figs
+        printFig(fig,fig_dir,[fig_basename,'_meanF_with_minis'])
     end
 end
 end
