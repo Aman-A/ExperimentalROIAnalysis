@@ -13,7 +13,7 @@ in = sl.in.processVarargin(in,varargin);
 rec_file = sprintf('%s_%04d-%04d',rec_file_base,sweep1,sweep1+num_sweeps-1);
 s = ws.loadDataFile(fullfile(in.rec_file_fold,[rec_file '.h5'])); 
 fs = s.header.AcquisitionSampleRate;
-[V0,t] = formatWaveSurferSweeps(s); 
+[V0,t,time_stamps] = formatWaveSurferSweeps(s); 
 V = V0/gain; % actual voltage
 if in.filt_order > 0    
     [b,a] = butter(in.filt_order,in.filt_cutoffs/(fs/2),in.filt_type);
@@ -49,9 +49,7 @@ ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*in.ss_
 ss_V = mean(meanV(ss_wind,:),1)';
 % ss_E = mean(meanE(ss_wind,:),1);
 ss_E = ss_V/(iel*1e-3); % V/m steady state E-field
-[b,~,~,~,stats] = regress(ss_E,[ones(size(amps_mA)) amps_mA]); % center x at 0
-Rsq = stats(1); 
-p = stats(3); 
+
 out = struct();
 out.t = t;
 out.V = V;
@@ -61,38 +59,86 @@ out.ss_wind = ss_wind;
 out.amps_mA = amps_mA; 
 out.ss_V = ss_V;
 out.ss_E = ss_E;
-out.E_slope = b(2); 
-out.E_int = b(1); 
-out.Rsq = Rsq;
-out.p = p;
+if length(unique(amps_mA)) > 1
+    [b,~,~,~,stats] = regress(ss_E,[ones(size(amps_mA)) amps_mA]); % center x at 0
+    Rsq = stats(1); 
+    p = stats(3); 
+    out.E_slope = b(2); 
+    out.E_int = b(1); 
+    out.Rsq = Rsq;
+    out.p = p;
+else
+    out.E_slope = ss_E./amps_mA; 
+end
 %% Plot
 if plot_figs
-    fig = figure('Position',[520         828        1418         454]); 
-    plot(t,V0);
-    xlabel('time (sec)'); ylabel('\Delta V (V)')
-    legend(numericVec2chars(amps_mA,'%g mA'),'Box','off')
-    title('Recorded V (not gain adjusted)'); box off; 
-    xlim([t(1),t(end)])
-    if save_figs
-        printFig(fig,in.fig_fold,sprintf('%s_raw',rec_file));
-    end
-    %%
-    fig2 = figure('Position',[475         134        1525         497]);
-    subplot(1,2,1)
-    plot(ta,meanV);
-    xlabel('time (sec)'); ylabel('\Delta V (V)')
-    box off;
-    legend(numericVec2chars(amps_mA,'%g mA'),'Box','off','Location','NorthEast')
-    title(sprintf('IEL = %g mm, gain = %gx',iel,gain))
-    xlim([ta(1),ta(end)]);
-    subplot(1,2,2)
-    plot(amps_mA,ss_E,'o'); hold on;
-    plot(amps_mA,b(1) + b(2)*amps_mA,'-','Color','r')
-    xlabel('Current (mA)'); ylabel('Steady state |E| (V/m)')
-    title(sprintf('%.2f V/m per mA. R^{2} = %.3f (p = %.3f)',...
-                b(2),Rsq,p))
-    box off;
-    if save_figs
-        printFig(fig2,in.fig_fold,sprintf('%s_meanV_E',rec_file));
+    if length(unique(amps_mA)) > 1
+        fig = figure('Position',[520         828        1418         454]); 
+        plot(t,V0);
+        xlabel('time (sec)'); ylabel('\Delta V (V)')
+        legend(numericVec2chars(amps_mA,'%g mA'),'Box','off')
+        title('Recorded V (not gain adjusted)'); box off; 
+        xlim([t(1),t(end)])
+        if save_figs
+            printFig(fig,in.fig_fold,sprintf('%s_raw',rec_file));
+        end
+        %%
+        fig2 = figure('Position',[475         134        1525         497]);
+        subplot(1,2,1)
+        plot(ta,meanV);
+        xlabel('time (sec)'); ylabel('\Delta V (V)')
+        box off;
+        legend(numericVec2chars(amps_mA,'%g mA'),'Box','off','Location','NorthEast')
+        title(sprintf('IEL = %g mm, gain = %gx',iel,gain))
+        xlim([ta(1),ta(end)]);
+        subplot(1,2,2)
+        plot(amps_mA,ss_E,'o'); hold on;
+        plot(amps_mA,b(1) + b(2)*amps_mA,'-','Color','r')
+        xlabel('Current (mA)'); ylabel('Steady state |E| (V/m)')
+        title(sprintf('%.2f V/m per mA. R^{2} = %.3f (p = %.3f)',...
+                    b(2),Rsq,p))
+        box off;
+        if save_figs
+            printFig(fig2,in.fig_fold,sprintf('%s_meanV_E',rec_file));
+        end
+    else
+        if num_sweeps > 5
+            plot_sweep_inds = round(linspace(1,num_sweeps,5));
+        else
+            plot_sweep_inds = 1:num_sweeps; 
+        end
+        fig = figure('Position',[520         828        1418         454]); 
+        plot(t,V0(:,plot_sweep_inds));
+        xlabel('time (sec)'); ylabel('\Delta V (V)')
+        legend(numericVec2chars(plot_sweep_inds,'sweep %g'),'Box','off')
+        title('Recorded V (not gain adjusted)'); box off; 
+        xlim([t(1),t(end)])
+        if save_figs
+            printFig(fig,in.fig_fold,sprintf('%s_raw',rec_file));
+        end
+        %% 
+        fig2 = figure('Position',[475         134        1525         497]);
+%         plot_E = ss_E./amps_mA;
+%         ylabel_str = '|E| (V/m per mA)';
+        plot_E = ss_E; 
+        ylabel_str = '|E| (V/m)';
+        plot(time_stamps-time_stamps(1),plot_E,'-ko');
+%         xlabel('Sweep number');
+        xlabel('time (sec)')
+        ylabel(ylabel_str)
+        title(sprintf('I = %g mA, IEL = %g mm, gain = %gx',amps_mA(1),iel,gain))
+        box off;
+        ax = gca;
+        ylim1 = ax.YLim; 
+        yyaxis right; 
+%         plot(1:num_sweeps,100*ss_E/(ss_E(1)),'-ko');
+%         ylim([0 max(ss_E)*1.2])
+        ax2 = gca; ax2.YColor = 'k';
+        box off;
+        ax2.YLim = 100*ylim1/(plot_E(1))';
+        ylabel('% first sweep')
+        if save_figs
+            printFig(fig2,in.fig_fold,sprintf('%s_E_vs_sweep',rec_file));
+        end
     end
 end
