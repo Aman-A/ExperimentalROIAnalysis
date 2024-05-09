@@ -7,7 +7,7 @@ classdef EfieldAnalysisClass < ws.UserClass
           % TimeAtStartOfLastRunAsString_ should only be accessed from 
           % the methods below, but making it protected is a pain.         
          amplifier_gain = 13; % gain on instrumentation amplifier
-         iel_mm = 4.7; % interelectrode length (recording elecrodes) in mm
+         iel_mm = 4.5; % interelectrode length (recording elecrodes) in mm
          isolator_amps_per_V = 1; % mA out per V input for isolator in arbitrary analog isolation mode
          ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
                              % value, e.g. 0.5 is last half of stimulus pulse, 0
@@ -168,16 +168,23 @@ classdef EfieldAnalysisClass < ws.UserClass
             tic
             V = V0/self.amplifier_gain; % actual voltage            
             sweep_ind = wsModel.NSweepsCompletedInThisRun; 
-            stim_ind = wsModel.indexOfStimulusLibraryClassSelection('ws.Stimulus');
+            stim_ind = wsModel.indexOfStimulusLibraryClassSelection('ws.Stimulus');           
+            stim_type = wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'TypeString');
+            % Common properties
             del = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Delay'));
-            pulse_dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'PulseDuration'));
-            dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Duration'));
-            freq = 1/str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Period'));
             amp = eval(sprintf('arrayfun(@(i) %s,%g)',wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Amplitude'),sweep_ind));
             amp_mA = amp*self.isolator_amps_per_V; % stimululs amp in mA
-            
-            stim_vals = defineStimTrain(del,freq,dur);
-            exp_settings = ExperimentSettings(stim_vals,pulse_dur*2,pulse_dur/2,'sec',wsModel.AcquisitionSampleRate,...
+            end_time = wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'EndTime');
+            if strcmp(stim_type,'SquarePulse')
+                pulse_dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Duration'));
+                stim_vals = del; 
+            elseif strcmp(stim_type,'SquarePulseTrain')
+                pulse_dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'PulseDuration'));
+                dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Duration'));
+                freq = 1/str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Period'));
+                stim_vals = defineStimTrain(del,freq,dur);
+            end                                             
+            exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),min(del,pulse_dur/2),'sec',wsModel.AcquisitionSampleRate,...
                                                'stim_pulse_dur',pulse_dur);
             exp_settings.convert2Frames(); 
             align_out = calcStimAlignedResponses(V,exp_settings.stim_vals,...

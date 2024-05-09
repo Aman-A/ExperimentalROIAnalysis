@@ -50,7 +50,8 @@ in.align_use_train_baseline = 1; % if num_trains > 1, in addition to
                                  % Set to 1 to generate deltaF_F0 with 
                                  % baseline of first stim in train, 0 to 
                                  % use baseline before individual stim
-                                 % responses                                 
+                                 % responses  
+in.blank_frame_inds = [];                                  
 in = sl.in.processVarargin(in,varargin); 
 if nargin < 4
    exp_settings = ExperimentSettings([],[],20,'frames',100); 
@@ -128,6 +129,18 @@ end
 time_elapsed = toc; 
 if in.print_level > 0
     fprintf(print_str,time_elapsed);
+end
+ % Blank frames to discard
+if ~isempty(in.blank_frame_inds)
+    for i = 1:length(funcs)
+        output.(funcs{i})(in.blank_frame_inds,:) = nan;
+    end
+    if length(in.blank_frame_inds) == recording.imsize(3)
+        num_blanked_frames = sum(in.blank_frame_inds);
+    else
+        num_blanked_frames = length(in.blank_frame_inds);
+    end
+    fprintf('Blanked %g frames with nans\n',num_blanked_frames)
 end
 %% Apply photobleaching correction
 if in.rem_pbleach

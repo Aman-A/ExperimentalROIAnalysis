@@ -125,7 +125,7 @@ else
 %             fitswrite(rec.vals,motcorr_filename); 
 %             fprintf('Saved motion corrected recording to %s\n',motcorr_filename)
 %         end
-%     end
+%     end   
     %% Output peak image
     [imgs,fig_hands] = diffImage(rec,exp_settings,in.show_diff_image,...
                                 'filt_width',in.filt_width,'peak_mode',in.peak_mode,...
@@ -200,7 +200,8 @@ else
     end   
     %% Calculate deltaF/F0 
     func_output = calcROIfuncs(rec,rois,in.funcs,exp_settings,in.roi_func_mode,...
-                               'rem_pbleach',in.rem_pbleach,'align_use_train_baseline',0);
+                               'rem_pbleach',in.rem_pbleach,'align_use_train_baseline',0,...
+                               'blank_frame_inds',in.blank_frame_inds);
     %% Generate output data structure
     output_data = struct();
     output_data.recording = rec.unload(); % save with data unloaded, reduce HD usage

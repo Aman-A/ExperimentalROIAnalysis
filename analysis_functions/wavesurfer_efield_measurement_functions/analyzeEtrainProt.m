@@ -24,26 +24,34 @@ all_stim_names = cellstr(structfun(@(x) x.Name,s.header.StimulusLibrary.Stimuli,
 stim_elem = find(strcmp(all_stim_names,stim_name));
 stim = s.header.StimulusLibrary.Stimuli.(num2str(stim_elem,'element%g')).Delegate;
 del = str2double(stim.Delay); 
-pulse_dur = str2double(stim.PulseDuration);
 dur = str2double(stim.Duration);
-freq = 1/str2double(stim.Period);
+if strcmp(stim.TypeString,'SquarePulseTrain') || strcmp(stim.TypeString,'SquarePulse')
+    pulse_dur = str2double(stim.PulseDuration);
+    freq = 1/str2double(stim.Period);
+    stim_vals = defineStimTrain(del,freq,dur);
+    exp_settings = ExperimentSettings(stim_vals,pulse_dur*2,pulse_dur/2,'sec',fs,...
+                                   'stim_pulse_dur',pulse_dur);
+elseif strcmp(stim.TypeString,'File') % single pulse defind in file
+    pulse_dur = dur; 
+    stim_vals = del; 
+    exp_settings = ExperimentSettings(stim_vals,pulse_dur,del,'sec',fs,...
+                                   'stim_pulse_dur',pulse_dur);
+end
 amps = eval(sprintf('arrayfun(@(i) %s,1:%g,''UniformOutput'',1)',stim.Amplitude,s.header.NSweepsPerRun))';
 amps_mA = amps*amp_per_V;
 % amp = str2double(stim.Amplitude);
-stim_vals = defineStimTrain(del,freq,dur);
-exp_settings = ExperimentSettings(stim_vals,pulse_dur*2,pulse_dur/2,'sec',fs,...
-                                   'stim_pulse_dur',pulse_dur);
+
 exp_settings.convert2Frames(); 
 align_out = calcStimAlignedResponses(V,exp_settings.stim_vals,...
                     exp_settings.baseline_wind,exp_settings.stim_wind);
 V_aligned = align_out.mean_aligned;
-bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1);
+bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1,'omitnan');
 V_aligned_bs = V_aligned - bslines; % baseline subtracted voltage traces  
 ta = 0:(1/fs):((size(V_aligned,1)-1)/fs);
 ta = ta-ta(exp_settings.baseline_wind+1);
 meanV = mean(V_aligned_bs,3,'omitnan');
 % meanE = meanV/(iel*1e-3); % V/m  - Efield amplitude
-% use 2nd half of pulse
+% use part of pulse defind by ss_wind_frac
 ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*in.ss_wind_frac) + 1):...
          (exp_settings.baseline_wind + exp_settings.stim_pulse_dur + 1);
 ss_V = mean(meanV(ss_wind,:),1)';
@@ -135,7 +143,7 @@ if plot_figs
 %         ylim([0 max(ss_E)*1.2])
         ax2 = gca; ax2.YColor = 'k';
         box off;
-        ax2.YLim = 100*ylim1/(plot_E(1))';
+        ax2.YLim = 100*ylim1/(abs(plot_E(1)))';
         ylabel('% first sweep')
         if save_figs
             printFig(fig2,in.fig_fold,sprintf('%s_E_vs_sweep',rec_file));

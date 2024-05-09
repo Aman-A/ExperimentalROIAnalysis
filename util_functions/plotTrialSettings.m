@@ -59,4 +59,5 @@ settings.spike_thresh = 3; % spike_thresh x std(baseline) for analyzeStimAligned
 settings.spike_window = 0.03; % sec - window to find peak after stim for spike detection in analyzeStimAlignedTraces (used with func = 'decay_fit')
 settings.roi_func_peak_align = 0; % 1 = peak align before averaging in plotROIFunc
 settings.roi_func_line_cols = {}; % default uses 'lines' colororder
+settings.blank_frame_inds = []; 
 settings = sl.in.processVarargin(settings,varargin);

@@ -96,6 +96,9 @@ out.ss_wind = ss_wind;
 out.amp_mA = amp_mA; 
 out.ss_V = ss_V; 
 out.ss_E  = ss_E; 
+if stim_train
+    out.V_aligned_bs = V_aligned_bs;
+end
 %% Plot
 if plot_figs
     fig = figure('Position',[535 460        1418         822]);     
