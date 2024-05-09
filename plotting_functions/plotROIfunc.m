@@ -120,16 +120,20 @@ if regexp(func_name,'aligned','ONCE')
             % concatenate average response to each 
             % train, plot as single trace in each ROI
             if size(stim_frames,1) > 1
+                stim_wind = size(y,1)-baseline_wind-1;
                 y_all = zeros(size(y,1)*size(stim_frames,1),size(y,2));
-                starti = 1; endi = size(y,1);
+                starti = 1; endi = size(y,1);    
+                stim_frames_new = stim_frames(1); 
                 for i = 1:size(stim_frames,1)
                     y_all(starti:endi,:) = y(:,:,i);
                     starti = endi + 1; 
                     endi = endi + size(y,1);
+                    stim_frames_new = [stim_frames_new,stim_frames_new(i)+(stim_wind+baseline_wind)/sampling_rate];
                 end
+                stim_frames = stim_frames_new(1:end-1)-stim_frames_new(1);
                 y = y_all; 
                 x = (1:size(y,1))'/sampling_rate; % convert frames to time in sec
-                x = x - x(baseline_wind+1); 
+                x = x - x(baseline_wind+1);                                 
             end            
         end
     end
@@ -215,8 +219,10 @@ if isempty(regexp(func_name,'aligned','ONCE'))
         stimpoints_hand2 = []; 
     end
 else
-    stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
-                                            ax,'stim_pulse_dur',in.stim_pulse_dur);    
+%     stimpoints_hand = addStimPointsToPlot(x(baseline_wind+1),in.stim_marker_mode,...
+%                                             ax,'stim_pulse_dur',in.stim_pulse_dur);
+    stimpoints_hand = addStimPointsToPlot(stim_frames,in.stim_marker_mode,...
+                                            ax,'stim_pulse_dur',in.stim_pulse_dur);
 end
 xlabel(ax,sprintf('time (%s)',unit_str)); 
 ylabel_str = funcNameToLabel(func_name,y_flipped);
