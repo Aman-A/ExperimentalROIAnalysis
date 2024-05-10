@@ -7,7 +7,7 @@ classdef EfieldAnalysisClass < ws.UserClass
           % TimeAtStartOfLastRunAsString_ should only be accessed from 
           % the methods below, but making it protected is a pain.         
          amplifier_gain = 13; % gain on instrumentation amplifier
-         iel_mm = 4.5; % interelectrode length (recording elecrodes) in mm
+         iel_mm = 4.7; % interelectrode length (recording elecrodes) in mm
          isolator_amps_per_V = 1; % mA out per V input for isolator in arbitrary analog isolation mode
          ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
                              % value, e.g. 0.5 is last half of stimulus pulse, 0
@@ -190,7 +190,8 @@ classdef EfieldAnalysisClass < ws.UserClass
             align_out = calcStimAlignedResponses(V,exp_settings.stim_vals,...
                                 exp_settings.baseline_wind,exp_settings.stim_wind);
             V_aligned = align_out.mean_aligned;
-            bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1);
+            bslines = align_out.baselines; 
+%             bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1,'omitnan');
             V_aligned_bs = squeeze(V_aligned - bslines); % baseline subtracted voltage traces  
             ta = 0:(1/wsModel.AcquisitionSampleRate):((size(V_aligned,1)-1)/wsModel.AcquisitionSampleRate);
             ta = ta-ta(exp_settings.baseline_wind+1);

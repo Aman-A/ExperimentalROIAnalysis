@@ -65,7 +65,7 @@ if num_trains > 1
         include_indsi = ~isnan(framesj);
         mean_aligned(include_indsi,:,j) = means(framesj(include_indsi),:);
     end
-    baselines = mean(mean_aligned(1:baseline_wind,:,:),1); % [1 x num_traces x num_stim or num_trains]
+    baselines = mean(mean_aligned(1:baseline_wind,:,:),1,'omitnan'); % [1 x num_traces x num_stim or num_trains]
     deltaF_F0_aligned = (mean_aligned - baselines)./baselines; 
     
     if in.align_spikes_and_trains % also align to individual stimuli
@@ -80,7 +80,7 @@ if num_trains > 1
                 mean_aligned2(include_indsij,:,i,j) = means(framesij(include_indsij),:);
             end
         end
-        baselines2 = mean(mean_aligned2(1:baseline_wind,:,:,:),1); % [1 x num_traces x num_trains x num_stim]
+        baselines2 = mean(mean_aligned2(1:baseline_wind,:,:,:),1,'omitnan'); % [1 x num_traces x num_trains x num_stim]
         if in.use_train_baseline
             deltaF_F0_aligned2 = (mean_aligned2 - baselines2(:,:,:,1))./baselines2(:,:,:,1); 
         else
@@ -100,7 +100,7 @@ else % Align all individual spikes
         include_indsi = ~isnan(framesj);
         mean_aligned(include_indsi,:,j) = means(framesj(include_indsi),:);
     end
-    baselines = mean(mean_aligned(1:baseline_wind,:,:),1); % [1 x num_traces x num_stim or num_trains]
+    baselines = mean(mean_aligned(1:baseline_wind,:,:),1,'omitnan'); % [1 x num_traces x num_stim or num_trains]
     deltaF_F0_aligned = (mean_aligned - baselines)./baselines; 
 end
 out.deltaF_F0_aligned = deltaF_F0_aligned;
