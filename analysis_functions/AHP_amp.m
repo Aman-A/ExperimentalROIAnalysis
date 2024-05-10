@@ -20,6 +20,7 @@ in = sl.in.processVarargin(in,varargin);
 if nargin < 4
     plot_fig = 0; 
 end
+stim_index = uint16(stim_index);
 if isempty(in.max_ahp_wind)
     end_ind = size(y,1);
 else
