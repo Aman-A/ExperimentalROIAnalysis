@@ -45,7 +45,7 @@ in.AHP_mode = 1; % 0 - find AHP trough in each trace
                  % [2,time_point] - input time point to use for AHP as 2nd element (not implemented)
 in.plot_width = 0.1; 
 in.frac_amps = 0.1:0.1:0.9;
-in.norm_AP_feats = 0; % 1 - plot % change in AP features, 0 - plot abs differences
+in.norm_AP_feats = 0; % 1 - plot % change in AP features, 2 - subtract 0 mA control trial, 0 - plot abs differences
 in.pol_smooth_wind = 30; 
 in.rise_fit_dur = 100; % duration in ms of polarization stimulus pulse to 
                       % use for fitting rise time constant 
@@ -94,7 +94,7 @@ if isfield(AP_data,'successful_spikes')
 else
     error('Need successful_spikes to compute averaged AP')
 end
-% time vector
+% time vector (ms)
 tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(AP_data.deltaF_F0_aligned2_all{1},1));
 tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
 % Only average trials with successful AP 
@@ -105,7 +105,7 @@ for i = 1:length(AP_data.deltaF_F0_aligned2_all)
         si = squeeze(successful_spikes{i}(in.roi_ind,:,:)); 
     else
         si = successful_spikes{i}; 
-    end    
+    end        
     yi = indicator_dir*AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,:,:); 
     for j = 1:AP_data.exp_settings(1).num_trains
         yi(:,in.roi_ind,j,~logical(si(j,:))) = nan; % blank traces with no AP
@@ -115,7 +115,7 @@ for i = 1:length(AP_data.deltaF_F0_aligned2_all)
         end
     end
     if in.mean_AP_peak_align
-        [tAPs{i},meanAPs{i}] = averagePeakAlignedTraces(tAP,AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,:,:),...
+        [tAPs{i},meanAPs{i}] = averagePeakAlignedTraces(tAP,yi,...
                                      AP_data.exp_settings(1).baseline_wind + 1,4); 
     else
         meanAPs{i} = squeeze(mean(yi,[2 4],'omitnan'));
@@ -132,6 +132,7 @@ if in.mean_AP_peak_align
     meanAPs = cellfun(@(x,y) x(find(y==0)-nbefore:find(y==0)+nafter,:),...
         meanAPs,tAPs,'UniformOutput',0);
 end
+%%
 % meanAPs = cellfun(@(x) squeeze(mean(x,[2,4])),AP_data.deltaF_F0_aligned2_all,...
 %                 'UniformOutput',0);
 
@@ -172,7 +173,7 @@ end
 amp_labels(amps == 0) = repmat({''},1,sum(amps==0));
 
 out.meanAPs = meanAPs;
-out.tAP = tAP; 
+out.tAP = tAP; % time in ms
 out.mean_pols = mean_pols;
 out.tpol = tpol; 
 out.dF_ss = dF_ss; % steady state polarization at each current amplitude (dF/F0)
@@ -220,7 +221,7 @@ for j = 1:length(amps) % dc amp
                                     'smooth_trace',1,...
                                     'smooth_span',20*in.spline_sampling_factor,...
                                     'max_ahp_wind',in.spline_sampling_factor*AP_data.exp_settings(1).convert2Frames(0.03),...
-                                    'AHP_ind',AHP_inds(i,j)); % AHP max 30 ms
+                                    'ahp_ind',AHP_inds(i,j)); % AHP max 30 ms
         end
         AHP_amps(i,j) = AHP_amps_ij*100; % percent deltaF/F below baseline
     end

@@ -48,14 +48,14 @@ dms.mini_width_frac_amp = 0.5;
 dms.apply_filter = 1; 
 dms.filt_order = 1; 
 dms.filt_type = 'butter';
-dms.fc = 0.5; 
+dms.fc = 0.5; % high pass  
 dms.deconv = 0; 
 dms.deconv_tau = 0.035; 
 dms.refilter_deconv = 1; 
 dms.smooth_filt_width = 0;
 dms.use_asls_baseline = 0; 
 % Plot settings
-dms.plot_figs = 2; 
+dms.plot_figs = 0; % 1 - 
 dms.save_figs = 0;
 dms.plot_filt_output_roi_index = 8; 
 dms.offset_factor = 100; 
@@ -125,10 +125,58 @@ hold on; box off;
 plot(t_fit,decay_fit.fitobjs{1}(t_fit),'--r');
 xlabel('time (sec)'); ylabel('\Delta F/F_{0} (norm.)');
 legend('Data',sprintf('Fit: \\tau_{d} = %.1f ms',taud))
-%% Plot distribution of minis before and during
+%% Plot distribution of minis before and during - within dish
 bin_width = 0.5;
 convert_to_mHz = 0; 
 dur = stim_frame/data{1}.exp_settings(1).sampling_rate; % sec
+for n = 1:num_dishes
+    fig = figure; 
+    hd = zeros(1,num_amps);
+    pd = zeros(1,num_amps);
+    median_n_minis_before = median(mean_n_minis_before,1);
+    median_n_minis_during = median(mean_n_minis_during,1);
+    for i = 1:num_amps
+        ax = subplot(1,num_amps,i);
+        [Nb,edgesb] = histcounts(mean_n_minis_before(dish_inds==n,i),'BinWidth',bin_width,...
+                                'Normalization','cdf');
+        [Nd,edgesd] = histcounts(mean_n_minis_during(dish_inds==n,i),'BinWidth',bin_width,...
+                                'Normalization','cdf');
+        xb = edgesb(1:end-1) + bin_width/2;
+        xd = edgesd(1:end-1) + bin_width/2;
+        if convert_to_mHz
+            plot(ax,xb,1e3*Nb/dur,'k'); hold on;
+            plot(ax,xd,1e3*Nd/dur,'r');
+            xlabel(ax,'Mean mini rate (mHz)');
+        else
+            plot(ax,xb,Nb,'k'); hold on;
+            plot(ax,xd,Nd,'r');
+            xlabel('N minis');
+            % xlabel(ax,sprintf('Mean number of minis in %g sec',dur));
+        end
+        box(ax,'off');
+        if i == 1
+            ylabel(ax,'Proportion');
+        end    
+        title(ax,plot_amps_labels(i));
+        sgtitle(sprintf('Dish %g',n));
+        [hd(i),pd(i)] = kstest2(Nb,Nd,alpha);  
+        if hd(i)
+            plot(ax.XLim(1) + 0.5*diff(ax.XLim),ax.YLim(1) + 0.95*diff(ax.YLim),'r*',...
+                'MarkerSize',12);
+        end
+        if i == num_amps
+            legend(ax,'Before','During','Box','off','Location','best');
+        end
+    end
+    if save_figs
+        printFig(fig,fig_fold,sprintf('CDFs_within_%gcells',num_dishes));
+    end
+end
+%% Plot distribution of minis before and during - all dishes 
+bin_width = 0.5;
+convert_to_mHz = 0; 
+dur = stim_frame/data{1}.exp_settings(1).sampling_rate; % sec
+
 fig = figure; 
 hd = zeros(1,num_amps);
 pd = zeros(1,num_amps);
@@ -166,5 +214,4 @@ for i = 1:num_amps
         legend(ax,'Before','During','Box','off','Location','best');
     end
 end
-
 
