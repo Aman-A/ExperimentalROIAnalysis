@@ -1,4 +1,4 @@
-function out = analyzeEtrainProt(rec_file_base,sweep1,num_sweeps,stim_name,...
+function out = analyzeEtrainProt(rec_file_base,sweep1,num_sweeps,...
                                 gain,iel,amp_per_V,plot_figs,save_figs,varargin)
 in.rec_file_fold = '.';
 in.fig_fold = 'figs';
@@ -15,29 +15,38 @@ s = ws.loadDataFile(fullfile(in.rec_file_fold,[rec_file '.h5']));
 fs = s.header.AcquisitionSampleRate;
 [V0,t,time_stamps] = formatWaveSurferSweeps(s); 
 V = V0/gain; % actual voltage
-if in.filt_order > 0    
+if in.filt_order > 0        
     [b,a] = butter(in.filt_order,in.filt_cutoffs/(fs/2),in.filt_type);
     V = filtfilt(b,a,V); 
     fprintf('Applied %g order %s butterworth filter\n',in.filt_order,in.filt_type)
 end
-all_stim_names = cellstr(structfun(@(x) x.Name,s.header.StimulusLibrary.Stimuli,'UniformOutput',1));
-stim_elem = find(strcmp(all_stim_names,stim_name));
-stim = s.header.StimulusLibrary.Stimuli.(num2str(stim_elem,'element%g')).Delegate;
+stim_elem_ind = s.header.StimulationTriggerIndex;
+stim = s.header.StimulusLibrary.Stimuli.(num2str(stim_elem_ind,'element%g')).Delegate;
 del = str2double(stim.Delay); 
 dur = str2double(stim.Duration);
-if strcmp(stim.TypeString,'SquarePulseTrain') || strcmp(stim.TypeString,'SquarePulse')
-    pulse_dur = str2double(stim.PulseDuration);
-    freq = 1/str2double(stim.Period);
+end_time = str2double(stim.EndTime);
+if strcmp(stim.TypeString,'SquarePulse')
+    pulse_dur = dur; 
+    stim_vals = del;
+    exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),...
+                                    min(del,pulse_dur/2),'sec',fs,...
+                                    'stim_pulse_dur',pulse_dur);
+elseif strcmp(stim.TypeString,'SquarePulseTrain')
+    pulse_dur = str2dboule(stim.PulseDuration);    
+    freq = 1/str2double(stim.Period);    
     stim_vals = defineStimTrain(del,freq,dur);
-    exp_settings = ExperimentSettings(stim_vals,pulse_dur*2,pulse_dur/2,'sec',fs,...
-                                   'stim_pulse_dur',pulse_dur);
+    exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),...
+                                       min(del,pulse_dur/2),'sec',fs,...
+                                       'stim_pulse_dur',pulse_dur);
 elseif strcmp(stim.TypeString,'File') % single pulse defind in file
     pulse_dur = dur; 
     stim_vals = del; 
     exp_settings = ExperimentSettings(stim_vals,pulse_dur,del,'sec',fs,...
                                    'stim_pulse_dur',pulse_dur);
 end
-amps = eval(sprintf('arrayfun(@(i) %s,1:%g,''UniformOutput'',1)',stim.Amplitude,s.header.NSweepsPerRun))';
+exp_settings.convert2Frames();
+
+amps = eval(sprintf('arrayfun(@(i) %s,1:%g,''UniformOutput'',1)',stim.Amplitude,num_sweeps))';
 amps_mA = amps*amp_per_V;
 % amp = str2double(stim.Amplitude);
 
@@ -80,12 +89,21 @@ else
 end
 %% Plot
 if plot_figs
+    if in.filt_order > 0
+        if strcmp(stim.TypeString,'SquarePulse')
+            fig1_title_str = 'Recorded V (gain adjusted, filtered, baseline subtracted)';
+        else
+            fig1_title_str = 'Recorded V (gain adjusted and filtered)';
+        end
+    else
+        fig1_title_str = 'Recorded V (gain adjusted)';
+    end
     if length(unique(amps_mA)) > 1
         fig = figure('Position',[520         828        1418         454]); 
-        plot(t,V0);
+        plot(t,V);
         xlabel('time (sec)'); ylabel('\Delta V (V)')
         legend(numericVec2chars(amps_mA,'%g mA'),'Box','off')
-        title('Recorded V (not gain adjusted)'); box off; 
+        title(fig1_title_str); box off; 
         xlim([t(1),t(end)])
         if save_figs
             printFig(fig,in.fig_fold,sprintf('%s_raw',rec_file));
@@ -116,11 +134,16 @@ if plot_figs
             plot_sweep_inds = 1:num_sweeps; 
         end
         fig = figure('Position',[520         828        1418         454]); 
-        plot(t,V0(:,plot_sweep_inds));
+        if strcmp(stim.TypeString,'SquarePulse')
+            plot(ta,V_aligned_bs(:,plot_sweep_inds));
+            xlim([ta(1),ta(end)])
+        else
+            plot(t,V(:,plot_sweep_inds));
+            xlim([t(1),t(end)])
+        end
         xlabel('time (sec)'); ylabel('\Delta V (V)')
         legend(numericVec2chars(plot_sweep_inds,'sweep %g'),'Box','off')
-        title('Recorded V (not gain adjusted)'); box off; 
-        xlim([t(1),t(end)])
+        title(fig1_title_str); box off;         
         if save_figs
             printFig(fig,in.fig_fold,sprintf('%s_raw',rec_file));
         end
@@ -143,8 +166,8 @@ if plot_figs
 %         ylim([0 max(ss_E)*1.2])
         ax2 = gca; ax2.YColor = 'k';
         box off;
-        ax2.YLim = 100*ylim1/(abs(plot_E(1)))';
-        ylabel('% first sweep')
+        ax2.YLim = 100*(ylim1-abs(plot_E(1)))/(abs(plot_E(1)))';
+        ylabel('% change vs. first sweep')
         if save_figs
             printFig(fig2,in.fig_fold,sprintf('%s_E_vs_sweep',rec_file));
         end

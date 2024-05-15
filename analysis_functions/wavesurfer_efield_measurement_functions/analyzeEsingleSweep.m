@@ -1,11 +1,9 @@
-function out = analyzeEsingleSweep(rec_file,stim_name,...
-                            gain,iel,amp_per_V,plot_figs,save_figs,varargin)
+function out = analyzeEsingleSweep(rec_file,gain,iel,amp_per_V,plot_figs,save_figs,varargin)
 
 if nargin == 0
     rec_file_base = 'test_10sec_trial';
     sweep_num = 1;
-    rec_file = sprintf('%s_%04d',rec_file_base,sweep_num);
-    stim_name = '10sec_DC';
+    rec_file = sprintf('%s_%04d',rec_file_base,sweep_num);    
     gain = 1; 
     iel = 4.5; % mm 
     amp_per_V = 1; % mA/V
@@ -37,8 +35,9 @@ if in.filt_order > 0
 end
 stim_elems = s.header.StimulusLibrary.Stimuli;
 stim_elem_names = fieldnames(stim_elems);
-all_stim_names = cellstr(structfun(@(x) x.Name,s.header.StimulusLibrary.Stimuli,'UniformOutput',1));
-stim_elem_ind = strcmp(all_stim_names,stim_name);
+% all_stim_names = cellstr(structfun(@(x) x.Name,s.header.StimulusLibrary.Stimuli,'UniformOutput',1));
+% stim_elem_ind = strcmp(all_stim_names,stim_name);
+stim_elem_ind = s.header.StimulationTriggerIndex;
 % for i = 1:length(stim_elem_names)
 %     if strcmp(stim_elems.(stim_elem_names{i}).Name,stim_name)
 %         stim_elem = stim_elems.(stim_elem_names{i});
@@ -102,7 +101,7 @@ end
 %% Plot
 if plot_figs
     fig = figure('Position',[535 460        1418         822]);     
-    plot(t,V(:,1)/(iel*1e-3)); hold on;   
+    plot(t,V_bs(:,1)/(iel*1e-3)); hold on;   
     xlabel('time (sec)'); 
     ylabel('|E| (V/m)')
     title(sprintf('E = %.2f V/m. I = %.3f mA. IEL = %g mm, gain = %gx',...

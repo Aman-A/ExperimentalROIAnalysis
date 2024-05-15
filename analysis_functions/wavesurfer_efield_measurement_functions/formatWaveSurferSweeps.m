@@ -7,6 +7,10 @@ function [data,t,timestamps] = formatWaveSurferSweeps(s)
         data{i} = s.(f{i}).analogScans;
         timestamps(i) = s.(f{i}).timestamp;
     end
+    if ~isequal(size(data{end}),size(data{1}))
+        fprintf('Last sweep ended early, removing...\n')
+        data(end) = []; 
+    end
     data = cell2mat(data); 
     fs = s.header.AcquisitionSampleRate;
     dt = 1/fs; 
