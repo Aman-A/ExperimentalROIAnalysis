@@ -11,7 +11,7 @@ roiset_filename = 'RoiSet_pc_test.zip';
 stim_pulse_dur = 0.001; % sec - train duration
 num_stim = 1; 
 num_trains = 1; 
-del = 4; % sec 
+del = 2; % sec 
 freq = 1/4; % Hz
 dur = (num_stim)/freq; 
 stim_vals = defineStimTrains(del,freq,dur,num_trains,num_stim/freq); % frames - 3 sec delay (100 Hz sampling time)
@@ -20,7 +20,8 @@ baseline_wind = 2; % frames before stim/s to take baseline
 units = 'sec'; % specify units 'frames' or 'sec' 
 sampling_rate = 50; % sampling rate (frames/sec)
 stim_pulse_dur2 = 0.1;
-stim_vals2 = stim_vals - stim_pulse_dur2; 
+subthresh_interval = 0; % no delay
+stim_vals2 = stim_vals - stim_pulse_dur2 - subthresh_interval; 
 exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                   units,sampling_rate,...
                                   'stim_pulse_dur',stim_pulse_dur,...
@@ -49,7 +50,7 @@ ps.plot_func = 'deltaF_F0'; % 'deltaF_F0' 'deltaF_F0_aligned'
 if regexp(ps.plot_func,'aligned')
     ps.x_lim = [-baseline_wind, 1.4];
 else
-    ps.x_lim = [-1 1];
+    ps.x_lim = [];
 %     ps.x_lim = [-baseline_wind stim_vals(end)-stim_vals(1) + stim_wind];
 end
 ps.recenterROIs = 0;
@@ -89,10 +90,6 @@ ps.save_fig = 2; % 1 - save trials overlaid, 2- save individual trials as separa
 ps.plot_func = 'deltaF_F0';
 ps.roi_func_mode = 'combine';
  
-% roiset_filenames = {{'RoiSet_pc_DC_1.zip','RoiSet_pc_DC_2.zip','RoiSet_pc_DC_3.zip'},
-%     {'RoiSet_pc_DC_1.zip','RoiSet_pc_DC_2.zip','RoiSet_pc_DC_3.zip'},
-%     {'RoiSet_pc_DC_1.zip','RoiSet_pc_DC_2.zip','RoiSet_pc_DC_3.zip'}};
-
 roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                          ps.transform_type,...
                                             ps.registration_rec);  
