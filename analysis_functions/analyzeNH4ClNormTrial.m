@@ -1,4 +1,4 @@
-function [F_traces_norm,ss_dFF0,nh4cl_trace] = analyzeNH4ClNormTrial(img_name,...
+function [dF_metrics,F_traces_norm,nh4cl_trace,exp_settings] = analyzeNH4ClNormTrial(img_name,...
                                                 exp_settings,roiset_filename,...
                                                 plot_settings,mean_wind,F_traces,...
                                                 varargin)
@@ -104,7 +104,7 @@ while getting_traces
         break % don't loop, proceed with input settings
     end
 end
-% get mean value during steady state phase of glutamate response
+% get mean value during steady state phase of nh4cl response
 nh4cl_trace = datai.func_output.(in.norm_func);
 if isempty(mean_wind)
     mean_wind = exp_settings.stim_wind_inds(:,1);
@@ -116,6 +116,8 @@ if in.scaling_factor ~= 1
 else
     fprintf('No scaling factor applied\n')
 end
-ss_dFF0 = mean(nh4cl_trace(mean_wind,:),1);
-F_traces_norm = F_traces/ss_dFF0; 
+dF_metrics = struct();
+dF_metrics.ss_dFF0 = mean(nh4cl_trace(mean_wind,:),1); % mean within stimulus window
+dF_metrics.per95 = quantile(nh4cl_trace,0.95); % 95th percentile of full trace
+F_traces_norm = F_traces/dF_metrics.per95; % default normalization, 95th percentile
 end
