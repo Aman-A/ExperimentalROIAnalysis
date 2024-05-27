@@ -133,7 +133,9 @@ end
  % Blank frames to discard
 if ~isempty(in.blank_frame_inds)
     for i = 1:length(funcs)
-        output.(funcs{i})(in.blank_frame_inds,:) = nan;
+        if ~strcmp(funcs{i},'baseline')
+            output.(funcs{i})(in.blank_frame_inds,:) = nan;
+        end
     end
     if length(in.blank_frame_inds) == recording.imsize(3)
         num_blanked_frames = sum(in.blank_frame_inds);
