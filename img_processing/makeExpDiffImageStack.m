@@ -14,6 +14,7 @@ function img_stack = makeExpDiffImageStack(exp_folder,trial_folders,exp_settings
 in.include_plots = [0 4]; % same format as diffImage, 1 - baseline, 2 - peak, 
                       % 3 diff image, leave empty or set to 0 to skip 
                       % plotting
+in.img_field = '';                      
 in.img_stack_name = 'diffimage_stack';     
 in.img_names_all = cell(size(trial_folders)); 
 in.save_sep_images = 0;
@@ -55,7 +56,12 @@ assert(sum(in.include_plots > 0)  == 1,...
 [img_struct,~] = diffImage(rec1,exp_settings(1),in.include_plots,'peak_mode',in.peak_mode,...
                          'filt_width',in.filt_width,'indicator_dir',in.indicator_dir);
 img_fields = fieldnames(img_struct); 
-img_field = img_fields{end}; % skip bsline_img if include_plots = 3 or 4
+if isempty(in.img_field)
+    img_field = img_fields{end}; % skip bsline_img if include_plots = 3 or 4
+else
+    img_field = in.img_field; 
+end
+
 img1 = img_struct.(img_field); 
 img_stack = zeros([size(img1,[1 2]),num_trials]);
 img_stack(:,:,1) = img1; 

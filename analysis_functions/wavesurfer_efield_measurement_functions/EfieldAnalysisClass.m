@@ -7,7 +7,7 @@ classdef EfieldAnalysisClass < ws.UserClass
           % TimeAtStartOfLastRunAsString_ should only be accessed from 
           % the methods below, but making it protected is a pain.         
          amplifier_gain = 13; % gain on instrumentation amplifier
-         iel_mm = 4.7; % interelectrode length (recording elecrodes) in mm
+         iel_mm = 4.7; % interelectrode length (recording elecrodes) in mm        
          isolator_amps_per_V = 1; % mA out per V input for isolator in arbitrary analog isolation mode
          ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
                              % value, e.g. 0.5 is last half of stimulus pulse, 0

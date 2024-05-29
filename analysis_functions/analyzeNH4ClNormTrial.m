@@ -119,5 +119,6 @@ end
 dF_metrics = struct();
 dF_metrics.ss_dFF0 = mean(nh4cl_trace(mean_wind,:),1); % mean within stimulus window
 dF_metrics.per95 = quantile(nh4cl_trace,0.95); % 95th percentile of full trace
+dF_metrics.max = max(nh4cl_trace); % 95th percentile of full trace
 F_traces_norm = F_traces/dF_metrics.per95; % default normalization, 95th percentile
 end
