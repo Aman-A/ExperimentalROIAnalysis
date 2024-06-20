@@ -78,12 +78,12 @@ else
     end
     in.stim_pulse_dur2 = in.stim_pulse_dur2/sampling_rate; 
     % set t = 0 as first stim frame
-    if ~isempty(stim_frames) && numel(stim_frames) < 40
-%     if ~isempty(stim_frames) && ~strcmp(func_name,'deltaF_F0')
-        x = x - stim_frames(1); 
-        in.stim_frames2 = in.stim_frames2 - stim_frames(1);
-        stim_frames = stim_frames - stim_frames(1);         
-    end       
+%     if ~isempty(stim_frames) && numel(stim_frames) < 40
+% %     if ~isempty(stim_frames) && ~strcmp(func_name,'deltaF_F0')
+%         x = x - stim_frames(1); 
+%         in.stim_frames2 = in.stim_frames2 - stim_frames(1);
+%         stim_frames = stim_frames - stim_frames(1);         
+%     end       
     if regexp(func_name,'aligned','ONCE')
         x = x - x(baseline_wind+1); 
     end
