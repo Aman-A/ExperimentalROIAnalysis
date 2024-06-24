@@ -215,11 +215,12 @@ output.roi_func_mode = roi_func_mode;
 output.roi_inds = roi_inds; 
 output.funcs = funcs; 
 trec = exp_settings.getTimeVector(recording.imsize(3)); % time vector for full recording
-if length(exp_settings.stim_vals) > 1
-    output.trec = trec - trec(exp_settings.stim_vals(1)); % set t = 0 to first stim
-else
-    output.trec = trec; 
-end
+output.trec = trec;
+% if length(exp_settings.stim_vals) > 1
+%     output.trec = trec - trec(exp_settings.stim_vals(1)); % set t = 0 to first stim
+% else
+%     output.trec = trec; 
+% end
 output.baseline_wind_inds = baseline_wind_inds; 
 output.stim_frames = stim_frames; 
 %% Function for applying function to image data within ROI masks

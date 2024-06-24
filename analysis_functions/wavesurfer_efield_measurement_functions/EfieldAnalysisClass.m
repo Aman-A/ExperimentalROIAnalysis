@@ -7,8 +7,9 @@ classdef EfieldAnalysisClass < ws.UserClass
           % TimeAtStartOfLastRunAsString_ should only be accessed from 
           % the methods below, but making it protected is a pain.         
          amplifier_gain = 13; % gain on instrumentation amplifier
-         iel_mm = 4.7; % interelectrode length (recording elecrodes) in mm        
-         isolator_amps_per_V = 1; % mA out per V input for isolator in arbitrary analog isolation mode
+%          iel_mm = 0.61; % interelectrode length (recording elecrodes) in mm    
+        iel_mm = 4.2;  % interelectrode length (recording elecrodes) in mm    
+         isolator_mA_per_V = 1; % mA out per V input for isolator in arbitrary analog isolation mode
          ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
                              % value, e.g. 0.5 is last half of stimulus pulse, 0
                              % is full pulse duration
@@ -76,7 +77,7 @@ classdef EfieldAnalysisClass < ws.UserClass
                                                'Position',[xpos,100,100,22],...
                                                'ValueDisplayFormat','%.2f mm',...
                                                'Limits',[0,20],'LowerLimitInclusive','off',...
-                                               'Value',self.isolator_amps_per_V);            
+                                               'Value',self.isolator_mA_per_V);            
         end
         function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
             fprintf('%s  Saving to protocol file in %s.\n', ...
@@ -168,24 +169,39 @@ classdef EfieldAnalysisClass < ws.UserClass
             tic
             V = V0/self.amplifier_gain; % actual voltage            
             sweep_ind = wsModel.NSweepsCompletedInThisRun; 
-            stim_ind = wsModel.indexOfStimulusLibraryClassSelection('ws.Stimulus');           
+%             stim_ind = wsModel.indexOfStimulusLibraryClassSelection('ws.Stimulus');   
+            stim_inds = wsModel.stimulusLibrarySelectedOutputableProperty('IndexOfEachStimulusInLibrary'); 
+            chan_ind = strcmp(wsModel.stimulusLibrarySelectedOutputableProperty('ChannelName'),'AO0');
+            stim_ind = stim_inds{chan_ind};
+%             stim_ind =
+%             wsModel.selectedStimulusLibraryItemIndexWithinClass(); % bug
+%             -> can give selected stim in GUI, not stim used in sweep
             stim_type = wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'TypeString');
             % Common properties
             del = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Delay'));
             amp = eval(sprintf('arrayfun(@(i) %s,%g)',wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Amplitude'),sweep_ind));
-            amp_mA = amp*self.isolator_amps_per_V; % stimululs amp in mA
+            amp_mA = amp*self.isolator_mA_per_V; % stimululs amp in mA
             end_time = wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'EndTime');
             if strcmp(stim_type,'SquarePulse')
                 pulse_dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Duration'));
                 stim_vals = del; 
+                exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),min(del,pulse_dur/2),'sec',wsModel.AcquisitionSampleRate,...
+                                               'stim_pulse_dur',pulse_dur);
             elseif strcmp(stim_type,'SquarePulseTrain')
                 pulse_dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'PulseDuration'));
                 dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Duration'));
                 freq = 1/str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Period'));
                 stim_vals = defineStimTrain(del,freq,dur);
-            end                                             
-            exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),min(del,pulse_dur/2),'sec',wsModel.AcquisitionSampleRate,...
+                exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),min(del,pulse_dur/2),'sec',wsModel.AcquisitionSampleRate,...
                                                'stim_pulse_dur',pulse_dur);
+            elseif strcmp(stim_type,'Sine')
+                dur = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Duration'));
+                freq = str2double(wsModel.stimulusLibraryItemProperty('ws.Stimulus', stim_ind, 'Frequency'));
+                period = 1/freq; 
+                stim_vals = del;
+                exp_settings = ExperimentSettings(stim_vals,dur,min(del,period/2),'sec',wsModel.AcquisitionSampleRate,...
+                                               'stim_pulse_dur',period);
+            end                                                        
             exp_settings.convert2Frames(); 
             align_out = calcStimAlignedResponses(V,exp_settings.stim_vals,...
                                 exp_settings.baseline_wind,exp_settings.stim_wind);
@@ -193,13 +209,25 @@ classdef EfieldAnalysisClass < ws.UserClass
             bslines = align_out.baselines; 
 %             bslines = mean(V_aligned(1:exp_settings.baseline_wind,:,:),1,'omitnan');
             V_aligned_bs = squeeze(V_aligned - bslines); % baseline subtracted voltage traces  
-            ta = 0:(1/wsModel.AcquisitionSampleRate):((size(V_aligned,1)-1)/wsModel.AcquisitionSampleRate);
-            ta = ta-ta(exp_settings.baseline_wind+1);
-            meanV = mean(V_aligned_bs,2,'omitnan');
-            ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*self.ss_wind_frac) + 1):...
-                        (exp_settings.baseline_wind + exp_settings.stim_pulse_dur + 1);
-            ss_V = mean(meanV(ss_wind,:),1)';
-            ss_E = ss_V/(self.iel_mm*1e-3); % V/m steady state E-field
+            ta = (0:(1/wsModel.AcquisitionSampleRate):((size(V_aligned,1)-1)/wsModel.AcquisitionSampleRate))';
+            ta = ta-ta(exp_settings.baseline_wind+1);            
+            if strcmp(stim_type,'Sine')
+                % time synchronized average (Signal Processing Toolbox)
+                meanV = tsa(V_aligned_bs(exp_settings.baseline_wind+1:end),...
+                            exp_settings.sampling_rate,0:period:(dur-period));
+                V_aligned_bs = meanV; % for plotting output
+                ta = (0:1/(exp_settings.sampling_rate):(period-1/exp_settings.sampling_rate))';
+                ss_V = (max(meanV) - min(meanV))/2; % mean V amplitude
+                ss_E = ss_V/(self.iel_mm*1e-3); % V/m E amplitude
+            else    
+                meanV = mean(V_aligned_bs,2,'omitnan');
+%                 pfit = polyfit(ta(1:exp_settings.baseline_wind)',meanV(1:exp_settings.baseline_wind),1);
+%                 meanV = meanV - polyval(pfit,ta); % detrend
+                ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*self.ss_wind_frac) + 1):...
+                    (exp_settings.baseline_wind + exp_settings.stim_pulse_dur + 1);
+                ss_V = mean(meanV(ss_wind,:),1)';
+                ss_E = ss_V/(self.iel_mm*1e-3); % V/m steady state E-field
+            end                        
             time_elapsed = toc;
             fprintf('Sweep %g: |E| = %.3f V/m, %.3f V/m per mA (time elapsed = %.3f sec)\n',...
                 sweep_ind,ss_E,ss_E/amp_mA,time_elapsed);
