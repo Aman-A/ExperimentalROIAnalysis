@@ -16,7 +16,8 @@ in.filt_type = 'stop';
 in.ss_wind_frac = 0.5; % fraction of pulse to start calculation of steady state 
                        % value, e.g. 0.5 is last half of stimulus pulse, 0
                        % is full pulse duration
-in.chan_ind = 1;                       
+in.chan_ind = 1;      
+in.sweep_ind = 1;
 in = sl.in.processVarargin(in,varargin);
 
 [~,~,ext] = fileparts(rec_file);
@@ -26,6 +27,9 @@ end
 s = ws.loadDataFile(fullfile(in.rec_file_fold,rec_file)); 
 fs = s.header.AcquisitionSampleRate;
 [V0,t] = formatWaveSurferSweeps(s); 
+if size(V0,3) > 1
+    V0 = V0(:,:,in.sweep_ind);
+end
 V = V0/gain;
 
 if in.filt_order > 0  
@@ -68,7 +72,7 @@ else
 end
 % exp_settings.convert2Frames(); 
 %% analyze trace
-bsline = mean(V(exp_settings.baseline_wind_inds,:),1);
+bsline = mean(V(exp_settings.baseline_wind_inds,:,:),1);
 V_bs = V - bsline; % baseline subtracted voltage, full trace
 if stim_train    
     ss_wind = (exp_settings.baseline_wind + round(exp_settings.stim_pulse_dur*in.ss_wind_frac) + 1):...

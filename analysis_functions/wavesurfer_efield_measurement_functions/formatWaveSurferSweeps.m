@@ -11,7 +11,9 @@ function [data,t,timestamps] = formatWaveSurferSweeps(s)
         fprintf('Last sweep ended early, removing...\n')
         data(end) = []; 
     end
-    data = cell2mat(data); 
+    % if multi-trial and multichannel: ntime points x nchan x nsweeps
+    % otherwise: ntime points x nchan or ntime points x nsweeps
+    data = squeeze(cell2mat(reshape(data,1,1,length(data))));  
     fs = s.header.AcquisitionSampleRate;
     dt = 1/fs; 
     t = 0:dt:(size(data,1)-1)*dt;

@@ -101,7 +101,7 @@ if regexp(func_name,'aligned','ONCE')
                 y = squeeze(mean(y,3,'omitnan')); % mean across trains or stimuli
             end
         else
-            y = squeeze(mean(y,3:ndims(y),'omitnan')); 
+            y = squeeze(mean(y,3:max(3,ndims(y)),'omitnan')); 
         end
     else
         if strcmp(func_output.roi_func_mode,'combine')
