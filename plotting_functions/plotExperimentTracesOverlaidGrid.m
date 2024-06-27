@@ -77,7 +77,7 @@ else
     stim_wind_inds = exp_settings.stim_vals(1):size(meanF{1},1);
 end
 if in.norm_peak_ind > 0   
-    meanF = cellfun(@(x) x./max(meanF{1}(stim_wind_inds,:),[],1),meanF,'UniformOutput',0); 
+    meanF = cellfun(@(x) x./max(meanF{in.norm_peak_ind}(stim_wind_inds,:),[],1),meanF,'UniformOutput',0); 
     fprintf('Normalized all responses to peak of %s\n',...
             experiment_output.conditions{in.norm_peak_ind});
     in.fig_name = [in.fig_name '_norm' num2str(in.norm_peak_ind)]; 

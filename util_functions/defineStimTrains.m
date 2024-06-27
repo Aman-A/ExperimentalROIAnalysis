@@ -30,9 +30,9 @@ if nargin < 4
     num_trains = 1;
 end
 stim_times = delay:(1/freq):train_dur;
-if stim_times(1) == 0
-   stim_times(1) = [];  
-end
+% if stim_times(1) == 0
+%    stim_times(1) = [];  
+% end
 if stim_times(end) == train_dur
    stim_times(end) = []; % remove last stimulus if falls on final time step 
 end
