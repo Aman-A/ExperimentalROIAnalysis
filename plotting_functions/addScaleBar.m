@@ -51,10 +51,10 @@ if strcmp(in.sbar_orientation,'horz')
     text_x = in.x_factor*imsize(2) + sbar_pixel_len/2;
     text_y = text_y_factor*y_factor*imsize(1);
 elseif strcmp(in.sbar_orientation,'vert')
-    plot(ax,[in.x_factor*imsize(2),in.x_factor*imsize(2)],...
+    plot(ax,in.x_factor*[imsize(2),imsize(2)],...
             [y_factor*imsize(1),y_factor*imsize(1)-sbar_pixel_len],...
             'Color',in.color,'LineWidth',in.sbar_lw);
-    text_y = in.y_factor*imsize(1) - text_y_factor*sbar_pixel_len; 
+    text_y = in.y_factor*imsize(1) - text_y_factor*sbar_pixel_len;     
     text_x = in.text_x_factor*in.x_factor*imsize(2); 
 end
 if in.show_text

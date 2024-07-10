@@ -1,19 +1,20 @@
 %% Script to plot single trial
 % Overlay single trails on same figure by running with different img_name
 data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
-exp_date = '240619';
+exp_date = '240710';
 reporter = 'GluSnFR3_SynmRuby';
-dish = 'dish4';
+dish = 'dish1';
 div = 15; 
 
-% roiset_filename = 'RoiSet_auto_pos1.mat';
-roiset_filename = 'RoiSet_pc_pos1.zip';
+supra_amp = 3; 
+% roiset_filename = 'RoiSet_auto_pos0.mat';
+roiset_filename = 'RoiSet_pc_pos0.zip';
 
 num_stim = 20; 
 num_trains = 2; 
-del = 0; % sec 
+del = 0.5; % sec 
 freq = 2; % Hz
-dur = (1+num_stim)/freq; 
+dur = (num_stim)/freq; 
 stim_vals = defineStimTrains(del,freq,dur,num_trains,num_stim/freq); % frames - 3 sec delay (100 Hz sampling time)
 stim_wind = 0.4; % window
 baseline_wind = 0.15; % frames before stim/s to take baseline
@@ -42,27 +43,18 @@ ps.filt_width = 0;
 ps.funcs = {'mean','baseline','deltaF_F0'};
 ps.roi_func_mode = 'separate'; % combine or separate
 ps.save_processed_data = 1;
-ps.load_processed_data = 1; 
+ps.load_processed_data = 0; 
 ps.save_fig = 2;
-ps.plot_func = 'deltaF_F0'; % 'deltaF_F0' 'deltaF_F0_aligned'
-% ps.plot_func = 'deltaF_F0_aligned2'; % 'deltaF_F0' 'deltaF_F0_aligned'
-% if strcmp(ps.roi_func_mode,'combine')
-%     ps.y_lim = [];
-% else
-%     ps.y_lim = [];
-% end
+ps.plot_func = 'deltaF_F0'; % 'deltaF_F0' 'deltaF_F0_aligned2'
 if regexp(ps.plot_func,'aligned')
-%     ps.x_lim = [-baseline_wind, 1.4];
-    ps.x_lim = [-baseline_wind, 0.95];
+    ps.x_lim = [-baseline_wind, baseline_wind+stim_wind*num_trains];
 else
     ps.x_lim = [0.1 stim_vals(end) + stim_wind];
 end
 ps.recenterROIs = 0;
 ps.transform_type = 'none'; % 'none' or 'displace'         
-% ps.registration_rec = fullfile(data_fold,exp_date,reporter,dish,'6mAB_50VpmG_10s',...
-%                                '6mAB_50VpmG_10s.fits'); 
-ps.registration_rec = fullfile(data_fold,exp_date,reporter,dish,'3mABi_-50VpmG_10s',...
-                               '3mABi_-50VpmG_10s.fits'); 
+ps.registration_rec = fullfile(data_fold,exp_date,reporter,dish,...
+    sprintf('%gmABi_50VpmG_10s/%gmABi_50VpmG_10s.fits',supra_amp,supra_amp)); 
 ps.show_roi_labels = 1; 
 ps.close_img_after_save = 0;   
 ps.roi_func_fig_size = [19.8 22]; 
@@ -73,12 +65,13 @@ ps.motion_correct = 0;
 ps.rem_pbleach = 0; 
 ps.roi_func_sbar_len = 0.5;
 ps.analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
-ps.spike_window = 0.05;
+ps.spike_window = 0.08;
 ps.blank_frame_inds = 1;
 %%
-pulse_ind = 5; 
-ps.condition = sprintf('3mABi_-50VpmG_%gs',stim_pulse_durs2_all(pulse_ind));
-% ps.condition = sprintf('7mABi_-1mAG_%gs',stim_pulse_durs2_all(pulse_ind));
+supra_amp = 3; 
+pulse_ind = 1; 
+ps.condition = sprintf('%gmABi_50VpmG_%gs',...
+            supra_amp,stim_pulse_durs2_all(pulse_ind));
 img_name = [ps.condition '.fits'];
 trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.4]; 
 trace_axis = gca;
@@ -100,12 +93,12 @@ roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                          ps.transform_type,...
                                             ps.registration_rec);  
 
-pws = [stim_pulse_durs2_all(1),stim_pulse_durs2_all];
-amps = [50,-50*ones(1,length(unique(pws)))];
-conditions = arrayfun(@(x,y) sprintf('3mABi_%gVpmG_%gs',x,y),amps,pws,'UniformOutput',0);
+data_suffix = 'train';
+pws = [stim_pulse_durs2_all];
+amps = [50*ones(1,length(unique(pws)))];
+conditions = arrayfun(@(x,y) sprintf('%gmABi_%gVpmG_%gs',supra_amp,x,y),amps,pws,'UniformOutput',0);
 
 if regexp(ps.plot_func,'aligned')
-%     ps.x_lim = [-baseline_wind, 0.9];
     ps.x_lim = [-baseline_wind, 1.4];    
     ps.y_lim = []; 
 else
@@ -113,28 +106,27 @@ else
     ps.y_lim = [];
 end
 
-summary_fig_dir = fullfile(data_fold,exp_date,reporter,dish,...
-                            ['figs_',roiset_filename_no_ext]);
-summary_datafile = sprintf('%s_%s_%s_%s_%s_train',exp_date,reporter,dish,ps.roi_func_mode,...
-                                    roiset_filename_no_ext);
+summary_fig_fold = fullfile(data_fold,exp_date,reporter,dish,...
+                            ['figs_',roiset_filename_no_ext '_' data_suffix]);
+summary_datafile = sprintf('%s_%s_%s_%s_%s_%s',exp_date,reporter,dish,ps.roi_func_mode,...
+                                    roiset_filename_no_ext,data_suffix);
 % set(0,'DefaultFigureVisible','off') % to avoid window taking screen focus
-out = plotTrials_multipleConditions(conditions,ps,[exp_settings(1),exp_settings],...
+out = plotTrials_multipleConditions(conditions,ps,[exp_settings],...
                                     roiset_filename,...                               
-                                   'summary_fig_dir',summary_fig_dir,...
+                                   'summary_fig_dir',summary_fig_fold,...
                                    'summary_datafile',summary_datafile,...
                                    'plot_overlaid',0);
 % set(0,'DefaultFigureVisible','on') % to avoid window taking screen focus
 %%
 cond_inds = []; 
-% pws = [stim_pulse_durs2_all,fliplr(stim_pulse_durs2_all)];
-pws = [stim_pulse_durs2_all(1),stim_pulse_durs2_all];
-amps = [50,-50*ones(1,length(unique(pws)))];
+pws = [stim_pulse_durs2_all];
+amps = [50*ones(1,length(unique(pws)))];
 cond_names = arrayfun(@(x,y) sprintf('%gmA_%gs',x,y),amps,pws,'UniformOutput',0);
-sort_amp_ind = 2;
+sort_amp_ind = 1;
 save_figs = 1;
-norm_to_cont = 1;
-plot_roi_ind = 7; 
-plot_figs = [1]; % Select analysis figures to plot
+norm_to_cont = 0;
+plot_roi_ind = 1; 
+plot_figs = [1,2,5:7]; % Select analysis figures to plot
                       % 1 - Plot mean trace averaged across ROIs
                       % 2 - Plot mean traces averaged within ROIs
                       % 3 - Plot responses within specific ROI in single figure                      
@@ -149,16 +141,14 @@ plot_figs = [1]; % Select analysis figures to plot
 roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                          ps.transform_type,...
                                             ps.registration_rec);                        
-data_file_suffix = 'train';
-analysis_fig_fold = ['figs_' roiset_filename_no_ext];
 
 if exist('out','var')
     analyze_DCmod_GluSnFR3_experiment2(out,...
                         cond_inds,cond_names,sort_amp_ind,save_figs,...
                         'plot_figs',plot_figs,'plot_roi_ind',plot_roi_ind,...
-                        'norm_to_cont',norm_to_cont,'data_file_suffix',data_file_suffix,...
+                        'norm_to_cont',norm_to_cont,'data_file_suffix',data_suffix,...
                         'data_fold',data_fold,'analysis_fig_fold',...
-                        analysis_fig_fold);
+                        summary_fig_fold);
 else
     data_params.exp_date = exp_date;
     data_params.reporter = reporter;
@@ -167,7 +157,90 @@ else
     analyze_DCmod_GluSnFR3_experiment2(data_params,...
                         cond_inds,cond_names,sort_amp_ind,save_figs,...
                         'plot_figs',plot_figs,'plot_roi_ind',plot_roi_ind,...
-                        'norm_to_cont',norm_to_cont,'data_file_suffix',data_file_suffix,...
+                        'norm_to_cont',norm_to_cont,'data_file_suffix',data_suffix,...
                         'data_fold',data_fold,'analysis_fig_fold',...
-                        analysis_fig_fold);
+                        summary_fig_fold);
 end
+%%
+pw_labels = [sprintf('%g s',pws(1)),numericVec2chars(pws(2:end)*1e3,'%g ms')];
+% mean across APs within train and trials
+mean_dF_rois = cellfun(@(x) mean(x,[4 5]),out.deltaF_F0_aligned2_all,'UniformOutput',0); % mean within ROis
+
+mean_dF = cellfun(@(x) squeeze(mean(x,2)),mean_dF_rois,'UniformOutput',0); % mean across ROIs
+peaks_mean_all = cell2mat(cellfun(@(x) max(x,[],1),mean_dF,'UniformOutput',0)');
+peak_change_all = 100*(peaks_mean_all(:,2:end) - peaks_mean_all(:,1))./peaks_mean_all(:,1);
+
+% Plot - averaged across ROIs before extracting peaks
+fig = figure; 
+b = bar(peak_change_all,'FaceColor',0.8*[1 1 1],'EdgeColor','k');
+box off; 
+ax = gca;
+ax.XTick = 1:length(pw_labels);
+ax.XTickLabel = pw_labels;
+ax.YLabel.String = 'Peak change (%)';
+ylim([0 55]);
+ax.YGrid = 'on';
+if save_figs
+    printFig(fig,summary_fig_fold,'mean_peak_change')
+end
+%% Plot - average within ROIs
+peaks_rois = cellfun(@(x) squeeze(max(x,[],1)),mean_dF_rois,'UniformOutput',0);
+peaks_rois_per_change = cell2mat(cellfun(@(x) 100*(x(:,2:end)-x(:,1))./x(:,1),peaks_rois,'UniformOutput',0));
+mean_peaks_rois_per_change = mean(peaks_rois_per_change,1);
+std_peaks_rois_per_change = std(peaks_rois_per_change,0,1);
+sem_peaks_rois_per_change = std_peaks_rois_per_change/sqrt(out.rois_all{1}{1}.num_rois);
+
+% Plot - averaged across ROIs before extracting peaks
+fig = figure; 
+b = bar(mean_peaks_rois_per_change,'FaceColor',0.8*[1 1 1],'EdgeColor','k',...
+        'FaceAlpha',1);
+hold on;
+errorbar(mean_peaks_rois_per_change,sem_peaks_rois_per_change,'ko')
+box off; 
+ax = gca;
+ax.XTick = 1:length(pw_labels);
+ax.XTickLabel = pw_labels;
+ax.YLabel.String = 'Peak change (%)';
+ylim([0 55]);
+ax.YGrid = 'on';
+if save_figs
+    printFig(fig,summary_fig_fold,'peak_change_mean_sem_rois')
+end
+%% Plot peaks averaged across ROIs over time
+% mean across ROIs and trials
+% num_frames x num_trains x num_stim
+mean_dF_rois_train = cellfun(@(x) squeeze(mean(x,[2 5])),out.deltaF_F0_aligned2_all,...
+                                'UniformOutput',0); 
+peaks_rois_train = cellfun(@(x) squeeze(max(x,[],1)),mean_dF_rois_train,...
+                            'UniformOutput',0);
+peaks_rois_train_nmean = cellfun(@(x) x/mean(x(1,:)),peaks_rois_train,...
+                            'UniformOutput',0);
+plot_peaks_str = 'norm_mean'; % 'abs' or 'norm_mean'
+
+if strcmp(plot_peaks_str,'norm_mean')
+    plot_peaks = peaks_rois_train_nmean;
+    ylabel_str = 'Peak GluSnFR3 \Delta F/F_{0} (norm. mean before)';
+    mean_ys = ones(1,length(pws));
+else
+    plot_peaks = peaks_rois_train;
+    ylabel_str = 'Peak GluSnFR3 \Delta F/F_{0} (%)';
+    mean_ys = cellfun(@(x) mean(x(1,:)),peaks_rois_train,'UniformOutput',1);
+end
+fig = figure('Units','inches'); 
+fig.Position(3:4) = [7.7 8.2];
+for i = 1:length(pws)    
+    subplot(length(pws),1,i);
+    plot(1:exp_settings(1).num_stim,plot_peaks{i}(1,:),'-ko'); % before
+    hold on;
+    plot(exp_settings(1).num_stim + 1:2*exp_settings(1).num_stim,...
+            plot_peaks{i}(2,:),'-ro'); % during
+    plot([1 exp_settings(1).num_stim*2],mean_ys(i)*[1 1],'--',...
+        'Color',0.4*[1 1 1])
+    if i == round(length(pws)/2)
+        ylabel(ylabel_str);
+    end
+    box off;
+    ylim([0.5 1.7]);
+    title(pw_labels{i});
+end
+xlabel('AP (#)')

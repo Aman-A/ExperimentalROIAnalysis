@@ -262,23 +262,32 @@ out.peaks_before_mat = cell2mat(reshape(peaks_before,1,1,length(peaks_before)));
 out.peaks_during_mat = cell2mat(reshape(peaks_during,1,1,length(peaks_during)));
 out.mean_peaks_before = squeeze(mean(out.peaks_before_mat,2,'omitnan'));
 out.mean_peaks_during = squeeze(mean(out.peaks_during_mat,2,'omitnan'));
-out.peak_mod_during = out.mean_peaks_during./out.mean_peaks_before; 
-out.peak_mod_during_per = 100*(out.peak_mod_during - 1); % percent change
-out.peak_mod_during_diff = out.mean_peaks_during - out.mean_peaks_before; % difference
+out.peak_mod_during = out.mean_peaks_during./out.mean_peaks_before; % ratio (during/before)
+out.peak_mod_during_diff = out.mean_peaks_during - out.mean_peaks_before; % difference (during - before)
+out.peak_mod_during_per = 100*out.peak_mod_during_diff./out.mean_peaks_before; % percent change 100*(during-before)/before
 
 
 % average within cell
 mean_peaks_before_cell = zeros(num_dishes,length(plot_vars));
 mean_peaks_during_cell = zeros(num_dishes,length(plot_vars));
+% peak modulation calculated WITHIN ROI, then averaged within cell 
+out.peak_mod_during_cell_wroi = zeros(num_dishes,length(plot_vars)); 
+out.peak_mod_during_cell_wroi_diff = zeros(num_dishes,length(plot_vars));
+out.peak_mod_during_cell_wroi_per = zeros(num_dishes,length(plot_vars));
 for i = 1:num_dishes
     mean_peaks_before_cell(i,:) = squeeze(mean(out.peaks_before_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));
     mean_peaks_during_cell(i,:) = squeeze(mean(out.peaks_during_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));       
+    out.peak_mod_during_cell_wroi(i,:) = mean(out.peak_mod_during(dish_inds{1}==i,:),1,'omitnan');
+    out.peak_mod_during_cell_wroi_diff(i,:) = mean(out.peak_mod_during_diff(dish_inds{1}==i,:),1,'omitnan');    
+    out.peak_mod_during_cell_wroi_per(i,:) = mean(out.peak_mod_during_per(dish_inds{1}==i,:),1,'omitnan');    
 end
 out.mean_peaks_before_cell = mean_peaks_before_cell;
 out.mean_peaks_during_cell = mean_peaks_during_cell;
-out.peak_mod_during_cell = out.mean_peaks_during_cell./out.mean_peaks_before_cell; 
-out.peak_mod_during_cell_diff = out.mean_peaks_during_cell - out.mean_peaks_before_cell; 
-out.peak_mod_during_cell_per = 100*(out.peak_mod_during_cell - 1); % percent change
+out.peak_mod_during_cell = out.mean_peaks_during_cell./out.mean_peaks_before_cell; % ratio (during/before)
+out.peak_mod_during_cell_diff = out.mean_peaks_during_cell - out.mean_peaks_before_cell; % difference (during - before)
+out.peak_mod_during_cell_per = 100*out.peak_mod_during_cell_diff./out.mean_peaks_before_cell; % percent change 100*(during-before)/before
+
+
 
 out.success_before = success_before;
 out.success_during = success_during;

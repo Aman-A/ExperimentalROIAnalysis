@@ -176,17 +176,21 @@ function plot_img(vals,title_str,cmap,cb_settings,title_settings,cax_mode,...
                   cax_lims,pixel_size)
     imagesc(vals)
     ax = gca; 
-    axis(ax,'equal','off'); hold(ax,'on');        
-    colorbar(ax, cb_settings{:});
+    axis(ax,'equal','off','tight'); hold(ax,'on');  
+    if ~isempty(cb_settings)
+        colorbar(ax, cb_settings{:});
+    end
     axis(ax,[0 size(vals,2) 0 size(vals,1)]);
     if ~isempty(title_str)
         title(ax,title_str,title_settings{:}); 
     end
-    if strcmp(cax_mode,'quantile')
-        caxis(ax,quantile(vals(:),cax_lims))
-    elseif strcmp(cax_mode,'abs')
-        caxis(ax,cax_lims); 
-    end % if cax_mode 'auto', leave as is
+    if ~isempty(cax_lims)
+        if strcmp(cax_mode,'quantile')
+            caxis(ax,quantile(vals(:),cax_lims))
+        elseif strcmp(cax_mode,'abs')
+            caxis(ax,cax_lims); 
+        end % if cax_mode 'auto', leave as is
+    end
     colormap(ax,cmap); 
     ax.YDir = 'normal';
     if ~isempty(pixel_size)

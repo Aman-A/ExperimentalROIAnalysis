@@ -198,6 +198,9 @@ else
     end
     if ~isempty(in.roi_colors)
         if ~iscell(in.roi_colors) % num_rois x 3 RGB triplets
+            if size(in.roi_colors,1) == 1 % all single color
+                in.roi_colors = repmat(in.roi_colors,num_rois,1);
+            end
             in.roi_colors = mat2cell(in.roi_colors,ones(size(in.roi_colors,1),1),3);            
         end
         set(lns,{'Color'},in.roi_colors)

@@ -245,7 +245,12 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             if ~obj.loaded
                 obj.load(); 
             end
-            imagesc(obj.vals(:,:,frame)); 
+            if isempty(frame)
+                % Plot mean
+                imagesc(mean(obj.vals,3)); 
+            else
+                imagesc(obj.vals(:,:,frame)); 
+            end           
             colorbar; 
             axis equal; axis tight; axis off; 
             set(gca,'YDir','normal')
