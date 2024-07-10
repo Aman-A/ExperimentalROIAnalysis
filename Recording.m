@@ -214,11 +214,13 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         end
         function info = getTiffInfo(obj)
             info = imfinfo(obj.filepath);
-            img_desc = info.ImageDescription; 
-            [~,exp_ind] = regexp(img_desc,'Exposure1 = ','ONCE');
-            s_ind = regexp(img_desc(exp_ind:end),'s');
-            if ~isempty(exp_ind) % get exposure time for HCImage multi-page tiff 
-                obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
+            if isfield(info,'ImageDescription')
+                img_desc = info.ImageDescription; 
+                [~,exp_ind] = regexp(img_desc,'Exposure1 = ','ONCE');
+                s_ind = regexp(img_desc(exp_ind:end),'s');
+                if ~isempty(exp_ind) % get exposure time for HCImage multi-page tiff 
+                    obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
+                end
             end
             obj.imsize = [info(1).Height,info(1).Width,length(info)];
             if isfield(info(1),'XResolution') 
