@@ -209,7 +209,7 @@ end
 %% Plot peaks averaged across ROIs over time
 % mean across ROIs and trials
 % num_frames x num_trains x num_stim
-mean_dF_rois_train = cellfun(@(x) squeeze(mean(x,[2 5])),out.deltaF_F0_aligned2_all,...
+mean_dF_rois_train = cellfun(@(x) squeeze(mean(x(:,:,:,:,2),[2 5])),out.deltaF_F0_aligned2_all,...
                                 'UniformOutput',0); 
 peaks_rois_train = cellfun(@(x) squeeze(max(x,[],1)),mean_dF_rois_train,...
                             'UniformOutput',0);
@@ -219,28 +219,46 @@ plot_peaks_str = 'norm_mean'; % 'abs' or 'norm_mean'
 
 if strcmp(plot_peaks_str,'norm_mean')
     plot_peaks = peaks_rois_train_nmean;
-    ylabel_str = 'Peak GluSnFR3 \Delta F/F_{0} (norm. mean before)';
-    mean_ys = ones(1,length(pws));
+    ylabel_str = {'Peak GluSnFR3 \Delta F/F_{0}','(norm. mean before)'};
+    mean_ys_before = ones(1,length(pws));    
+    fig_name = 'peak_vs_time_norm_mean_before';
+    yax_lims = [0.5 1.7];
 else
-    plot_peaks = peaks_rois_train;
+    plot_peaks = cellfun(@(x) x*100,peaks_rois_train,'UniformOutput',0);
     ylabel_str = 'Peak GluSnFR3 \Delta F/F_{0} (%)';
-    mean_ys = cellfun(@(x) mean(x(1,:)),peaks_rois_train,'UniformOutput',1);
+    mean_ys_before = cellfun(@(x) 100*mean(x(1,:)),peaks_rois_train,'UniformOutput',1);
+    fig_name = 'peak_vs_time_abs';
+    yax_lims = [0 12];
+    % yax_lims = [];
 end
+mean_ys_during = cellfun(@(x) mean(x(2,:)),plot_peaks,'UniformOutput',1);
+
 fig = figure('Units','inches'); 
-fig.Position(3:4) = [7.7 8.2];
+% fig.Position(3:4) = [7.7 8.2]; % 5 x 1 fig
+fig.Position(3:4) = [18 4]; % 1 x 5 fig
 for i = 1:length(pws)    
-    subplot(length(pws),1,i);
+    subplot(1,length(pws),i);
     plot(1:exp_settings(1).num_stim,plot_peaks{i}(1,:),'-ko'); % before
     hold on;
     plot(exp_settings(1).num_stim + 1:2*exp_settings(1).num_stim,...
             plot_peaks{i}(2,:),'-ro'); % during
-    plot([1 exp_settings(1).num_stim*2],mean_ys(i)*[1 1],'--',...
+    plot([1 exp_settings(1).num_stim],mean_ys_before(i)*[1 1],'--',...
         'Color',0.4*[1 1 1])
-    if i == round(length(pws)/2)
+    plot([1+exp_settings(1).num_stim,2*exp_settings(1).num_stim],...
+        mean_ys_during(i)*[1 1],'--','Color',[1 0 0])
+    if i == 1
         ylabel(ylabel_str);
     end
     box off;
-    ylim([0.5 1.7]);
+    if ~isempty(yax_lims)
+        ylim(yax_lims);
+    end
     title(pw_labels{i});
+    xlabel('AP (#)')
 end
-xlabel('AP (#)')
+if isempty(yax_lims)
+    setAxesUniformLim(fig,'YLim');
+end
+if save_figs
+    printFig(fig,summary_fig_fold,fig_name)
+end
