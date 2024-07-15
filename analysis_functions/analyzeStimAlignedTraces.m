@@ -29,7 +29,7 @@ function output = analyzeStimAlignedTraces(traces,exp_settings,varargin)
 % always time. Could use recursive loop like matlab answer here: 
 % https://stackoverflow.com/questions/14040260/how-to-iterate-over-n-dimensions
 % AUTHOR    : Aman Aberra 
-in.funcs = {'peaks','peak_times','poststim_ints','decay_fit','fwhm','mean_fwhm'};
+in.funcs = {'peaks','peak_times','poststim_ints','successful_spikes','decay_fit','fwhm','mean_fwhm'};
 in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.02; % sec - peak must be within this time of stim to be considered spike
@@ -139,8 +139,28 @@ if any(strcmp(in.funcs,'poststim_ints'))
     poststim_ints = (1/sampling_rate)*trapz(traces(stim_frame:end,:,:,:,:),1);    
     output.poststim_ints = squeeze(poststim_ints); 
 end
+%% Detect spikes alone or for fitting response decay
+if (any(strcmp(in.funcs,'successful_spikes')) || any(strcmp(in.funcs,'decay_fit'))) && in.spike_thresh > 0
+    % Note: assumes 'peaks' computed
+    successful_spikes = false(trace_dims(2:end));      
+    n_traces = prod(trace_dims(2:end));    
+    [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
+    spike_thresh = in.spike_thresh;         
+    parfor n = 1:n_traces
+        trace_w_bsline = traces(:,n); % include bsline for spike detection
+        successful_spike = spikePresentInWindow(trace_w_bsline,baseline_wind,...
+                                         spike_thresh,spike_window,peaks(n)); % uses peaks computed within spike_window
+        successful_spikes(n) = successful_spike;
+    end
+    output.successful_spikes = successful_spikes;
+    output.spike_thresh = in.spike_thresh;  
+    output.spike_window = spike_window;
+    Pr = sum(successful_spikes,2)./size(successful_spikes,2);    
+    fprintf('Mean Pr = %.3f +/- %.3f (WARNING: may be inaccurate)\n',mean(Pr,[1 3]),std(Pr,0,[1 3]));
+end
 %% Fit post-stim decay to mono or bi-exponential function
 if any(strcmp(in.funcs,'decay_fit'))
+    % Note: assumes 'peaks' computed
     t = exp_settings.getTimeVector(size(traces,1));           
     % Recover time constants from transient                  
     taud1 = zeros(trace_dims(2:end)); % sec - fast time constant
@@ -150,10 +170,10 @@ if any(strcmp(in.funcs,'decay_fit'))
     rsquare = zeros(trace_dims(2:end)); % amplitude (a.u./%)
     fitobjs = cell(trace_dims(2:end)); 
     gofs = cell(trace_dims(2:end)); 
-    successful_spikes = false(trace_dims(2:end));      
+    % successful_spikes = false(trace_dims(2:end));      
     n_traces = prod(trace_dims(2:end));    
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
-    spike_thresh = in.spike_thresh;         
+    % spike_thresh = in.spike_thresh;         
     decay_fit_order = in.decay_fit_order;
     if length(exp_settings.stim_vals) > 1
         ISI = exp_settings.convert2Time(max(diff(exp_settings.stim_vals(:)))); % max inter-spike interval in sec
@@ -184,9 +204,10 @@ if any(strcmp(in.funcs,'decay_fit'))
         trace_fit = trace_w_bsline(pk_inds(n):end);        
 %         successful_spike = spikePresent(trace_w_bsline,baseline_wind,...
 %                                          spike_thresh,peaks(n)); 
-        successful_spike = spikePresentInWindow(trace_w_bsline,baseline_wind,...
-                                         spike_thresh,spike_window,peaks(n)); % uses peaks computed within spike_window
-        successful_spikes(n) = successful_spike;
+        % successful_spike = spikePresentInWindow(trace_w_bsline,baseline_wind,...
+        %                                  spike_thresh,spike_window,peaks(n)); % uses peaks computed within spike_window
+        % successful_spikes(n) = successful_spike;
+        successful_spike = successful_spikes(n);
         % only include trial if more than 4 frames and includes spike
         include_trial = length(t_fit) > 4 && successful_spike; 
         if include_trial
@@ -244,12 +265,7 @@ if any(strcmp(in.funcs,'decay_fit'))
     decay_fit.fitobjs = fitobjs;
     decay_fit.gofs = gofs;
     % add to output
-    output.decay_fit = decay_fit;
-    output.successful_spikes = successful_spikes;
-    output.spike_thresh = in.spike_thresh;  
-    output.spike_window = spike_window;
-    Pr = sum(successful_spikes,2)./size(successful_spikes,2);    
-    fprintf('Mean Pr = %.3f +/- %.3f (WARNING: may be inaccurate)\n',mean(Pr,[1 3]),std(Pr,0,[1 3]));
+    output.decay_fit = decay_fit;    
 end
 %% FWHM of individual responses
 if any(strcmp(in.funcs,'fwhm')) % full width half max of all traces   

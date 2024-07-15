@@ -15,6 +15,10 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                                        % each stimulus                                        
         baseline_start_frame = 1; % start baseline from 1 frame before 
                                   % stimulus frames     
+        stim_amps {mustBeNumeric} % N stimuli x M trains array of stimulus amplitudes 
+                                  % single train is 1 x N vector, stays in
+                                  % same units as input
+        E_per_mA {mustBeNumeric} % E-field amplitude scaling in V/m per mA
         % Stimulation with second source
         stim_vals2 {mustBeNumeric} % N stimuli x M trains array of stimulus times 
                                   % single train is 1 x N vector, stays in
@@ -47,7 +51,9 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
     methods
         function obj = ExperimentSettings(stim_vals,stim_wind,baseline_wind,units,...
                                 sampling_rate,varargin)
-%             in.print_level = 0;        
+%             in.print_level = 0;    
+              in.stim_amps = [];
+              in.E_per_mA = []; 
               in.stim_pulse_dur = [];
               in.stim_vals2 = [];
               in.stim_pulse_dur2 = []; 
@@ -64,6 +70,19 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                 obj.stim_pulse_dur2 = in.stim_pulse_dur2; 
                 obj.stim_vals2 = in.stim_vals2;
                 obj.convert2Frames()
+                if ~isempty(in.stim_amps)
+                    if length(in.stim_amps) == 1 % single amp for all stimuli
+                        obj.stim_amps = in.stim_amps*ones(size(obj.stim_vals));
+                    elseif length(in.stim_amps) == size(obj.stim_vals,1) % separate amps for each train
+                        if isrow(in.stim_amps) % make column vector
+                            in.stim_amps = in.stim_amps'; 
+                        end 
+                        obj.stim_amps = in.stim_amps.*ones(size(obj.stim_vals)); 
+                    else
+                        obj.stim_amps = in.stim_amps;
+                    end
+                    obj.E_per_mA = in.E_per_mA; 
+                end
             end                    
         end
         function varargout = convert2Frames(obj,varargin)     

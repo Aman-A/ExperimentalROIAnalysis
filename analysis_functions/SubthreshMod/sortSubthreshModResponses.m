@@ -63,6 +63,7 @@ num_vars = length(plot_vars);
 sort_inds = fliplr(1:num_vars);
 dc_inds = [1,length(plot_vars)];
 flipped_amp_rois = false(num_rois_total,1);
+% Sort within ROI
 for i = 1:num_rois_total
     % [b,~,~,~,stats] = regress(peak_mod_during_per(i,:)',[plot_amps',ones(length(plot_amps),1)]);
     % Rsqi = stats(1); pi = stats(3);
@@ -140,6 +141,7 @@ for i = 1:num_rois_total
         flipped_amp_rois(i) = true;
     end
 end
+% Sort within cell (average across ROIs within cell)
 num_dishes = length(out.num_rois);
 flipped_amp_cells = false(num_dishes,1);
 for i = 1:num_dishes    
