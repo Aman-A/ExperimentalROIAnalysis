@@ -80,7 +80,7 @@ for i = 1:num_conditions
     roiset_filename = roiset_filenames{i};
     plot_settings.condition = conditions{i};    
     % trial data for ith condition
-    tdi = plotTrials(in.img_names{i},exp_settingsi(i),roiset_filename,plot_settings);    
+    tdi = plotTrials(in.img_names{i},exp_settingsi,roiset_filename,plot_settings);    
     if isempty(tdi); continue; end
     out.means_all{i} = tdi.means;    
     out.deltaF_F0_all{i} = tdi.deltaF_F0;    

@@ -59,6 +59,7 @@ out.thresh = thresh;
 out.thresh_prob = in.thresh_prob; 
 out.xfit = xfit; 
 out.yfit = yfit; 
+out.E_per_mA = in.E_per_mA; 
 if in.print_level > 0
     fprintf('Threshold (p>%g) = %.2f %s',in.thresh_prob,thresh,units)
     if strcmp(units,'V/m')

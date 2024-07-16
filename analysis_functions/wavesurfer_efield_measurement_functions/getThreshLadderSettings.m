@@ -6,5 +6,5 @@ function amps = getThreshLadderSettings(expected_thresh,per_step_size,num_steps)
 step_size = expected_thresh*per_step_size/100; 
 start_amp = expected_thresh-step_size*num_steps/2;
 amps = start_amp:step_size:(start_amp + step_size*(num_steps-1));
-fprintf('Start amp = %.3f, step size = %.3f, num_steps = %.3f, end amp = %.3f\n',...
+fprintf('Start amp = %.4f, step size = %.4f, num_steps = %g, end amp = %.4f\n',...
     start_amp,step_size,num_steps,amps(end))

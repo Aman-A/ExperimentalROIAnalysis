@@ -17,8 +17,8 @@ E_per_mA = 68.524; % V/m per mA
 isolator_mA_per_V = 10; 
 
 trial_ind = 1; 
-E_recs_fold = sprintf('E_recs_%gms_after',pulse_dur_ms);
-ps.condition = sprintf('thresh_%gms_after',pulse_dur_ms); % 
+ps.condition = sprintf('thresh_%gms',pulse_dur_ms); % 
+E_recs_fold = ps.condition; 
 
 stim_file = sprintf('%s/E_trial_%04d.h5',E_recs_fold,trial_ind);
 img_name = reindexFileNameForAndor('trial',trial_ind);
@@ -37,7 +37,7 @@ exp_settings = WaveSurferStim2ExpSettings(stim_file,sampling_rate,...
                                            stim_wind,baseline_wind,'E_per_mA',...
                                            E_per_mA,'isolator_mA_per_V',isolator_mA_per_V);
 if length(exp_settings) > 1
-    exp_settings = exp_settings(trial_ind)
+    exp_settings = exp_settings(trial_ind);
 end
 % Plot settings
 ps.data_fold = data_fold;
