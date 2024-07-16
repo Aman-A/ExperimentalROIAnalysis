@@ -50,7 +50,11 @@ else
     meanF = cellfun(@(x) squeeze(mean(x,[2 4 5])),F,'UniformOutput',0); % mean across trials within condition/ROI
 end  
 meanF = cellfun(@(x) x*in.indicator_dir,meanF,'UniformOutput',0); % flip if negative going
-exp_settings = experiment_output.exp_settings(1);
+if iscell(experiment_output.exp_settings(1))
+    exp_settings = experiment_output.exp_settings{1}(1);
+else
+    exp_settings = experiment_output.exp_settings(1);
+end
 %% Pad ending of shorter traces with nans
 num_frames = cellfun(@(x) size(x,1),meanF,'UniformOutput',1);
 if any(num_frames ~= num_frames(1))

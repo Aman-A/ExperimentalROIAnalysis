@@ -55,18 +55,32 @@ elseif iscell(roiset_filenames)
 end
 % Format exp_settings
 if length(exp_settings) == 1
-    exp_settings = repmat(exp_settings,num_conditions,1); % convert to object array
+    exp_settings_all = repmat(exp_settings,num_conditions,1); % convert to object array
+    sep_trial_settings = 0; % same settings for all conditions/trials
+elseif length(exp_settings) == num_conditions
+    exp_settings_all = exp_settings;
+    sep_trial_settings = 0; % same settings for all trials within condition
 else
-    if iscell(exp_settings) % cell array of ExperimentSettings objects
-        % convert to object array
-        exp_settings = [exp_settings{:}];
+    % each exp_settings array applies to trials of each condition    
+    if ~iscell(exp_settings) % replicate object array for each condition 
+        exp_settings_all = cell(1,num_conditions);
+        exp_settings_all(:) = {exp_settings};
+    else % already cell array of object arrays (or single object)
+        exp_settings_all = exp_settings;
     end
+    sep_trial_settings = 1; % separate settings for all trials and each condition
 end
+
 for i = 1:num_conditions    
+    if sep_trial_settings
+        exp_settingsi = exp_settings_all{i}; 
+    else 
+        exp_settingsi = exp_settings_all(i); 
+    end
     roiset_filename = roiset_filenames{i};
     plot_settings.condition = conditions{i};    
     % trial data for ith condition
-    tdi = plotTrials(in.img_names{i},exp_settings(i),roiset_filename,plot_settings);    
+    tdi = plotTrials(in.img_names{i},exp_settingsi(i),roiset_filename,plot_settings);    
     if isempty(tdi); continue; end
     out.means_all{i} = tdi.means;    
     out.deltaF_F0_all{i} = tdi.deltaF_F0;    
@@ -90,8 +104,10 @@ for i = 1:num_conditions
     if isfield(tdi.analysis,'poststim_ints') 
         out.poststim_ints_all{i} = permute(concatFieldInStructArray(tdi.analysis,'poststim_ints'),[2 1 3 4]);       
     end
-    if isfield(tdi.analysis,'decay_fit')        
-        out.decay_fits{i} = tdi.analysis.decay_fit;  
+    if isfield(tdi.analysis,'decay_fit')
+        out.decay_fits{i} = tdi.analysis.decay_fit;
+    end
+    if isfield(tdi.analysis,'successful_spikes')    
         out.successful_spikes{i} = tdi.analysis.successful_spikes;
         if i == num_conditions
             out.spike_thresh = tdi.analysis.spike_thresh;
@@ -119,7 +135,7 @@ out.exp_date = plot_settings.exp_date;
 out.reporter = plot_settings.reporter;
 out.dish = plot_settings.dish;
 out.img_names = img_names_new;
-out.exp_settings = exp_settings;
+out.exp_settings = exp_settings_all;
 out.roi_set_filenames = roiset_filenames;
 out.plot_settings = plot_settings;
 if iscell(roiset_filenames{1})

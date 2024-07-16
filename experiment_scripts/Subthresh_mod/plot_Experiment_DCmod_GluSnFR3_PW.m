@@ -73,7 +73,7 @@ pulse_ind = 1;
 ps.condition = sprintf('%gmABi_50VpmG_%gs',...
             supra_amp,stim_pulse_durs2_all(pulse_ind));
 img_name = [ps.condition '.fits'];
-trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.4]; 
+trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.32]; 
 trace_axis = gca;
 datai = plotTrial(img_name,exp_settings(pulse_ind),roiset_filename,...
                    trace_axis,ps);

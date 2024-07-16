@@ -25,6 +25,7 @@ in.save_fig = 0;
 in.fig_fold = '.';
 in.thresh_prob = 0.5; % threshold defined as >= 50% prob of AP
 in.save_data = 0; 
+in.data_fold = '';
 in.data_filename = 'thresh_data'; 
 in.print_level = 1; 
 in = sl.in.processVarargin(in,varargin);
@@ -59,7 +60,13 @@ out.thresh_prob = in.thresh_prob;
 out.xfit = xfit; 
 out.yfit = yfit; 
 if in.print_level > 0
-    fprintf('Threshold (p>%g) = %.2f %s\n',in.thresh_prob,thresh,units)
+    fprintf('Threshold (p>%g) = %.2f %s',in.thresh_prob,thresh,units)
+    if strcmp(units,'V/m')
+        out.thresh_mA = thresh/in.E_per_mA;
+        fprintf(' (%.3f mA)\n',out.thresh_mA)
+    else
+        fprintf('\n');
+    end
 end
 if in.plot_fig
     fig = figure; 
@@ -81,7 +88,10 @@ if in.plot_fig
     end
 end
 if in.save_data
-    data_filepath = fullfile(in.fig_fold,[in.data_filename '.mat']);
+    if isempty(in.data_fold)
+        in.data_fold = in.fig_fold; 
+    end
+    data_filepath = fullfile(in.data_fold,[in.data_filename '.mat']);
     save(data_filepath,'-STRUCT','out')
     fprintf('Saved threshold data to %s\n',data_filepath);
 end
