@@ -77,6 +77,45 @@ trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.32];
 trace_axis = gca;
 datai = plotTrial(img_name,exp_settings(pulse_ind),roiset_filename,...
                    trace_axis,ps);
+
+mean_dF2 = mean(datai.func_output.deltaF_F0_aligned2,4); % average within ROI
+peaks_all = max(mean_dF2(exp_settings(1).baseline_wind+1:exp_settings(1).baseline_wind+8,:,:),[],1);
+mean_peaks_before = peaks_all(1,:,1);
+mean_peaks_during = peaks_all(1,:,2);
+mean_dF2_normb = mean_dF2./mean_peaks_before;
+mean_dF2_normb_mean = squeeze(mean(mean_dF2_normb,2));
+per_change = 100*(mean_peaks_during - mean_peaks_before)./mean_peaks_before;
+include_rois_thresh = 0.06;
+include_rois = mean_peaks_before > include_rois_thresh; 
+% include_rois = 35:38; 
+mean_per_change = mean(per_change);
+std_per_change = std(per_change,0);
+sem_per_change = std_per_change/sqrt(datai.rois.num_rois);
+
+fig = figure('Position',[530 710 1310 590]); 
+subplot(1,3,1)
+plot(datai.func_output.ta2,...
+            squeeze(mean(datai.func_output.deltaF_F0_aligned2,[2 4])))
+box off; title(img_name,'Interpreter','none'); 
+xlabel('time (sec)'); ylabel('\Delta F/F_{0}'); 
+legend('Before','During E','Box','off')
+subplot(1,3,2)
+plot(datai.func_output.ta2,mean_dF2_normb_mean./max(mean_dF2_normb_mean(:,1)));
+% plot(datai.func_output.ta2,...
+%             squeeze(mean(datai.func_output.deltaF_F0_aligned2(:,include_rois,:,:),[2 4])))
+% title(sprintf('ROIs > %.2f',include_rois_thresh),'Interpreter','none'); 
+title('Norm to before within ROI')
+box off; 
+xlabel('time (sec)'); ylabel('\Delta F/F_{0} (norm.)'); 
+subplot(1,3,3)
+plot([1 2],[mean_peaks_before;mean_peaks_during],'-o');
+xlim([0.5 2.5]);
+ax = gca; ax.XTick = [1 2];
+ax.XTickLabel = {'Before','During'};
+box off; 
+title(sprintf('Per change (mean +/- std): %.2f +/- %.2f',...
+        mean_per_change,std_per_change))
+
 %% Plot trials within each condition
 pulse_ind = 2; 
 ps.condition = sprintf('control_2mABi_1mAG_%gs',stim_pulse_durs2_all(pulse_ind));
