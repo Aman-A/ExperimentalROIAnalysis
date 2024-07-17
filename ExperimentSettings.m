@@ -4,6 +4,7 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
         stim_vals {mustBeNumeric} % N stimuli x M trains array of stimulus times 
                                   % single train is 1 x N vector, stays in
                                   % same units as input
+        stim_vals_sec {mustBeNumeric} % store stim times in sec
         stim_wind {mustBeNumeric} % time window to extract post-stimulus statistics, e.g. peak,
                                   %  generates NxM windows
         baseline_wind {mustBeNumeric} % time window to extract baseline, either
@@ -24,6 +25,7 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
         stim_vals2 {mustBeNumeric} % N stimuli x M trains array of stimulus times 
                                   % single train is 1 x N vector, stays in
                                   % same units as input
+        stim_vals2_sec {mustBeNumeric}
         stim_pulse_dur2 {mustBeNumeric} % Stimulus pulse duration/s, scalar 
                                        % for uniform duration, or array same
                                        % size as stim_vals with duration of
@@ -71,10 +73,14 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                 obj.stim_vals = stim_vals; % set other properties first so get method can update stim_wind_inds/baseline_inds                
                 obj.stim_pulse_dur2 = in.stim_pulse_dur2; 
                 obj.stim_vals2 = in.stim_vals2;
-                if strcmp(units,'sec')
+                if strcmp(units,'sec') % use input times
+                    obj.stim_vals_sec = stim_vals;
+                    obj.stim_vals2_sec = in.stim_vals2; 
                     obj.stim_pulse_dur_sec = in.stim_pulse_dur;
-                    obj.stim_pulse_dur2_sec = in.stim_pulse_dur;
-                else
+                    obj.stim_pulse_dur2_sec = in.stim_pulse_dur2;
+                else % convert 
+                    obj.stim_vals_sec = obj.convert2Time(stim_vals);
+                    obj.stim_vals2_sec = obj.convert2Time(in.stim_vals2);
                     obj.stim_pulse_dur_sec = obj.convert2Time(in.stim_pulse_dur);
                     obj.stim_pulse_dur2_sec = obj.convert2Time(in.stim_pulse_dur2);
                 end
@@ -117,13 +123,15 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
             % given vector of frames to times if input as second argument
             if nargin == 1 % convert properties of object
                 if strcmp(obj.units,'frames')
-                   obj.stim_vals = obj.stim_vals/obj.sampling_rate; 
+%                    obj.stim_vals = obj.stim_vals/obj.sampling_rate; 
+                   obj.stim_vals = obj.stim_vals_sec; 
                    obj.stim_wind = obj.stim_wind/obj.sampling_rate; 
                    obj.baseline_wind = obj.baseline_wind/obj.sampling_rate;                
                    obj.stim_pulse_dur = obj.stim_pulse_dur_sec; 
                    obj.units = 'sec';  
                    % 2nd source
-                   obj.stim_vals2 = obj.stim_vals2/obj.sampling_rate; 
+%                    obj.stim_vals2 = obj.stim_vals2/obj.sampling_rate; 
+                   obj.stim_vals2 = obj.stim_vals2_sec; 
                    obj.stim_pulse_dur2 = obj.stim_pulse_dur2_sec; 
                 end           
             elseif nargin == 2 % just convert input value/s

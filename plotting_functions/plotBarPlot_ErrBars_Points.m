@@ -89,7 +89,7 @@ box(ax,'off');
 % data points
 if in.plot_pts 
     if in.connect_pts
-        l = plot(x_vals,data_mat,'-o','LineWidth',0.5);
+        l = plot(x_vals,data_mat,'LineWidth',0.5,'Marker',in.pt_marker);
         if ~isempty(in.pt_cols)
             if size(in.pt_cols,1) == 1; in.pt_cols = repmat(in.pt_cols,length(l),1); end;                 
             for i = 1:length(l)
