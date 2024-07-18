@@ -107,6 +107,7 @@ if exist(save_data_filename,'file') && in.load_processed_data
                               'indicator_dir',in.indicator_dir);               
     addROIoverlayAndSave(fig_hands,output_data.rois,in.save_fig,fig_dir,rec.img_name,...
                          in.close_img_after_save,in.show_roi_labels);
+    output_data.fig_dir = fig_dir; 
 else
     if in.motion_correct
         rec.motionCorrect(exp_settings.baseline_wind_inds(:,1),'dft',1,1);

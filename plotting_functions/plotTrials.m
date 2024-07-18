@@ -6,16 +6,27 @@ function trials_data = plotTrials(img_names,exp_settings,roiset_filename,...
 in = plotTrialSettings; % get defaults from plotTrialSettings
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
-if isempty(img_names) % assume all .fits files are relevant trial data
-    if isempty(in.filedir) % construct default experiment file path to this condition
-        filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
-        img_names = getImagesWithinDir(filedir); 
-    else % use input path to find all trials for this condition
-        filedir = in.filedir; 
-        img_names = getImagesWithinDir(filedir); 
-        % append full path
+% if isempty(img_names) % assume all .fits files are relevant trial data
+%     if isempty(in.filedir) % construct default experiment file path to this condition
+%         filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
+%         img_names = getImagesWithinDir(filedir); 
+%     else % use input path to find all trials for this condition
+%         filedir = in.filedir; 
+%         img_names = getImagesWithinDir(filedir); 
+%         % append full path
+%         img_names = fullfile(filedir,img_names); 
+%     end   
+% end
+if isempty(in.filedir) % construct default experiment file path to this condition
+    filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
+else
+    filedir = in.filedir; 
+end
+if isempty(img_names)
+    img_names = getImagesWithinDir(filedir); 
+    if ~isempty(in.filedir) % use manually defined file directory
         img_names = fullfile(filedir,img_names); 
-    end   
+    end
 end
 if ischar(img_names)
    img_names = {img_names};  
@@ -131,9 +142,9 @@ if isempty(in.analysis_funcs)
 else
    analysis_funcs = in.analysis_funcs; 
 end
-if ~exist('filedir','var')
-    filedir = datai.recording.filedir;
-end
+% if ~exist('filedir','var')
+%     filedir = datai.recording.filedir;
+% end
 % Analyze traces
 if isfield(datai.func_output,'deltaF_F0_aligned')        
     deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
