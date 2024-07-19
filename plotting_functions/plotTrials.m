@@ -273,6 +273,19 @@ if in.save_fig && in.overlay_trials && plot_trials
     end
 %     fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
     fig_name = sprintf('%s_%s_%gtrials',in.plot_func,in.roi_func_mode(1:3),num_trials);
+    if isfield(analysis,'successful_spikes') && num_trials > 4 
+        trace_names = {trace_axis.Children.DisplayName};
+        for i = 1:num_trials
+            spiked = analysis.successful_spikes(i);
+            trace_ind = strcmp(img_names{i},trace_names);
+            l = trace_axis.Children(trace_ind);
+            if spiked
+                l.Color = [1 0 0 0.5];
+            else
+                l.Color = [0.4 0.4 0.4 0.5];
+            end
+        end
+    end
     printFig(trace_fig,fig_dir,fig_name);
 end
 end

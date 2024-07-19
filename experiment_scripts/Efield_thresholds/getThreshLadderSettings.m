@@ -1,4 +1,5 @@
-function amps = getThreshLadderSettings(expected_thresh,per_step_size,num_steps)
+function [amps,start_amp,step_size] = getThreshLadderSettings(expected_thresh,...
+                                                    per_step_size,num_steps)
 % expected_thresh: Expected threshold amplitude
 % per_step_size: step size as percentage (%)
 % num_steps: number of amplitude steps in ladder
