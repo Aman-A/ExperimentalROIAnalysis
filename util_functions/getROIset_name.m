@@ -12,6 +12,9 @@ function roiset_filename_no_ext = getROIset_name(roiset_filename,transform_type,
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
+if nargin < 3
+    registration_rec = '';
+end
 if ischar(roiset_filename)
     [~,roiset_filename_no_ext] = fileparts(roiset_filename);     
     roiset_filename_no_ext = appendRegistrationSuff(roiset_filename_no_ext,...
