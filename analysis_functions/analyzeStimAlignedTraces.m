@@ -33,6 +33,7 @@ in.funcs = {'peaks','peak_times','poststim_ints','successful_spikes','decay_fit'
 in.decay_fit_order = 1;
 in.spike_thresh = 3; % peak must be over 3x std of baseline to be considered spike
 in.spike_window = 0.02; % sec - peak must be within this time of stim to be considered spike
+in.spike_min_amp = []; 
 in.train_peak_baseline_mode = 1; % for num_trains > 1:
                                   % 1 - use same baseline for full train
                                   % 2 - get individual baseline for each
@@ -145,11 +146,13 @@ if (any(strcmp(in.funcs,'successful_spikes')) || any(strcmp(in.funcs,'decay_fit'
     successful_spikes = false(trace_dims(2:end));      
     n_traces = prod(trace_dims(2:end));    
     [i_vec,j_vec,k_vec] = ind2sub(trace_dims(2:end),1:n_traces);  
-    spike_thresh = in.spike_thresh;         
+    spike_thresh = in.spike_thresh;     
+    spike_min_amp = in.spike_min_amp; 
     parfor n = 1:n_traces
         trace_w_bsline = traces(:,n); % include bsline for spike detection
         successful_spike = spikePresentInWindow(trace_w_bsline,baseline_wind,...
-                                         spike_thresh,spike_window,peaks(n)); % uses peaks computed within spike_window
+                                         spike_thresh,spike_window,peaks(n),...
+                                        spike_min_amp); % uses peaks computed within spike_window
         successful_spikes(n) = successful_spike;
     end
     output.successful_spikes = successful_spikes;

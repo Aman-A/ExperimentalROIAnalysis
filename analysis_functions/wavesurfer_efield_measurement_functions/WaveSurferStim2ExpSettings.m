@@ -40,9 +40,8 @@ switch stim.TypeString
         exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                           in.units,im_sampling_rate,...
                                           'stim_pulse_dur',stim_pulse_dur,...
-                                          'stim_amps',amps,'E_per_mA',in.E_per_mA); % automatically converts to frames
+                                          'stim_amps',amps,'E_per_mA',in.E_per_mA); % automatically converts to frames    
     case 'SquarePulse'
-        % Not implemented yet
         del = str2double(stim.Delay); 
         stim_vals = del; 
         stim_pulse_dur = str2double(stim.Duration);
@@ -52,6 +51,22 @@ switch stim.TypeString
                                           in.units,im_sampling_rate,...
                                           'stim_pulse_dur',stim_pulse_dur,...
                                           'stim_amps',amps(1),'E_per_mA',in.E_per_mA); % automatically converts to frames
+        if length(amps) > 1
+            exp_settings_all = []; % convert to object array
+            for i = 1:num_sweeps
+                exp_settings_all = [exp_settings_all;copy(exp_settings)]; % copy to pass value not reference
+                exp_settings_all(i).stim_amps = amps(i); 
+            end
+            exp_settings = exp_settings_all; 
+        end
+    case 'File'
+        del = str2double(stim.Delay); 
+        stim_vals = del;
+        amps = eval(sprintf('arrayfun(@(i) %s,1:%g,''UniformOutput'',1)',stim.Amplitude,num_sweeps))';
+        amps = amps*in.isolator_mA_per_V;
+        exp_settings = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
+                                          in.units,im_sampling_rate,...
+                                          'stim_amps',amps(1),'E_per_mA',in.E_per_mA);
         if length(amps) > 1
             exp_settings_all = []; % convert to object array
             for i = 1:num_sweeps

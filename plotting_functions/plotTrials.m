@@ -182,7 +182,8 @@ if strcmp(in.roi_func_mode,'combine')
                                             'fwhm_spline_interp',in.fwhm_spline_interp,...
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
                                             'spike_thresh',in.spike_thresh,...
-                                            'spike_window',in.spike_window);          
+                                            'spike_window',in.spike_window,...
+                                            'spike_min_amp',in.spike_min_amp);          
         if isfield(analysis,'peaks')
             mean_peak_deltaF_F0 = analysis.mean_peak;
             std_peak_deltaF_F0 = analysis.std_peak; 
@@ -212,7 +213,8 @@ elseif strcmp(in.roi_func_mode,'separate')
                                             'fwhm_spline_interp',in.fwhm_spline_interp,...
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
                                             'spike_thresh',in.spike_thresh,...
-                                            'spike_window',in.spike_window);
+                                            'spike_window',in.spike_window,...
+                                            'spike_min_amp',in.spike_min_amp);
         if isfield(analysis,'peaks')
             mean_peak_deltaF_F0 = analysis.mean_peak;
             std_peak_deltaF_F0 = analysis.std_peak; 
@@ -269,7 +271,8 @@ if in.save_fig && in.overlay_trials && plot_trials
         fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,...
                             in.condition,['figs_',roiset_filename_no_ext]);
     end
-    fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
+%     fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
+    fig_name = sprintf('%s_%s_%gtrials',in.plot_func,in.roi_func_mode(1:3),num_trials);
     printFig(trace_fig,fig_dir,fig_name);
 end
 end
