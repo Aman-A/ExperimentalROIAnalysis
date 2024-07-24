@@ -1,4 +1,5 @@
-function plotViolins_DCmod(peaks_before,peaks_during,peaks_after,varargin)
+function [med_before,med_during,med_after] = plotViolins_DCmod(peaks_before,...
+                                            peaks_during,peaks_after,varargin)
 %PLOTVIOLINS_DCMOD ... 
 %  
 %   Inputs 
@@ -214,6 +215,9 @@ if strcmp(in.y_mode,'log')
         ax.YGrid = 'on';
     end
     % ax.YMinorGrid = 'off';
+end
+if ~in.plot_after
+    med_after = []; 
 end
 ax.FontName = in.font_name;
 ax.FontSize =  in.font_size;

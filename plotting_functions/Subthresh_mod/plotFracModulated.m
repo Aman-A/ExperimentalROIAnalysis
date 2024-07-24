@@ -21,9 +21,9 @@ in.plot_test = 'ranksum'; % kstest2, ranksum, or ttest2
 in.sig_mod_during = [];
 in.sig_mod_after = []; 
 in.bar_cols = [0.6,0.6,0.6;0.4023    0.6602    0.8086;0.9336    0.5391    0.3828];
-in.bar_mode = 2;    
+in.bar_mode = 1;    
 in.save_fig = 0;
-in.amp_labels = []; 
+in.x_labels = []; 
 in.fig_fold = '.';
 in.title_on = 1;
 in.add_val_labels = 0;
@@ -32,12 +32,18 @@ in = sl.in.processVarargin(in,varargin);
 mean_peaks_before = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_before,'UniformOutput',0));
 mean_peaks_during = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_during,'UniformOutput',0));
 mean_peaks_during_diff = mean_peaks_during - mean_peaks_before; 
-if ~isempty(peaks_after)
+include_rows = all(~isnan(mean_peaks_before),2);
+if any(~include_rows)
+    fprintf('Removing %g points with missing data\n',sum(~include_rows));    
+    mean_peaks_during_diff = mean_peaks_during_diff(include_rows,:);    
+end
+if isempty(peaks_after)    
+    include_after = 0; 
+else    
     mean_peaks_after = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_after,'UniformOutput',0));
     mean_peaks_after_diff = mean_peaks_after - mean_peaks_before; 
     include_after = 1; 
-else
-    include_after = 0; 
+    mean_peaks_after_diff = mean_peaks_after_diff(include_rows,:);    
 end
 %%
 num_amps = length(peaks_before);
@@ -46,23 +52,23 @@ if isempty(in.sig_mod_during)
     is_normal = nan(num_rois,num_amps);
     % KS test
     h_during = nan(num_rois,num_amps);
-    p_during = nan(num_rois,num_amps);
-    h_after = nan(num_rois,num_amps);
-    p_after = nan(num_rois,num_amps);    
+    p_during = nan(num_rois,num_amps);    
     % Wilcoxon rank sum (mann whitney u-test) non-parametric,
     % independent "t-test"
     h_during2 = nan(num_rois,num_amps);
-    p_during2 = nan(num_rois,num_amps);
-    h_after2 = nan(num_rois,num_amps);
-    p_after2 = nan(num_rois,num_amps);
-    zvals_during = nan(num_rois,num_amps);
-    zvals_after = nan(num_rois,num_amps);
+    p_during2 = nan(num_rois,num_amps);    
+    zvals_during = nan(num_rois,num_amps);    
     % t-test
     h_during3 = nan(num_rois,num_amps);
-    p_during3 = nan(num_rois,num_amps);
+    p_during3 = nan(num_rois,num_amps);       
+    % after
+    h_after = nan(num_rois,num_amps);
+    p_after = nan(num_rois,num_amps);    
+    h_after2 = nan(num_rois,num_amps);
+    p_after2 = nan(num_rois,num_amps);
+    zvals_after = nan(num_rois,num_amps);
     h_after3 = nan(num_rois,num_amps);
-    p_after3 = nan(num_rois,num_amps);
-    
+    p_after3 = nan(num_rois,num_amps);    
     for i = 1:num_amps
         peaks_beforei = peaks_before{i}; 
         peaks_duringi = peaks_during{i}; 
@@ -104,8 +110,7 @@ if isempty(in.sig_mod_during)
             [h_after3,~,~,p_after3] = fdr_bh(p_after3,in.fdr_rate,'pdep','no');
         end
         fprintf('Adjusted for false discovery rate of %g %%\n',100*in.fdr_rate)
-    end
-
+    end    
     if strcmp(in.plot_test,'kstest2')
         in.sig_mod_during = h_during;
         in.sig_mod_after = h_after;
@@ -131,12 +136,16 @@ if isempty(in.sig_mod_during)
     stats.h_during3 = h_during3;
     stats.p_during3 = p_during3;
     stats.h_after3 = h_after3;
-    stats.p_after3 = p_after3;    
-else
+    stats.p_after3 = p_after3;        
+else    
     % nan_inds = isnan(mean_peaks_during_diff);    
     % in.sig_mod_during(nan_inds) = 0;
     % in.sig_mod_after(nan_inds) = 0;        
     stats = []; 
+end
+in.sig_mod_during = in.sig_mod_during(include_rows,:);
+if include_after
+    in.sig_mod_after = in.sig_mod_after(include_rows,:);
 end
 % Modulation during
 % 0 - no change, 1 decrease, 2 increase
@@ -168,9 +177,9 @@ for i = 1:size(in.bar_cols,1)
     b(i).FaceColor = in.bar_cols(i,:);
 end
 ax = gca;
-ax.XTick = 1:size(mean_peaks_before,2);
-if ~isempty(in.amp_labels)
-    ax.XTickLabel = in.amp_labels;
+ax.XTick = 1:size(mean_peaks_during_diff,2);
+if ~isempty(in.x_labels)
+    ax.XTickLabel = in.x_labels;
 end
 legend({'No change','Decreased','Increased'},'Box','off',...
         'Location','northoutside','Orientation','horizontal');
@@ -208,8 +217,8 @@ if include_after && in.plot_after
     end
     ax = gca;
     ax.XTick = 1:size(mean_peaks_after,2);
-    if ~isempty(in.amp_labels)
-        ax.XTickLabel = in.amp_labels;
+    if ~isempty(in.x_labels)
+        ax.XTickLabel = in.x_labels;
     end
     legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
     ylabel('% ROIs');

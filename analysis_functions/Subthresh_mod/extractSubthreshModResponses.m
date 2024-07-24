@@ -50,7 +50,7 @@ for i = 1:num_dishes
             data_ind = data_inds(dup_plot_vars==j);
             plot_data_inds{i} = [plot_data_inds{i};data_ind];
             max_num_peaks(j) = max(max_num_peaks(j),...
-                prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)
+                prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)            
             max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{data_ind},1));
         end
     end
@@ -247,6 +247,7 @@ for i = 1:num_dishes
 end 
 fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',num_dishes,sum(num_rois,'omitnan'))
 
+
 %% Output data
 out.peaks_before = peaks_before;
 out.peaks_during = peaks_during;
@@ -266,10 +267,34 @@ out.peak_mod_during = out.mean_peaks_during./out.mean_peaks_before; % ratio (dur
 out.peak_mod_during_diff = out.mean_peaks_during - out.mean_peaks_before; % difference (during - before)
 out.peak_mod_during_per = 100*out.peak_mod_during_diff./out.mean_peaks_before; % percent change 100*(during-before)/before
 
+%% average each AP within train separately
+% num_rois x num_stim (20) x num_trials x num_amps, retains ordering
+peaks_before_mat_tr = reshape(out.peaks_before_mat,size(out.peaks_before_mat,1),...
+                              data{1}.exp_settings(1).num_stim,...
+                              size(out.peaks_before_mat,2)/data{1}.exp_settings(1).num_stim,...
+                              size(out.peaks_before_mat,3));
+peaks_during_mat_tr = reshape(out.peaks_during_mat,size(out.peaks_during_mat,1),...
+                              data{1}.exp_settings(1).num_stim,...
+                              size(out.peaks_during_mat,2)/data{1}.exp_settings(1).num_stim,...
+                              size(out.peaks_during_mat,3));
 
-% average within cell
+
+out.mean_peaks_before_mat_tr = squeeze(mean(peaks_before_mat_tr,3,'omitnan')); % average across trials
+out.mean_peaks_during_mat_tr = squeeze(mean(peaks_during_mat_tr,3,'omitnan')); % average across trials
+
+% normalize to mean before (within ROI)
+out.mean_peaks_before_mat_tr_norm = out.mean_peaks_before_mat_tr./mean(out.mean_peaks_before_mat_tr,2,'omitnan');
+out.mean_peaks_during_mat_tr_norm = out.mean_peaks_during_mat_tr./mean(out.mean_peaks_before_mat_tr,2,'omitnan');
+
+%% average within cell
 mean_peaks_before_cell = zeros(num_dishes,length(plot_vars));
 mean_peaks_during_cell = zeros(num_dishes,length(plot_vars));
+% mean across ROIs within cell
+mean_peaks_before_cell_tr = zeros(num_dishes,data{1}.exp_settings(1).num_stim,length(plot_vars));
+mean_peaks_during_cell_tr = zeros(num_dishes,data{1}.exp_settings(1).num_stim,length(plot_vars));
+% mean across ROIs within cell after normalizing within ROI to mean before
+mean_peaks_before_cell_tr_norm = zeros(num_dishes,data{1}.exp_settings(1).num_stim,length(plot_vars));
+mean_peaks_during_cell_tr_norm = zeros(num_dishes,data{1}.exp_settings(1).num_stim,length(plot_vars));
 % peak modulation calculated WITHIN ROI, then averaged within cell 
 out.peak_mod_during_cell_wroi = zeros(num_dishes,length(plot_vars)); 
 out.peak_mod_during_cell_wroi_diff = zeros(num_dishes,length(plot_vars));
@@ -277,12 +302,20 @@ out.peak_mod_during_cell_wroi_per = zeros(num_dishes,length(plot_vars));
 for i = 1:num_dishes
     mean_peaks_before_cell(i,:) = squeeze(mean(out.peaks_before_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));
     mean_peaks_during_cell(i,:) = squeeze(mean(out.peaks_during_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));       
+    mean_peaks_before_cell_tr(i,:,:) = squeeze(mean(out.mean_peaks_before_mat_tr(dish_inds{1}==i,:,:),1,'omitnan'));
+    mean_peaks_during_cell_tr(i,:,:) = squeeze(mean(out.mean_peaks_during_mat_tr(dish_inds{1}==i,:,:),1,'omitnan'));
+    mean_peaks_before_cell_tr_norm(i,:,:) = squeeze(mean(out.mean_peaks_before_mat_tr_norm(dish_inds{1}==i,:,:),1,'omitnan'));
+    mean_peaks_during_cell_tr_norm(i,:,:) = squeeze(mean(out.mean_peaks_during_mat_tr_norm(dish_inds{1}==i,:,:),1,'omitnan'));
     out.peak_mod_during_cell_wroi(i,:) = mean(out.peak_mod_during(dish_inds{1}==i,:),1,'omitnan');
     out.peak_mod_during_cell_wroi_diff(i,:) = mean(out.peak_mod_during_diff(dish_inds{1}==i,:),1,'omitnan');    
     out.peak_mod_during_cell_wroi_per(i,:) = mean(out.peak_mod_during_per(dish_inds{1}==i,:),1,'omitnan');    
 end
 out.mean_peaks_before_cell = mean_peaks_before_cell;
 out.mean_peaks_during_cell = mean_peaks_during_cell;
+out.mean_peaks_before_cell_tr = mean_peaks_before_cell_tr;
+out.mean_peaks_during_cell_tr = mean_peaks_during_cell_tr;
+out.mean_peaks_before_cell_tr_norm = mean_peaks_before_cell_tr_norm;
+out.mean_peaks_during_cell_tr_norm = mean_peaks_during_cell_tr_norm; 
 out.peak_mod_during_cell = out.mean_peaks_during_cell./out.mean_peaks_before_cell; % ratio (during/before)
 out.peak_mod_during_cell_diff = out.mean_peaks_during_cell - out.mean_peaks_before_cell; % difference (during - before)
 out.peak_mod_during_cell_per = 100*out.peak_mod_during_cell_diff./out.mean_peaks_before_cell; % percent change 100*(during-before)/before
@@ -304,11 +337,25 @@ if include_after
     out.peak_mod_after_diff = out.mean_peaks_after - out.mean_peaks_before; % difference    
     out.success_after = success_after;
     out.success_after_mat = cell2mat(reshape(success_after,1,1,length(peaks_after)));
-    mean_peaks_after_cell = zeros(num_dishes,length(plot_vars));
+    % num_rois x num_stim x num_trials x num_amps
+    peaks_after_mat_tr = reshape(out.peaks_after_mat,size(out.peaks_after_mat,1),...
+                              data{1}.exp_settings(1).num_stim,...
+                              size(out.peaks_after_mat,2)/data{1}.exp_settings(1).num_stim,...
+                              size(out.peaks_after_mat,3));
+    out.mean_peaks_after_mat_tr = squeeze(mean(peaks_after_mat_tr,3,'omitnan')); % average across trials
+    out.mean_peaks_after_mat_tr_norm = out.mean_peaks_after_mat_tr./mean(out.mean_peaks_before_mat_tr,2,'omitnan');  % norm to mean before
+    % average within cell
+    mean_peaks_after_cell = zeros(num_dishes,length(plot_vars)); 
+    mean_peaks_after_cell_tr = zeros(num_dishes,data{1}.exp_settings(1).num_stim,length(plot_vars));
+    mean_peaks_after_cell_tr_norm = zeros(num_dishes,data{1}.exp_settings(1).num_stim,length(plot_vars));
     for i = 1:num_dishes
         mean_peaks_after_cell(i,:) = squeeze(mean(out.peaks_after_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));    
+        mean_peaks_after_cell_tr(i,:,:) = squeeze(mean(out.mean_peaks_after_mat_tr(dish_inds{1}==i,:,:),1));
+        mean_peaks_after_cell_tr_norm(i,:,:) = squeeze(mean(out.mean_peaks_after_mat_tr_norm(dish_inds{1}==i,:,:),1));
     end
     out.mean_peaks_after_cell = mean_peaks_after_cell;
+    out.mean_peaks_after_cell_tr = mean_peaks_after_cell_tr;
+    out.mean_peaks_after_cell_tr_norm = mean_peaks_after_cell_tr_norm;
     out.peak_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_before_cell; 
     out.peak_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_before_cell; 
     out.peak_mod_after_cell_per = 100*(out.peak_mod_after_cell - 1); % percent change

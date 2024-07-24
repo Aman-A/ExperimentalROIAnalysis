@@ -86,7 +86,7 @@ classdef ExperimentSettings < handle & matlab.mixin.Copyable % Stimulus, recordi
                 end
                 obj.convert2Frames()
                 if ~isempty(in.stim_amps)
-                    if length(in.stim_amps) == 1 % single amp for all stimuli
+                    if isscalar(in.stim_amps) % single amp for all stimuli
                         obj.stim_amps = in.stim_amps*ones(size(obj.stim_vals));
                     elseif length(in.stim_amps) == size(obj.stim_vals,1) % separate amps for each train
                         if isrow(in.stim_amps) % make column vector

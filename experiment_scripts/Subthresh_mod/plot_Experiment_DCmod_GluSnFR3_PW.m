@@ -217,7 +217,6 @@ ax = gca;
 ax.XTick = 1:length(pw_labels);
 ax.XTickLabel = pw_labels;
 ax.YLabel.String = 'Peak change (%)';
-ylim([0 55]);
 ax.YGrid = 'on';
 if save_figs
     printFig(fig,summary_fig_fold,'mean_peak_change')
@@ -240,7 +239,6 @@ ax = gca;
 ax.XTick = 1:length(pw_labels);
 ax.XTickLabel = pw_labels;
 ax.YLabel.String = 'Peak change (%)';
-ylim([0 55]);
 ax.YGrid = 'on';
 if save_figs
     printFig(fig,summary_fig_fold,'peak_change_mean_sem_rois')
@@ -248,7 +246,7 @@ end
 %% Plot peaks averaged across ROIs over time
 % mean across ROIs and trials
 % num_frames x num_trains x num_stim
-mean_dF_rois_train = cellfun(@(x) squeeze(mean(x(:,:,:,:,2),[2 5])),out.deltaF_F0_aligned2_all,...
+mean_dF_rois_train = cellfun(@(x) squeeze(mean(x,[2 5])),out.deltaF_F0_aligned2_all,...
                                 'UniformOutput',0); 
 peaks_rois_train = cellfun(@(x) squeeze(max(x,[],1)),mean_dF_rois_train,...
                             'UniformOutput',0);
@@ -261,14 +259,13 @@ if strcmp(plot_peaks_str,'norm_mean')
     ylabel_str = {'Peak GluSnFR3 \Delta F/F_{0}','(norm. mean before)'};
     mean_ys_before = ones(1,length(pws));    
     fig_name = 'peak_vs_time_norm_mean_before';
-    yax_lims = [0.5 1.7];
+    yax_lims = [];
 else
     plot_peaks = cellfun(@(x) x*100,peaks_rois_train,'UniformOutput',0);
     ylabel_str = 'Peak GluSnFR3 \Delta F/F_{0} (%)';
     mean_ys_before = cellfun(@(x) 100*mean(x(1,:)),peaks_rois_train,'UniformOutput',1);
     fig_name = 'peak_vs_time_abs';
-    yax_lims = [0 12];
-    % yax_lims = [];
+    yax_lims = [];    
 end
 mean_ys_during = cellfun(@(x) mean(x(2,:)),plot_peaks,'UniformOutput',1);
 
