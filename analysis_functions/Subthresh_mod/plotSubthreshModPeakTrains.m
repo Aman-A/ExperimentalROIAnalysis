@@ -21,11 +21,20 @@ in.fig_name2 = 'peak_vs_APnum_slopes_bar';
 in.fig_fold = '.';
 in.include_inds = []; 
 in.line_cols = []; 
+in.train_cols = {'k','r','b'}; % before, during, after
 in.plot_cond_inds = []; 
 in.cond_labels = {};
+in.cond_label = 'Amplitude';
 in.leg_pos = [0.8890    0.6753    0.0912    0.2192];
 in.add_regress = 0; % add regression lines and plot for all conditions
+in.stim_times = []; 
 in = sl.in.processVarargin(in,varargin);
+
+plot_mode_options = {'abs','normroi','cell','cell_normroi','cell_sep','cell_normroi_sep'};
+assert(any(strcmp(plot_mode,plot_mode_options)),...
+                                ['plot_mode must be one of:\n%s\n',...
+                                repmat('%s\n',1,length(plot_mode_options)-1)],...
+                                plot_mode_options{:});
 
 if isempty(in.include_inds) % include all    
     if contains(plot_mode,'cell')        
@@ -149,6 +158,9 @@ if isempty(in.plot_cond_inds)
     plot_cond_inds = 1:num_conds_all;
 else
     plot_cond_inds = in.plot_cond_inds;
+    if ~isequal(length(plot_cond_inds),length(in.cond_labels)) % assume subindexing labels as well
+        in.cond_labels = in.cond_labels(plot_cond_inds);
+    end
 end
 num_conds = length(plot_cond_inds);
 for j = 1:num_conds
@@ -161,29 +173,25 @@ for j = 1:num_conds
     %                     var_train{2}(:,i),'-r');
     % e3 = errorbar((2*num_stim+1):3*num_stim,mean_train{3}(:,i),...
     %                     var_train{3}(:,i),'-b');
-    if contains(plot_mode,'sep')
-        e1 = plot(ax,1:num_stim,squeeze(mean_train{1}(:,:,jj)));
-        hold on;
-        e2 = plot(ax,(num_stim+1):2*num_stim,squeeze(mean_train{2}(:,:,jj)));
-        if include_after
-            e3 = plot(ax,(2*num_stim+1):3*num_stim,squeeze(mean_train{3}(:,:,jj)));
+    es = []; 
+    for i = 1:num_trains
+        if isempty(in.stim_times)
+            xplot = ((1 + num_stim*(i-1)):i*num_stim)';
+        else            
+            xplot = in.stim_times(i,:)';
         end
-        for n = 1:N
-            e1(n).Color = line_cols(n,:);
-            e2(n).Color = line_cols(n,:);
-            if include_after
-                e3(n).Color = line_cols(n,:);
+        if contains(plot_mode,'sep')
+            e = plot(ax,xplot,squeeze(mean_train{i}(:,:,jj)));
+            hold on;
+            es = [es,e];            
+            for n = 1:N
+                e(n).Color = line_cols(n,:);                
             end
-        end
-    else
-        e1 = shadedErrorBar(1:num_stim,mean_train{1}(:,jj),...
-            var_train{1}(:,jj),'lineProps','k');
-        hold on;
-        e2 = shadedErrorBar((num_stim+1):2*num_stim,mean_train{2}(:,jj),...
-            var_train{2}(:,jj),'lineProps','r');
-        if include_after
-            e3 = shadedErrorBar((2*num_stim+1):3*num_stim,mean_train{3}(:,jj),...
-                var_train{3}(:,jj),'lineProps','b');
+        else
+            e = shadedErrorBar(xplot,mean_train{i}(:,jj),...
+                var_train{1}(:,jj),'lineProps',in.train_cols{i});
+            hold on;
+            es = [es,e];                        
         end
     end
     box(ax,'off');
@@ -194,22 +202,26 @@ for j = 1:num_conds
             ylabel(ax,'Mean peak \Delta F/F_{0}')
         end
     end
-    title(ax,in.cond_labels{jj});
-    xlabel(ax,'AP number');
+    title(ax,in.cond_labels{j});
+    if isempty(in.stim_times)
+        xlabel(ax,'AP number');
+    else
+        xlabel(ax,'time (sec)');
+    end
     
     if ~contains(plot_mode,'sep')
-        plot(ax,[0 num_trains*num_stim],mean(mean_train{1}(:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
+        plot(ax,ax.XLim,mean(mean_train{1}(:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
         if j == length(plot_cond_inds)
             if include_after
-                legend([e1.patch,e2.patch,e3.patch],'Before','During','After',...
+                legend([es(1).patch,es(2).patch,es(3).patch],'Before','During','After',...
                     'Position',in.leg_pos,'AutoUpdate','off');
             else
-                legend([e1.patch,e2.patch],'Before','During',...
+                legend([es(1).patch,es(2).patch],'Before','During',...
                     'Position',in.leg_pos,'AutoUpdate','off');
             end
         end        
     else
-        plot(ax,[0 num_trains*num_stim],mean(mean_train{1}(:,:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
+        plot(ax,ax.XLim,mean(mean_train{1}(:,:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
     end
 end
 setAxesUniformLim(fig,'YLim');       
@@ -219,45 +231,82 @@ end
 %% Add regression analysis
 if in.add_regress
     % fit to regression
-    regress_slopes = zeros(2,num_conds);
-    regress_ints = zeros(2,num_conds);
-    regress_Rsqs = zeros(2,num_conds);
-    regress_pvals = zeros(2,num_conds);
-    for i = 1:2
-        xfit = ((1 + num_stim*(i-1)):i*num_stim)';
+    regress_slopes = zeros(num_trains,num_conds);
+    regress_ints = zeros(num_trains,num_conds);
+    regress_Rsqs = zeros(num_trains,num_conds);
+    regress_pvals = zeros(num_trains,num_conds);
+    for i = 1:num_trains
+        if isempty(in.stim_times)
+            xfit = ((1 + num_stim*(i-1)):i*num_stim)';
+            xplot = xfit; 
+        else            
+            xplot = in.stim_times(i,:)';
+            xfit = xplot - xplot(1); % start at 0
+        end
         for j = 1:num_conds
-            yij = mean_train{i}(:,j);
+            jj = plot_cond_inds(j); 
+            yij = mean_train{i}(:,jj);
             [b,~,~,~,stats] = regress(yij,[ones(size(xfit)) xfit]); % 
             regress_ints(i,j) = b(1);
             regress_slopes(i,j) = b(2);
             regress_Rsqs(i,j) = stats(1); 
-            regress_pvals(i,j) = stats(3); 
+            regress_pvals(i,j) = stats(3);             
             ax = subplot(1,num_conds,j);
             hold(ax,'on');        
-            plot(xfit,xfit*b(2) + b(1),'-k','LineWidth',2)        
+            plot(xplot,xfit*b(2) + b(1),'-k','LineWidth',2)                    
         end
     end
     varargout = {regress_slopes,regress_ints,regress_Rsqs,regress_pvals};
     fig2 = figure; 
-    b = bar(regress_slopes','hist');
-    b(1).FaceColor = 0.4*[1 1 1];
-    b(2).FaceColor = 'r'; 
-    b(1).FaceAlpha = 0.4;
-    b(2).FaceAlpha = 0.4;
-    ax = gca;
+    fig2.Units = 'inches';
+    fig2.Position(3:4) = [17.8 4.1];
+    % Slope
+    ax = subplot(1,2,1);
+    b = bar(100*regress_slopes','hist');
+    for n = 1:num_trains
+        b(n).FaceAlpha = 0.4; 
+        if n == 1
+            b(n).FaceColor = 0.4*[1 1 1];
+        else
+            b(n).FaceColor = in.train_cols{n};
+        end
+    end    
     ax.XTick = 1:num_conds;
     ax.XTickLabel = in.cond_labels;
     box off; hold on;
-    ax.XLim = [0.5 num_conds-0.5];
+    % ax = gca;
+    ax.XLim = [0.5 num_conds+0.5];
     plot(ax.XLim,[0 0],'k-')
-    ylabel('Slope')
-    xlabel('Pulse duration');    
+    ylabel('Slope (%/AP)')
+    xlabel(in.cond_label);    
+    % ax.YLim = [-1.5 4];
+    % R^2
+    ax = subplot(1,2,2);    
+    b = bar(regress_Rsqs','hist');
+    b(1).FaceColor = 0.4*[1 1 1];
+    b(2).FaceColor = 'r'; 
+    b(1).FaceAlpha = 0.4;
+    b(2).FaceAlpha = 0.4;   
+    if include_after
+        b(3).FaceColor = 'b';
+        b(3).FaceAlpha = 0.4;
+    end
+    ax.XTick = 1:num_conds;
+    ax.XTickLabel = in.cond_labels;
+    box off; hold on;
+    ax.XLim = [0.5 num_conds+0.5];
+    % plot(ax.XLim,[0 0],'k-')
+    ylabel('R^{2}')
+    xlabel(in.cond_label);   
+    ax.YLim = [0 1];
+     
 else
     varargout = {};
 end
 if in.save_fig
     printFig(fig,in.fig_fold,in.fig_name)
-
-    printFig(fig2,in.fig_fold,in.fig_name2);
+    if in.add_regress
+        printFig(fig2,in.fig_fold,in.fig_name2);
+    end
 end
 end

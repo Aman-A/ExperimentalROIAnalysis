@@ -28,6 +28,7 @@ in.save_data = 0;
 in.data_fold = '';
 in.data_filename = 'thresh_data'; 
 in.print_level = 1; 
+in.title_str = '';
 in = sl.in.processVarargin(in,varargin);
 
 if ~isempty(in.E_per_mA)
@@ -83,6 +84,9 @@ if in.plot_fig
                                                 units),'Box','off',...
                                                 'Location','Best');
     xlim([min(x),max(x)]);
+    if ~isempty(in.title_str)
+        title(in.title_str)
+    end
     if in.save_fig
         fig_name = 'threshold_curve';
         printFig(fig,in.fig_fold,fig_name);

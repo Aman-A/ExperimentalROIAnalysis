@@ -273,7 +273,7 @@ if in.save_fig && in.overlay_trials && plot_trials
     end
 %     fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
     fig_name = sprintf('%s_%s_%gtrials',in.plot_func,in.roi_func_mode(1:3),num_trials);
-    if isfield(analysis,'successful_spikes') && num_trials > 4 
+    if isfield(analysis,'successful_spikes') && num_trials > 4 && exp_settings(1).num_stim == 1
         trace_names = {trace_axis.Children.DisplayName};
         for i = 1:num_trials
             spiked = analysis.successful_spikes(i);

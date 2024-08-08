@@ -1,4 +1,4 @@
-function [data_raw,def_raw,drug_data_raw,out,out_drug] = plotDCmod_drug_experiment_analysis(dataset_def_filename,reporter,roi_func_mode,...
+function [data_raw,def_raw,drug_data_raw,out,out_drug,varargout] = plotDCmod_drug_experiment_analysis(dataset_def_filename,reporter,roi_func_mode,...
                                             mode_str,load_compiled_dataset,varargin)
 %PLOTDCMOD_DRUG_EXPERIMENT_ANALYSIS(dataset_def_filename,reporter,roi_func_mode,...
 %                                            mode_str,load_compiled_dataset,varargin) 
@@ -13,7 +13,7 @@ function [data_raw,def_raw,drug_data_raw,out,out_drug] = plotDCmod_drug_experime
 %   --------------- 
 
 % AUTHOR    : Aman Aberra 
-in.plot_figs = 1:5; % 1 - mean peaks in control. vs each drug condition as line/scatter plot
+in.plot_figs = 1:9; % 1 - mean peaks in control. vs each drug condition as line/scatter plot
                     % 2 - mean peaks within cell in control. vs each drug condition as line/scatter plot
                     % 3 - mean peaks in control. vs each drug condition as CDFs
                     % 4 - change in DC modulation within cell in control. vs each drug
@@ -22,6 +22,7 @@ in.plot_figs = 1:5; % 1 - mean peaks in control. vs each drug condition as line/
                     % 7 - Mean stim-averaged traces before and during DC in
                     % control and drug (overlaid)
                     % 8 - Mean stim-averaged traces before and during DC in
+                    % 9 - peak vs. ap within trains
                     % control and drug (side by side)
 in.plot_amps = [-1,1];
 in.plot_amps_units = 'mA';
@@ -48,6 +49,8 @@ in.analysis_fold = pwd;
 in.spike_thresh = 3; % peak = 3xstd(baseline) above baseline for spike
 in.qc_settings = 'off'; 
 in.exclude_dishes = [];
+in.train_plot_mode = 'normroi'; % abs, normroi, cell, cell_normroi, cell_sep, cell_normroi_sep
+in.train_add_regress = 0; 
 [~,in.fig_fold] = fileparts(dataset_def_filename);
 in = sl.in.processVarargin(in,varargin);
 %%
@@ -362,7 +365,7 @@ if any(in.plot_figs == 3)
     end
 end
 %% Plot mean peaks before and during within cell in control vs. in drug
-
+% TODO
 %% Quantify modulation within cell in control vs. in drug 
 if any(in.plot_figs == 4)
     fig = figure('Units','inches');
@@ -396,8 +399,10 @@ if any(in.plot_figs == 4)
             for k = 1:length(l)
                 l(k).Color = dish_cols(k,:);
             end
-            mean_peakmodij = mean([peak_mod_cont_cell_peri(:,j),peak_mod_drug_cell_peri(:,j)],1,'omitnan');
-            sem_peakmodij = std([peak_mod_cont_cell_peri(:,j),peak_mod_drug_cell_peri(:,j)],0,1,'omitnan')/sqrt(num_cells_drug(i));
+            mean_peakmodij = mean([peak_mod_cont_cell_peri(:,j),...
+                                peak_mod_drug_cell_peri(:,j)],1,'omitnan');
+            sem_peakmodij = std([peak_mod_cont_cell_peri(:,j),...
+                                peak_mod_drug_cell_peri(:,j)],0,1,'omitnan')/sqrt(num_cells_drug(i));
             errorbar(ax,x_vals(:,j),mean_peakmodij,sem_peakmodij,...
                 'Color','k','LineStyle','-','LineWidth',2,'MarkerSize',10);    
             fprintf(' %s:\n',in.amp_labels{j});
@@ -646,7 +651,7 @@ if any(in.plot_figs == 7)
 end
 %% Mean stim-averaged traces before and during DC SIDE BY SIDE in control and drug
 if any(in.plot_figs == 8)    
-    for i = 1:length(in.drug_names)
+    for i = 1:length(in.drug_names)        
         fig = figure('Units','inches');
         fig.Position(3:4) = [11.5 5.9];
         for j = 1:length(in.plot_amps)
@@ -709,5 +714,195 @@ if any(in.plot_figs == 8)
         end
     end
 end
-%% RM Anova
+%% Plot peaks across trains
+if any(in.plot_figs == 9)
+    train_data = cell(1,length(in.drug_names));
+    for i = 1:length(in.drug_names)
+        if contains(in.train_plot_mode,'cell')
+            train_plot_inds = dish_inds_drug{i};            
+        else
+            train_plot_inds = roi_inds_drug(:,i);
+        end
+        train_data{i} = cell(1,2); % {cont, drug}
+        for k = 1:2
+            if k == 1
+                outi = out;
+                cond_name = in.control_name;
+                fig_name = sprintf('peak_vs_APnum_%gdishes_%gROIs_%s_%s-%g',...
+                    num_dishes,num_rois_total,...
+                    in.train_plot_mode,cond_name,k);
+            else
+                outi = out_drug;
+                cond_name = in.drug_names{i};
+                fig_name = sprintf('peak_vs_APnum_%gdishes_%gROIs_%s_%s',...
+                    num_dishes,num_rois_total,...
+                    in.train_plot_mode,cond_name);
+            end            
+            if in.train_add_regress
+                fig_name = [fig_name '_fit'];
+                fig_name2 = [fig_name '_slope_bar'];
+            else
+                fig_name2 = '';
+            end
+            fig = figure('Units','inches');         
+            fig.Position(3:4) = [23 4.4]; 
+            [mean_train,var_train] = plotSubthreshModPeakTrains(outi,...
+                                        in.train_plot_mode,'fig_name',fig_name,...
+                                        'fig_fold',in.fig_fold,'cond_labels',in.amp_labels,...
+                                        'save_fig',in.save_figs,'cond_name',cond_name,...
+                                        'include_inds',train_plot_inds,'add_regress',...
+                                        in.train_add_regress,'fig_name2',fig_name2);
+            train_data{i}{k} = [mean_train,var_train];
+        end
+    end
+    varargout = {train_data};
+    % dish_cols = lines(num_dishes);
+    % num_stim = data{1}.exp_settings(1).num_stim;
+    % for i = 1:length(in.drug_names)        
+    %     % analyze separately each AP within train  
+    %     for k = 1:2 % k=1: control for drugi, k=2: drugi
+    %         if k == 1
+    %             outi = out;
+    %             cond_name = in.control_name;
+    %             fig_name = sprintf('peak_vs_APnum_%gdishes_%gROIs_%s_%s-%g',...
+    %                                         num_dishes,num_rois_total,...
+    %                                         in.train_plot_mode,cond_name,k);
+    %         else
+    %             outi = out_drug; 
+    %             cond_name = in.drug_names{i};
+    %             fig_name = sprintf('peak_vs_APnum_%gdishes_%gROIs_%s_%s',...
+    %                                         num_dishes,num_rois_total,...
+    %                                         in.train_plot_mode,cond_name);
+    %         end
+    %         if strcmp(in.train_plot_mode,'abs')
+    %             % mean across rois (unnormalized)
+    %             mean_peaks_before_mat_tr_rois  = squeeze(mean(outi.mean_peaks_before_mat_tr(roi_inds_drug(:,i),:,:),1,'omitnan'));
+    %             mean_peaks_during_mat_tr_rois  = squeeze(mean(outi.mean_peaks_during_mat_tr(roi_inds_drug(:,i),:,:),1,'omitnan'));
+    %             mean_peaks_after_mat_tr_rois  = squeeze(mean(outi.mean_peaks_after_mat_tr(roi_inds_drug(:,i),:,:),1,'omitnan'));
+    %             % sem across rois
+    %             sem_peaks_before_mat_tr_rois = squeeze(std(outi.mean_peaks_before_mat_tr(roi_inds_drug(:,i),:,:),0,1,'omitnan'))/sqrt(num_rois_drug(i));
+    %             sem_peaks_during_mat_tr_rois = squeeze(std(outi.mean_peaks_during_mat_tr(roi_inds_drug(:,i),:,:),0,1,'omitnan'))/sqrt(num_rois_drug(i));
+    %             sem_peaks_after_mat_tr_rois = squeeze(std(outi.mean_peaks_after_mat_tr(roi_inds_drug(:,i),:,:),0,1,'omitnan'))/sqrt(num_rois_drug(i));
+    %             % organize in cell arrays
+    %             mean_train = {mean_peaks_before_mat_tr_rois; % unnormalized
+    %                 mean_peaks_during_mat_tr_rois;
+    %                 mean_peaks_after_mat_tr_rois};
+    %             var_train = {sem_peaks_before_mat_tr_rois;
+    %                 sem_peaks_during_mat_tr_rois;
+    %                 sem_peaks_after_mat_tr_rois};
+    %         elseif strcmp(in.train_plot_mode,'normroi')
+    %             % mean and std/sem across ROIs (normalized)
+    %             mean_peaks_before_mat_tr_norm_rois = squeeze(mean(outi.mean_peaks_before_mat_tr_norm(roi_inds_drug(:,i),:,:),1,'omitnan'));
+    %             mean_peaks_during_mat_tr_norm_rois = squeeze(mean(outi.mean_peaks_during_mat_tr_norm(roi_inds_drug(:,i),:,:),1,'omitnan'));
+    %             mean_peaks_after_mat_tr_norm_rois = squeeze(mean(outi.mean_peaks_after_mat_tr_norm(roi_inds_drug(:,i),:,:),1,'omitnan'));
+    %             % sem across ROIs (normalized)
+    %             sem_peaks_before_mat_tr_norm_rois = squeeze(std(outi.mean_peaks_before_mat_tr_norm(roi_inds_drug(:,i),:,:),0,1,'omitnan'))/sqrt(num_rois_drug(i));
+    %             sem_peaks_during_mat_tr_norm_rois = squeeze(std(outi.mean_peaks_during_mat_tr_norm(roi_inds_drug(:,i),:,:),0,1,'omitnan'))/sqrt(num_rois_drug(i));
+    %             sem_peaks_after_mat_tr_norm_rois = squeeze(std(outi.mean_peaks_after_mat_tr_norm(roi_inds_drug(:,i),:,:),0,1,'omitnan'))/sqrt(num_rois_drug(i));
+    %             % organize in cell arrays
+    %             mean_train = {mean_peaks_before_mat_tr_norm_rois; % normalized within ROI
+    %                 mean_peaks_during_mat_tr_norm_rois;
+    %                 mean_peaks_after_mat_tr_norm_rois};
+    %             var_train = {sem_peaks_before_mat_tr_norm_rois;
+    %                 sem_peaks_during_mat_tr_norm_rois;
+    %                 sem_peaks_after_mat_tr_norm_rois};
+    %         elseif strcmp(in.train_plot_mode,'cell')
+    %             % train within cell
+    %             mean_peaks_before_mat_tr_cell  = squeeze(mean(outi.mean_peaks_before_cell_tr(dish_inds_drug{i},:,:),1,'omitnan'));
+    %             mean_peaks_during_mat_tr_cell  = squeeze(mean(outi.mean_peaks_during_cell_tr(dish_inds_drug{i},:,:),1,'omitnan'));
+    %             mean_peaks_after_mat_tr_cell  = squeeze(mean(outi.mean_peaks_after_cell_tr(dish_inds_drug{i},:,:),1,'omitnan'));
+    %             % sem across cell
+    %             sem_peaks_before_mat_tr_cell = squeeze(std(outi.mean_peaks_before_mat_tr(dish_inds_drug{i},:,:),0,1,'omitnan'))/sqrt(num_cells_drug(i));
+    %             sem_peaks_during_mat_tr_cell = squeeze(std(outi.mean_peaks_during_mat_tr(dish_inds_drug{i},:,:),0,1,'omitnan'))/sqrt(num_cells_drug(i));
+    %             sem_peaks_after_mat_tr_cell = squeeze(std(outi.mean_peaks_after_mat_tr(dish_inds_drug{i},:,:),0,1,'omitnan'))/sqrt(num_cells_drug(i));
+    %             mean_train = {mean_peaks_before_mat_tr_cell;
+    %                 mean_peaks_during_mat_tr_cell;
+    %                 mean_peaks_after_mat_tr_cell};
+    %             var_train = {sem_peaks_before_mat_tr_cell;
+    %                 sem_peaks_during_mat_tr_cell;
+    %                 sem_peaks_after_mat_tr_cell};
+    %         elseif strcmp(in.train_plot_mode,'cell_normroi')
+    %             % train within cell after normalizing within ROI to mean before
+    %             mean_peaks_before_mat_tr_cell_norm  = squeeze(mean(outi.mean_peaks_before_cell_tr_norm(dish_inds_drug{i},:,:),1,'omitnan'));
+    %             mean_peaks_during_mat_tr_cell_norm  = squeeze(mean(outi.mean_peaks_during_cell_tr_norm(dish_inds_drug{i},:,:),1,'omitnan'));
+    %             mean_peaks_after_mat_tr_cell_norm  = squeeze(mean(outi.mean_peaks_after_cell_tr_norm(dish_inds_drug{i},:,:),1,'omitnan'));
+    %             % sem across cell
+    %             sem_peaks_before_mat_tr_cell_norm = squeeze(std(outi.mean_peaks_before_mat_tr_norm(dish_inds_drug{i},:,:),0,1,'omitnan'))/sqrt(num_cells_drug(i));
+    %             sem_peaks_during_mat_tr_cell_norm = squeeze(std(outi.mean_peaks_during_mat_tr_norm(dish_inds_drug{i},:,:),0,1,'omitnan'))/sqrt(num_cells_drug(i));
+    %             sem_peaks_after_mat_tr_cell_norm = squeeze(std(outi.mean_peaks_after_mat_tr_norm(dish_inds_drug{i},:,:),0,1,'omitnan'))/sqrt(num_cells_drug(i));
+    %             % organize into cell arrays
+    %             mean_train = {mean_peaks_before_mat_tr_cell_norm; % normalized within ROI
+    %                 mean_peaks_during_mat_tr_cell_norm;
+    %                 mean_peaks_after_mat_tr_cell_norm};
+    %             var_train = {sem_peaks_before_mat_tr_cell_norm;
+    %                 sem_peaks_during_mat_tr_cell_norm;
+    %                 sem_peaks_after_mat_tr_cell_norm};
+    %         elseif strcmp(in.train_plot_mode,'cell_sep') % plot cell traces separately
+    %             mean_train = {outi.mean_peaks_before_cell_tr(dish_inds_drug{i},:,:);
+    %                         outi.mean_peaks_during_cell_tr(dish_inds_drug{i},:,:);
+    %                         outi.mean_peaks_after_cell_tr(dish_inds_drug{i},:,:)};
+    %         elseif strcmp(in.train_plot_mode,'cell_normroi_sep') % plot cell traces separately
+    %             mean_train = {outi.mean_peaks_before_cell_tr_norm(dish_inds_drug{i},:,:);
+    %                 outi.mean_peaks_during_cell_tr_norm(dish_inds_drug{i},:,:);
+    %                 outi.mean_peaks_after_cell_tr_norm(dish_inds_drug{i},:,:)};
+    %         end
+    %         % Plot
+    %         fig = figure('Units','inches');
+    %         fig.Position(3:4) = [23 4.4];
+    %         leg_pos = [0.8890    0.6753    0.0912    0.2192];
+    %         for j = 1:num_amps
+    %             ax = subplot(1,num_amps,j);
+    %             % e1 = errorbar(1:num_stim,mean_train{1}(:,i),...
+    %             %                     var_train{1}(:,i),'-k');
+    %             % hold on;
+    %             % e2 = errorbar((num_stim+1):2*num_stim,mean_train{2}(:,i),...
+    %             %                     var_train{2}(:,i),'-r');
+    %             % e3 = errorbar((2*num_stim+1):3*num_stim,mean_train{3}(:,i),...
+    %             %                     var_train{3}(:,i),'-b');
+    %             if contains(in.train_plot_mode,'sep')
+    %                 e1 = plot(ax,1:num_stim,squeeze(mean_train{1}(:,:,j)));
+    %                 hold on;
+    %                 e2 = plot(ax,(num_stim+1):2*num_stim,squeeze(mean_train{2}(:,:,j)));
+    %                 e3 = plot(ax,(2*num_stim+1):3*num_stim,squeeze(mean_train{3}(:,:,j)));
+    %                 for n = 1:num_dishes
+    %                     e1(n).Color = dish_cols(n,:);
+    %                     e2(n).Color = dish_cols(n,:);
+    %                     e3(n).Color = dish_cols(n,:);
+    %                 end
+    %             else
+    %                 e1 = shadedErrorBar(1:num_stim,mean_train{1}(:,j),...
+    %                     var_train{1}(:,j),'lineProps','k');
+    %                 hold on;
+    %                 e2 = shadedErrorBar((num_stim+1):2*num_stim,mean_train{2}(:,j),...
+    %                     var_train{2}(:,j),'lineProps','r');
+    %                 e3 = shadedErrorBar((2*num_stim+1):3*num_stim,mean_train{3}(:,j),...
+    %                     var_train{3}(:,j),'lineProps','b');
+    %             end
+    %             box(ax,'off');
+    %             if j == 1
+    %                 if contains(in.train_plot_mode,'normroi')
+    %                     ylabel(ax,'Peak (norm. to mean before)')
+    %                 else
+    %                     ylabel(ax,'Mean peak \Delta F/F_{0}')
+    %                 end
+    %             end
+    %             title(ax,in.amp_labels{j});
+    %             xlabel(ax,'AP number');
+    %             plot(ax,[0 3*num_stim],mean(mean_train{1}(:,j))*[1 1],'--','Color',0.4*[1 1 1]);
+    %             if ~contains(in.train_plot_mode,'sep')
+    %                 if j == num_amps
+    %                     legend([e1.patch,e2.patch,e3.patch],'Before','During','After',...
+    %                         'Position',leg_pos);
+    %                 end
+    %             end
+    %         end
+    %         setAxesUniformLim(fig,'YLim');       
+    %         sgtitle(strrep(cond_name,'_',' '),'FontName',ax.FontName,'FontSize',ax.FontSize);
+    %         if in.save_figs
+    %             printFig(fig,fig_fold,fig_name)
+    %         end
+    %     end
+    % end
+end
 
+end

@@ -16,8 +16,8 @@ function plotBarPlot_ErrBars_Points(data,varargin)
 in.x_vals = []; 
 in.plot_err = 'sem'; % 'std' or 'sem' to use st dev or standard error for error bars
 in.bar_labels = {}; % cell array of string labels for bars
-in.bar_cols = {}; 
-in.bar_alphas = {};
+in.bar_cols = [0.4 0.4 0.4]; 
+in.bar_alphas = 0.4;
 in.font_name = 'Arial';
 in.font_size = 16; 
 in.jitter_amount = 0.05; 
@@ -69,7 +69,7 @@ if ~isempty(in.bar_cols)
     end
 end
 if ~isempty(in.bar_alphas)
-    if length(in.bar_alphas) == 1 % uniform bar alpha
+    if isscalar(in.bar_alphas) % uniform bar alpha
         in.bar_alphas = repmat(in.bar_alphas,n_bars,1);
     end
 end
