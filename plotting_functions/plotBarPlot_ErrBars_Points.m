@@ -66,6 +66,8 @@ end
 if ~isempty(in.bar_cols)
     if ~iscell(in.bar_cols) && size(in.bar_cols,1) == 1 % uniform bar color
         in.bar_cols = repmat({in.bar_cols},n_bars,1);
+    elseif ~iscell(in.bar_cols) && size(in.bar_cols,1) == size(data,2) % RGB array
+        in.bar_cols = mat2cell(in.bar_cols,ones(1,size(in.bar_cols,1)),3);
     end
 end
 if ~isempty(in.bar_alphas)

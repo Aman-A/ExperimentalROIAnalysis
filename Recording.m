@@ -285,7 +285,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 % skip saving for now to save disk space, recreate as
                 % needed and use adjusted name for downstream processed
                 % data files                
-                fitswrite(flipud(obj.vals),motcorr_filepath);
+                fitswrite(obj.vals,motcorr_filepath);
                 fprintf('Saved motion corrected recording to %s\n',obj.filepath)
                 end
                 obj.img_name = motcorr_img_name;
