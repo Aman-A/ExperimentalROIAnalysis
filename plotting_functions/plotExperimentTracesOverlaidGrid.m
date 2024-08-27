@@ -95,8 +95,9 @@ t = exp_settings.getTimeVector(size(F{1},1));
 if strcmp(in.align_to,'none') % align to stimulus, not characteristics of responses 
     if regexp(plot_func,'aligned')
         t = t - t(exp_settings.baseline_wind+1); % align to stim
-    else
-        t = t - t(exp_settings.stim_vals(1)); % align to first stim
+%     else
+%         t = t - t(exp_settings.stim_vals(1)); % align to first stim
+        
     end
 else % align to some aspect of response waveforms
     t_all = cell(1,size(meanF,2));

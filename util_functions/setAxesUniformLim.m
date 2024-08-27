@@ -25,6 +25,7 @@ lims = [inf,-inf];
 axes_all = []; 
 for i = 1:length(fig.Children)
     if strcmp(fig.Children(i).Type,'axes')
+        axis(fig.Children(i),'auto');
         lims(1) = min(fig.Children(i).(x_or_y_lim)(1),lims(1));
         lims(2) = max(fig.Children(i).(x_or_y_lim)(2),lims(2));
         axes_all = [axes_all,fig.Children(i)];

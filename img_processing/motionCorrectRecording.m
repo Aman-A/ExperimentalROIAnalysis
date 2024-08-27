@@ -44,7 +44,7 @@ if nargin < 4
     method = 'dft'; % 'dft' discrete fourier transform method
                     % 'imregtform' affine transformation with imregtform
 end
-ref = mean(data(:,:,ref_frames),3); 
+ref = mean(data(:,:,ref_frames),3,'omitnan'); 
 data2 = data; 
 switch method    
     case 'dft'
