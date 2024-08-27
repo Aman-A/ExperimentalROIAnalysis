@@ -25,11 +25,14 @@ in = sl.in.processVarargin(in,varargin);
 
 if in.norm_to_before   
     % Normalize to mean of peaks before DC
-    peaks_during = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_during,peaks_before,'UniformOutput',0);    
-    peaks_before = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_before,peaks_before,'UniformOutput',0);
+    peaks_during = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_during,...
+                                           peaks_before,'UniformOutput',0);        
     if in.plot_after
-        peaks_after = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_after,peaks_before,'UniformOutput',0);
+        peaks_after = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_after,...
+                                           peaks_before,'UniformOutput',0);
     end
+    peaks_before = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_before,...
+                                           peaks_before,'UniformOutput',0);
 end
 if in.plot_means % take mean of all peaks within ROI
     peaks_before = cellfun(@(x) mean(x,2,'omitnan'),peaks_before,'UniformOutput',0);
@@ -106,6 +109,9 @@ for i = 1:num_amps
         if in.norm_to_before
             plot([1 1],[0 1],'--','Color',0.6*[1 1 1]);
         end
+        if i == 1
+            ylabel(ax,'Proportion');
+        end
     end    
     if ~isempty(in.num_dishes_per_amp)
         text(ax,ax.XLim(1)+0.2*range(ax.XLim),0.2,sprintf('n = %g boutons\n%g dishes',...
@@ -114,7 +120,7 @@ for i = 1:num_amps
     end
 end
 if ~strcmp(in.hist_norm,'cdf')
-    setAxesUniformLim(fig,'YLim');
+    setAxesUniformLim(fig,'YLim');    
 end
 if in.save_fig
     fig_name = sprintf('peaks_%s_%gROIs_mean%g_norm%g',in.hist_norm,...

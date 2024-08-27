@@ -228,6 +228,10 @@ elseif strcmp(in.roi_func_mode,'separate')
             std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
         end
     end    
+    if exp_settings(1).num_trains > 1
+    % reshape to num_rois x num_trains x num_stim x num_trials
+        bslines = cellfun(@(x) permute(x,[1 3 2]),bslines,'UniformOutput',0);
+    end
     bslines = cell2mat(reshape(bslines,1,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = trialsCell2Mat(deltaF_F0);
     mean_deltaF_F0 = mean(deltaF_F0,[3 4],'omitnan'); 

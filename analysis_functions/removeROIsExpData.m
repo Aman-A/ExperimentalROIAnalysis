@@ -25,7 +25,8 @@ data_out = data;
 if any(~keep_rois)     
     num_conditions = length(data.conditions);
     data_out.means_all = cellfun(@(x) x(:,keep_rois,:),data_out.means_all,'UniformOutput',0);
-    data_out.baselines_all = cellfun(@(x) x(keep_rois,:,:),data_out.baselines_all,'UniformOutput',0);
+    data_out.baselines_all = cellfun(@(x) x(keep_rois,:,:,:),data_out.baselines_all,'UniformOutput',0);
+    % data_out.baselines_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.baselines_all,'UniformOutput',0);
     data_out.deltaF_F0_all = cellfun(@(x) x(:,keep_rois,:),data_out.deltaF_F0_all,'UniformOutput',0);
     data_out.mean_deltaF_F0_all = cellfun(@(x) x(:,keep_rois),data_out.mean_deltaF_F0_all,'UniformOutput',0);
     data_out.peaks_deltaF_F0_all = cellfun(@(x) x(:,keep_rois,:,:),data_out.peaks_deltaF_F0_all,'UniformOutput',0);

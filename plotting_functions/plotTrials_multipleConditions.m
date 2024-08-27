@@ -94,7 +94,7 @@ for i = 1:num_conditions
     end
     % Output metrics with dimensions: [num_stim x num_rois x num_trials]
     if isfield(tdi.analysis,'peaks')
-        out.peaks_deltaF_F0_all{i} = permute(concatFieldInStructArray(tdi.analysis,'peaks'),[2 1 3 4]); 
+        out.peaks_deltaF_F0_all{i} = permute(concatFieldInStructArray(tdi.analysis,'peaks'),[2 1 3 4]);         
         % Time of peak in sec relative to first stimulus
         out.peak_times_all{i} = permute(concatFieldInStructArray(tdi.analysis,'peak_times'),[2 1 3 4]);    
         out.mean_peaks{i} = [tdi.analysis.mean_peak];
@@ -121,7 +121,8 @@ for i = 1:num_conditions
         out.mean_fwhm{i} = tdi.analysis.mean_fwhm;
     end    
     out.trial_times_all{i} = tdi.trial_times;
-    out.baselines_all{i} = tdi.bslines;
+    % out.baselines_all{i} = tdi.bslines;
+    out.baselines_all{i} = permute(tdi.bslines,[2 1 3 4]);
     out.rois_all{i} = tdi.rois_all; 
     img_names_new{i} = tdi.img_names; 
 end

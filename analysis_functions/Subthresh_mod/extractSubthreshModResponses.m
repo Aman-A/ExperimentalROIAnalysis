@@ -31,15 +31,20 @@ subthresh_lvls = cellfun(@(x) str2num(x),def.(in.plot_var),'UniformOutput',0); %
 peaks_before = cell(1,num_vars);
 peaks_during = cell(1,num_vars);
 peaks_after = cell(1,num_vars);
+bslines_before = cell(1,num_vars);
+bslines_during = cell(1,num_vars);
+bslines_after = cell(1,num_vars);
 dish_inds = cell(1,num_vars);
 dF_al2_before = cell(1,num_vars);
 dF_al2_during = cell(1,num_vars);
 dF_al2_after = cell(1,num_vars);
+F = cell(1,num_vars); % full recording
 success_before = cell(1,num_vars);
 success_during = cell(1,num_vars);
 success_after = cell(1,num_vars);
 num_rois = nan(1,num_dishes);
 max_num_peaks = zeros(1,length(plot_vars)); % max number of peaks across all dishes
+max_num_trials = zeros(1,length(plot_vars));
 max_Nt_al2 = zeros(1,length(plot_vars)); % max number of time points for deltaF_F0_aligned2 across all dishes
 plot_data_inds = cell(1,num_dishes);
 for i = 1:num_dishes    
@@ -52,6 +57,7 @@ for i = 1:num_dishes
             max_num_peaks(j) = max(max_num_peaks(j),...
                 prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)            
             max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{data_ind},1));
+            max_num_trials(j) = max(max_num_trials(j),max(cellfun(@length,data{1}.img_names,'UniformOutput',1)));
         end
     end
 end
@@ -78,6 +84,8 @@ for i = 1:num_dishes
     data_out{i} = datai; 
     peaksi = datai.peaks_deltaF_F0_all;
     dF_al2i = datai.deltaF_F0_aligned2_all;     
+    meansi = datai.means_all; 
+    baselines_alli = datai.baselines_all; 
     num_roisi = datai.rois_all{1}{1}.num_rois;    
     if num_roisi < in.min_rois_included
         fprintf('Skipping dish %g, only %g ROIs (< %g)\n',i,num_roisi,in.min_rois_included);
@@ -94,7 +102,8 @@ for i = 1:num_dishes
             jd = plot_data_inds{i}(jp);                                                         
             peaksij = peaksi{jd}; % 3 x num_rois x 20 x num_trials
             dF_al2ij = dF_al2i{jd}; 
-
+            meansij = meansi{jd};
+            bslinesij = baselines_alli{jd};
             num_trials  = size(peaksij,4);                   
             num_peaksij = prod(size(peaksij,[3 4]));
             dish_inds{jp} = [dish_inds{jp};i*ones(num_roisi,1)];
@@ -110,11 +119,23 @@ for i = 1:num_dishes
                                                                         max_num_peaks(jp)-size(peaks_during{jp},2))];...
                                              [squeeze(peaksij(2,:,:)),...
                                              nan(size(peaksij,2),max_num_peaks(jp)-num_peaksij)]];
+                % bslines_before{jp} = [[bslines_before{jp},nan(size(bslines_before{jp},1),...
+                %                                                         max_num_peaks(jp)-size(bslines_before{jp},2))];...
+                %                              [squeeze(bslinesij(1,:,:)),...
+                %                              nan(size(bslinesij,2),max_num_peaks(jp)-num_peaksij)]];
+                % bslines_during{jp} = [[bslines_during{jp},nan(size(bslines_during{jp},1),...
+                %                                                         max_num_peaks(jp)-size(bslines_during{jp},2))];...
+                %                              [squeeze(bslinesij(2,:,:)),...
+                %                              nan(size(bslinesij,2),max_num_peaks(jp)-num_peaksij)]];
                 if include_after
                     peaks_after{jp} = [[peaks_after{jp},nan(size(peaks_after{jp},1),...
                                                                             max_num_peaks(jp)-size(peaks_after{jp},2))];...
                                                  [squeeze(peaksij(3,:,:)),...
                                                  nan(size(peaksij,2),max_num_peaks(jp)-num_peaksij)]];      
+                    % bslines_after{jp} = [[bslines_after{jp},nan(size(bslines_after{jp},1),...
+                    %                                                         max_num_peaks(jp)-size(peaks_after{jp},2))];...
+                    %                              [squeeze(bslinesij(3,:,:)),...
+                    %                              nan(size(bslinesij,2),max_num_peaks(jp)-num_peaksij)]];      
                 else
                     peaks_after{jp} = [[peaks_after{jp},nan(size(peaks_after{jp},1),...
                                                                             max_num_peaks(jp)-size(peaks_after{jp},2))];...
@@ -130,7 +151,7 @@ for i = 1:num_dishes
                     dF_al2_during{jp} = cat(3,dF_al2_during{jp},...
                         nan([size(dF_al2_during{jp},[1 2]),max_num_peaks(jp)-size(dF_al2_during{jp},3)]));
                     dF_al2_after{jp} = cat(3,dF_al2_after{jp},...
-                            nan([size(dF_al2_after{jp},[1 2]),max_num_peaks(jp)-size(dF_al2_after{jp},3)]));
+                            nan([size(dF_al2_after{jp},[1 2]),max_num_peaks(jp)-size(dF_al2_after{jp},3)]));                                        
                 end
                 dF_al2_beforeij = reshape(dF_al2ij(:,:,1,:),...
                                     [size(dF_al2ij,[1,2]),num_peaksij]);
@@ -154,6 +175,8 @@ for i = 1:num_dishes
                                                 cat(3,dF_al2_afterij,...
                                                     nan([size(dF_al2_afterij,...
                                                     [1,2]),max_num_peaks(jp)-size(dF_al2_afterij,3)]))];                
+                % raw F traces
+                % F{jp} = [F{jp},cat(3,meansij,nan([size(meansij,[1 2]),max_num_trials(jp)-num_trials]))];
                 % dish_inds{peak_indj} = [dish_inds{peak_indj};i*ones(num_roisi,1)];
                 exp_settingsij = datai.exp_settings(jd);
                 detectSpikesArgs = {exp_settingsij,spike_thresh,...
@@ -188,6 +211,8 @@ for i = 1:num_dishes
             else                                
                 peaks_before{jp} = [peaks_before{jp};nan(num_roisi,max_num_peaks(jp))];
                 peaks_during{jp} = [peaks_during{jp};nan(num_roisi,max_num_peaks(jp))];                
+                % bslines_before{jp} = [bslines_before{jp};nan(num_roisi,max_num_peaks(jp))];
+                % bslines_during{jp} = [bslines_during{jp};nan(num_roisi,max_num_peaks(jp))];                
                 dF_al2_before{jp} = [dF_al2_before{jp},...
                                             nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))];
@@ -195,6 +220,7 @@ for i = 1:num_dishes
                                             nan(max_Nt_al2(jp),...
                                             num_roisi,max_num_peaks(jp))];
                 peaks_after{jp} = [peaks_after{jp};nan(num_roisi,max_num_peaks(jp))];
+                % bslines_after{jp} = [bslines_after{jp};nan(num_roisi,max_num_peaks(jp))];                
                 dF_al2_after{jp} = [dF_al2_after{jp},...
                                         nan(max_Nt_al2(jp),...
                                         num_roisi,max_num_peaks(jp))];
@@ -214,17 +240,19 @@ for i = 1:num_dishes
             else
                 peaks_before{jp} = [peaks_before{jp};nan(num_roisi,max_num_peaks(jp))];
                 peaks_during{jp} = [peaks_during{jp};nan(num_roisi,max_num_peaks(jp))];
-                
+                % bslines_before{jp} = [bslines_before{jp};nan(num_roisi,max_num_peaks(jp))];
+                % bslines_during{jp} = [bslines_during{jp};nan(num_roisi,max_num_peaks(jp))];
                 dF_al2_before{jp} = [dF_al2_before{jp},...
                                             nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))];
                 dF_al2_during{jp} = [dF_al2_during{jp},...
                                             nan(max_Nt_al2(jp),...
-                                                    num_roisi,max_num_peaks(jp))];
+                                                    num_roisi,max_num_peaks(jp))];                
                 success_before{jp} = [success_before{jp};nan(num_roisi,max_num_peaks(jp))];
                 success_during{jp} = [success_during{jp};nan(num_roisi,max_num_peaks(jp))];
                 if include_after
                     peaks_after{jp} = [peaks_after{jp};nan(num_roisi,max_num_peaks(jp))];
+                    % bslines_after{jp} = [bslines_after{jp};nan(num_roisi,max_num_peaks(jp))];
                     dF_al2_after{jp} = [dF_al2_after{jp},...
                                             nan(max_Nt_al2(jp),...
                                                     num_roisi,max_num_peaks(jp))]; 
@@ -251,16 +279,21 @@ fprintf('Extracted peaks and stim-aligned traces in %g dishes, %g ROIs total\n',
 %% Output data
 out.peaks_before = peaks_before;
 out.peaks_during = peaks_during;
+out.bslines_before = bslines_before; 
+out.bslines_during = bslines_during; 
 out.dish_inds = dish_inds;
 out.dF_al2_before = dF_al2_before;
 out.dF_al2_during = dF_al2_during;
 out.dF_al2_after = dF_al2_after;
+out.F = F; % raw fluorescence traces
 out.num_rois = num_rois; 
 out.roi_in_dish_index_id = roi_in_dish_index_id;
 out.roi_in_dish_index = roi_in_dish_index;
 % [num_rois x num_stim x num_amps]
 out.peaks_before_mat = cell2mat(reshape(peaks_before,1,1,length(peaks_before)));
 out.peaks_during_mat = cell2mat(reshape(peaks_during,1,1,length(peaks_during)));
+out.bslines_before_mat = cell2mat(reshape(bslines_before,1,1,length(bslines_before)));
+out.bslines_during_mat = cell2mat(reshape(bslines_during,1,1,length(bslines_during)));
 out.mean_peaks_before = squeeze(mean(out.peaks_before_mat,2,'omitnan'));
 out.mean_peaks_during = squeeze(mean(out.peaks_during_mat,2,'omitnan'));
 out.peak_mod_during = out.mean_peaks_during./out.mean_peaks_before; % ratio (during/before)
@@ -330,7 +363,9 @@ out.success_during_mat = cell2mat(reshape(success_during,1,1,length(peaks_during
 out.exclude_rois = exclude_rois; 
 if include_after
     out.peaks_after = peaks_after;
+    out.bslines_after = bslines_after; 
     out.peaks_after_mat = cell2mat(reshape(peaks_after,1,1,length(peaks_after)));
+    out.bslines_after_mat = cell2mat(reshape(bslines_after,1,1,length(bslines_after)));
     out.mean_peaks_after = squeeze(mean(out.peaks_after_mat,2,'omitnan'));
     out.peak_mod_after = out.mean_peaks_after./out.mean_peaks_before; 
     out.peak_mod_after_per = 100*(out.peak_mod_after - 1); % percent change
