@@ -54,6 +54,7 @@ in.decay_fit_dur = 100; % duration in ms of post-stim phase to
 in.tau_fit_order = 1; % order for rise/decay time constant fitting
 in.tau_fit_offset_on = 0; % include y offset for tau fit
 in.tau_fit_snr_thresh = 3; % snr threshold for fitting tau from polarization trials
+in.units = 'mA'; % units of subthreshold stim
 in = sl.in.processVarargin(in,varargin);
 %% Load data if necessary
 if isfield(data_or_data_params,'AP_data')
@@ -94,19 +95,27 @@ if isfield(AP_data,'successful_spikes')
 else
     error('Need successful_spikes to compute averaged AP')
 end
+num_trains = AP_data.exp_settings(1).num_trains;
+if num_trains > 1
+    dF_field = 'deltaF_F0_aligned2_all';
+else
+    dF_field = 'deltaF_F0_aligned_all';
+end
 % time vector (ms)
-tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(AP_data.deltaF_F0_aligned2_all{1},1));
+tAP = 1e3*AP_data.exp_settings(1).getTimeVector(size(AP_data.(dF_field){1},1));
 tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
+
+
 % Only average trials with successful AP 
-meanAPs = cell(1,length(AP_data.deltaF_F0_aligned2_all));
-tAPs = cell(1,length(AP_data.deltaF_F0_aligned2_all));
-for i = 1:length(AP_data.deltaF_F0_aligned2_all)
+meanAPs = cell(1,length(AP_data.(dF_field)));
+tAPs = cell(1,length(AP_data.(dF_field)));
+for i = 1:length(AP_data.(dF_field))
     if strcmp(in.roi_func_mode,'separate')
         si = squeeze(successful_spikes{i}(in.roi_ind,:,:)); 
     else
         si = successful_spikes{i}; 
     end        
-    yi = indicator_dir*AP_data.deltaF_F0_aligned2_all{i}(:,in.roi_ind,:,:); 
+    yi = indicator_dir*AP_data.(dF_field){i}(:,in.roi_ind,:,:); 
     for j = 1:AP_data.exp_settings(1).num_trains
         yi(:,in.roi_ind,j,~logical(si(j,:))) = nan; % blank traces with no AP
         if any(~si(in.roi_ind,j,:))
@@ -133,7 +142,7 @@ if in.mean_AP_peak_align
         meanAPs,tAPs,'UniformOutput',0);
 end
 %%
-% meanAPs = cellfun(@(x) squeeze(mean(x,[2,4])),AP_data.deltaF_F0_aligned2_all,...
+% meanAPs = cellfun(@(x) squeeze(mean(x,[2,4])),AP_data.(dF_field),...
 %                 'UniformOutput',0);
 
 mean_pols = cell2mat(cellfun(@(x) indicator_dir*squeeze(mean(x(:,in.roi_ind,:),3)),...
@@ -186,14 +195,14 @@ out.pol_gain_mV_est_E = pol_gain_mV_est_E; % polarization sensitivity for E-fiel
 out.amp_labels = amp_labels;
 out.last_AP_cond_ind = last_AP_cond_ind;
 %% Calculate FWHMs, peaks, and AHPs
-mean_widths = zeros(2,length(amps),length(in.frac_amps)); % [control; dc on]
+mean_widths = zeros(num_trains,length(amps),length(in.frac_amps)); % [control; dc on]
 % mean_fwhm = zeros(2,length(amps)); % [control; dc on]
 stim_index0 = AP_data.exp_settings(1).baseline_wind + 1; 
-AP_peaks = zeros(2,length(amps));
-AHP_amps = zeros(2,length(amps));
-AHP_inds = zeros(2,length(amps));
+AP_peaks = zeros(num_trains,length(amps));
+AHP_amps = zeros(num_trains,length(amps));
+AHP_inds = zeros(num_trains,length(amps));
 for j = 1:length(amps) % dc amp
-    for i = 1:2    % [control, dc on]
+    for i = 1:num_trains   % [control, dc on]
         if in.spline_interp
             [t,y] = splineInterp(tAP*1e-3,meanAPs{j}(:,i),in.spline_sampling_factor);
             stim_index = stim_index0*in.spline_sampling_factor - in.spline_sampling_factor; 
@@ -231,28 +240,29 @@ if in.spline_interp
 end
 % calculate change in width, AP peak, and AHP amp normalized to before DC
 % waveform
-plot_widths = mean_widths(:,:,value2ind(in.plot_width,in.frac_amps));
-if in.norm_AP_feats == 1
-    % percent changes
-    norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
-    norm_AP_peaks = 100*(AP_peaks(2,:)-AP_peaks(1,:))./AP_peaks(1,:);
-    norm_AHP_amps = 100*(AHP_amps(2,:)-AHP_amps(1,:))./abs(AHP_amps(1,:));
-elseif in.norm_AP_feats == 2 % requires 0 mA control trial
-    norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
-    norm_AP_peaks = 100*(AP_peaks(2,:)-AP_peaks(1,:))./AP_peaks(1,:);
-    norm_AHP_amps = 100*(AHP_amps(2,:)-AHP_amps(1,:))./abs(AHP_amps(1,:));
-    % subtract from 0 mA control trial
-    cont_ind = amps == 0; 
-    norm_widths = norm_widths - norm_widths(cont_ind);
-    norm_AP_peaks = norm_AP_peaks - norm_AP_peaks(cont_ind);
-    norm_AHP_amps = norm_AHP_amps - norm_AHP_amps(cont_ind);
-else
-    % abs differences
-    norm_widths = plot_widths(2,:)-plot_widths(1,:); % ms
-    norm_AP_peaks = AP_peaks(2,:)-AP_peaks(1,:); % percent deltaF/F
-    norm_AHP_amps = AHP_amps(2,:)-AHP_amps(1,:); % percent deltaF/F (below baseline)
+if num_trains > 1
+    plot_widths = mean_widths(:,:,value2ind(in.plot_width,in.frac_amps));
+    if in.norm_AP_feats == 1
+        % percent changes
+        norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
+        norm_AP_peaks = 100*(AP_peaks(2,:)-AP_peaks(1,:))./AP_peaks(1,:);
+        norm_AHP_amps = 100*(AHP_amps(2,:)-AHP_amps(1,:))./abs(AHP_amps(1,:));
+    elseif in.norm_AP_feats == 2 % requires 0 mA control trial
+        norm_widths = 100*(plot_widths(2,:)-plot_widths(1,:))./plot_widths(1,:);
+        norm_AP_peaks = 100*(AP_peaks(2,:)-AP_peaks(1,:))./AP_peaks(1,:);
+        norm_AHP_amps = 100*(AHP_amps(2,:)-AHP_amps(1,:))./abs(AHP_amps(1,:));
+        % subtract from 0 mA control trial
+        cont_ind = amps == 0; 
+        norm_widths = norm_widths - norm_widths(cont_ind);
+        norm_AP_peaks = norm_AP_peaks - norm_AP_peaks(cont_ind);
+        norm_AHP_amps = norm_AHP_amps - norm_AHP_amps(cont_ind);
+    else
+        % abs differences
+        norm_widths = plot_widths(2,:)-plot_widths(1,:); % ms
+        norm_AP_peaks = AP_peaks(2,:)-AP_peaks(1,:); % percent deltaF/F
+        norm_AHP_amps = AHP_amps(2,:)-AHP_amps(1,:); % percent deltaF/F (below baseline)
+    end
 end
-
 out.frac_amps = in.frac_amps; 
 out.mean_widths = mean_widths; 
 out.AP_peaks = AP_peaks;
@@ -362,7 +372,7 @@ out.mean_pols_smooth = mean_pols_smooth; % only differs from mean_pols if pol_sm
 
 %% Plot Waveforms averaged within condition/amp
 stim_wind_inds = stim_index0:length(tAP);
-if any(in.plot_figs == 1)
+if any(in.plot_figs == 1) && num_trains > 1
     fig = figure('Units','inches');
     fig.Position = [0.5 0.5 in.ap_fig_size];
     for i = 1:length(amps)
@@ -408,14 +418,14 @@ if any(in.plot_figs == 1)
             plot(ax,tAP(AHP_inds(1,i)),yi(AHP_inds(1,i),1),'ko','MarkerSize',12);
             plot(ax,tAP(AHP_inds(2,i)),yi(AHP_inds(2,i),2),'o','Color',in.amp_cols{i},'MarkerSize',12);
         end
-        legend(ax,lhands,'Before',sprintf('%g mA',amps(i)),'Box','off')
+        legend(ax,lhands,'Before',sprintf('%g %s',amps(i),in.units),'Box','off')
     end
     if save_figs
         printFig(fig,fig_fold,sprintf('meanAP_traces_norm%g_align_to_%s',in.norm_AP_peak,in.align_AP_to))
     end
 end
 %% Plot widths at fractions of max
-if any(in.plot_figs == 2)
+if any(in.plot_figs == 2) && num_trains > 1
     fig = figure('Units','inches');
     fig.Position = [0.5 0.5 in.ap_fig_size];
     for j = 1:length(amps)
@@ -443,6 +453,7 @@ if any(in.plot_figs == 2)
     end
 end
 %% Plot modulation of fwhm, peak, and ahp
+if num_trains > 1
 % x_vals = amps;
 [~,amp_inds_mod,amp_inds] = intersect(amps,pol_amps); % get corresponding current amps from polarization trials
 if isempty(amp_inds) || strcmp(in.plot_pol_x_vals,'current')
@@ -450,7 +461,13 @@ if isempty(amp_inds) || strcmp(in.plot_pol_x_vals,'current')
 %     xlabel_str = 'Polarization (% AP peak - est)';
     pol_x_vals = amps; 
     amp_inds_mod = find(amps~=0);
-    xlabel_str = 'Current (mA)';
+    if strcmp(in.units,'mA')
+        xlabel_str = 'Current (mA)';
+    elseif strcmp(in.units,'V/m')
+        xlabel_str = '|E| (V/m)';
+    else
+        xlabel_str = sprintf('Stimulus (%s)',in.units); 
+    end
 else
     pol_x_vals = dF_ss_norm(amp_inds);
     xlabel_str = 'Polarization (% AP peak)';
@@ -468,7 +485,8 @@ out.pol_inds = amp_inds; % indices of polarization trials with amplitudes matchi
 out.ap_inds = amp_inds_mod; % indices of AP trials with subthreshold modulation amplitudes corresponding to polarization trials
                                 % used to match AP features to polarization
                                 % amplitudes
-if any(in.plot_figs == 3)
+end
+if any(in.plot_figs == 3) && num_trains > 1
     fig = figure('Units','inches'); 
     fig.Position = [10 0.5 7  8.5];
     ax1 = subplot(3,1,1);
@@ -576,7 +594,7 @@ if any(in.plot_figs == 5)
     ax = subplot(1,2,1);
     plot(pol_amps,dF_ss_norm,'ko'); hold on;
     plot(pol_amps,b(1) + b(2)*pol_amps,'--k');
-    xlabel('Current amplitude (mA)');
+    xlabel(sprintf('Amplitude (%s)',in.units));
     ylabel('Polarization (% AP amp)');
     box off; 
     title('Polarization normalized to AP amplitude','FontWeight','normal')
@@ -593,10 +611,10 @@ if any(in.plot_figs == 5)
     l2(1).Color = est_cols(1,:);
     l2(2).Color = est_cols(2,:);
     ylabel('Estimated polarization (mV)');
-    box off;
-    xlabel('Current amplitude (mA)');
-    title(sprintf('%.1f to %.1f mV per mA\n(est. AP amp of %g to %g mV)',...
-            pol_gain_mV_est,in.ap_height_est),'FontWeight','normal')
+    box off;    
+    xlabel(sprintf('Amplitude (%s)',in.units));
+    title(sprintf('%.2f to %.2f mV per %s\n(est. AP amp of %g to %g mV)',...
+            pol_gain_mV_est,in.units,in.ap_height_est),'FontWeight','normal')
     legend(l1,numericVec2chars(in.ap_height_est,'AP amp = %g mV'),'Box','off',...
            'Location','best')
     fprintf('R^2 = %.4f, p = %.4f\n',Rsq,p)
@@ -610,24 +628,26 @@ if any(in.plot_figs == 5)
 end
 %% Plot polarization rise and decay time constant fits 
 if any(in.plot_figs==6)
+    margins = [0.05,0.05];
     fig = figure('Units','inches');
     fig.Position = [0.6 0.6 15 7];
     for i = 1:length(pol_amps)
 %         ax1 = subplot_tight(length(pol_amps),2,2*i-1,[0.1,0.1]);
-        ax1 = subplot_tight(2,length(pol_amps),i,[0.1,0.1]);
+        ax1 = subplot_tight(2,length(pol_amps),i,margins);
         plot(ax1,t_rise,100*sign(dF_ss(i))*pol_rise(:,i),'k-'); hold(ax1,'on')
         if ~isempty(rise_fitobjs{i})
             plot(ax1,t_rise,100*sign(dF_ss(i))*rise_fitobjs{i}(t_rise),'r--');
         end
-        title(ax1,sprintf('%g mA: rise',pol_amps(i)),'FontWeight','normal')        
+        % title(ax1,sprintf('%g %s: rise',pol_amps(i),in.units),'FontWeight','normal')        
+        title(ax1,sprintf('%g %s',pol_amps(i),in.units),'FontWeight','normal')        
 %         ylabel(ax1,'\Delta F/F_{0} (%)')        
 %         ax2 = subplot_tight(length(pol_amps),2,2*i,[0.1,0.1]);
-        ax2 = subplot_tight(2,length(pol_amps),length(pol_amps)+i,[0.1,0.1]);
+        ax2 = subplot_tight(2,length(pol_amps),length(pol_amps)+i,margins);
         plot(ax2,t_decay,100*sign(dF_ss(i))*pol_decay(:,i),'k-'); hold(ax2,'on');
         if ~isempty(decay_fitobjs{i})
             plot(ax2,t_decay,100*sign(dF_ss(i))*decay_fitobjs{i}(t_decay),'r--');        
         end
-        title(ax2,sprintf('%g mA: decay',pol_amps(i)),'FontWeight','normal')
+        % title(ax2,sprintf('%g %s: decay',pol_amps(i),in.units),'FontWeight','normal')
 %         title('decay');
         box([ax1,ax2],'off')        
         % Add text with fit params
@@ -665,6 +685,7 @@ if any(in.plot_figs==6)
 %         ylim(ax1,100*max(abs(pol_rise),[],'all')*[-1.1 1.1]);
 %         ylim(ax2,100*max(abs(pol_decay),[],'all')*[-1.1 1.1]);
     end
+    % setAxesUniformLim(fig,'YLim');
     if save_figs
         printFig(fig,fig_fold,sprintf('Polarization_tau%g_fits_smooth%g',...
                 in.tau_fit_order,in.pol_smooth_wind))
