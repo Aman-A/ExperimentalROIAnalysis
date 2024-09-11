@@ -32,7 +32,12 @@ if nargin < 2 || isempty(stim_marker_mode)
     if length(stim_frames(:)) > 100
         stim_marker_mode = 1;
     elseif ~isempty(in.stim_pulse_dur) 
-        stim_marker_mode = 3; 
+        % if brief pulse relative to inter-stim interval (<5%), use points
+        if in.stim_pulse_dur < 0.05*max(diff(stim_frames)) 
+            stim_marker_mode = 1; 
+        else% otherwise use bars with time scaling
+            stim_marker_mode = 3; 
+        end
     else
         stim_marker_mode = 2;
     end    

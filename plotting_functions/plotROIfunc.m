@@ -23,14 +23,14 @@ in.offset_factor = []; % 1.01 default 1 - offset lines by offset_factor*max(func
 in.sbar_len = 1; % for separate roi_func_mode plots
 in.sort_traces = 0; % 1 for ascending, 2 for descending
 in.stim_marker_mode = []; % 1 for points, 2 for vertical lines, 3 for horz (needs stim_pulse_dur)
-in.stim_pulse_dur = []; % duration of stimulus pulses, default ignore
+in.stim_pulse_dur = []; % duration of stimulus pulses, default ignore (sec)
 in.show_y_tick_labels = 1; % for separate mode, shows ytick labels for ROIs
 in.indicator_dir = 1; % 1 = positive going, -1 = negative going
 in.plot_settings = {};
 in.peak_align = 1;
 in.baseline_wind = []; 
 in.stim_frames2 = []; 
-in.stim_pulse_dur2 = []; 
+in.stim_pulse_dur2 = [];  % sec
 in.roi_colors = {}; 
 in = sl.in.processVarargin(in,varargin); 
 if isempty(in.ax) % create new figure, otherwise add to existing
@@ -76,7 +76,8 @@ else
     if ~isempty(in.stim_frames2)
         in.stim_frames2 = in.stim_frames2/sampling_rate;
     end
-    in.stim_pulse_dur2 = in.stim_pulse_dur2/sampling_rate; 
+    % input in units of time
+%     in.stim_pulse_dur2 = in.stim_pulse_dur2/sampling_rate; 
     % set t = 0 as first stim frame
 %     if ~isempty(stim_frames) && numel(stim_frames) < 40
 % %     if ~isempty(stim_frames) && ~strcmp(func_name,'deltaF_F0')
@@ -156,7 +157,8 @@ if strcmp(func_output.roi_func_mode,'combine')
     else
         roi_str = sprintf('all %g ROIs',num_rois);
     end
-    display_names = strcat(func_output.img_name,{': '},roi_str);
+%     display_names = strcat(func_output.img_name,{': '},roi_str);
+    display_names = {func_output.img_name};
     title_str = func_output.img_name;
     if isfield(func_output,'baseline')
        title_str = [title_str sprintf(': Baseline = %.1f a.u.',...

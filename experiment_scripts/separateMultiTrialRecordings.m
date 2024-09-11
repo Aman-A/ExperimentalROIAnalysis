@@ -6,11 +6,11 @@
 % frames 101:150: trial 3 (condition 1)
 % frames 151:200: trial 4 (condition 2)
 % (loaded from 200 frame recording)
-data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
-exp_date = '240522';
-reporter = 'vGlut-pHluorin';
+data_fold = fullfile(getDataFold('aman_thor'),'Efield_thresh_experiments'); 
+exp_date = '240715';
+reporter = 'GCaMP8f_SynmRuby';
 dish = 'dish1';
-div = 15;
+div = 20;
 
 cond_suffs = {'0mA','1mA','-1mA'}; % repeating order of trials and suffixes
                                    % to add to names
@@ -38,7 +38,7 @@ for i = 1:length(rec_names)
                                            incond_trial_ind);       
        recij_filepath = fullfile(exp_fold,output_folds{cond_ind},...
                             [recij_img_name,reci.format]);
-       fitswrite(flipud(rec_ij_vals),recij_filepath);
+       fitswrite(rec_ij_vals,recij_filepath);
        fprintf('%g: Saved trial %g, %s to %s\n',j,incond_trial_ind,...
                     cond_suffs{cond_ind},recij_img_name);
     end    

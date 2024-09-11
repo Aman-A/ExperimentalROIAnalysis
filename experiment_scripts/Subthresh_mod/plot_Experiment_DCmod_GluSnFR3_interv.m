@@ -1,10 +1,10 @@
 %% Script to plot single trial
 % Overlay single trails on same figure by running with different img_name
 data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
-exp_date = '240710';
+exp_date = '240718';
 reporter = 'GluSnFR3_SynmRuby';
-dish = 'dish1';
-div = 15; 
+dish = 'dish4';
+div = 16; 
 
 supra_amp = 3; 
 % roiset_filename = 'RoiSet_auto_pos0.mat';
@@ -20,12 +20,13 @@ stim_wind = 0.4; % window
 baseline_wind = 0.15; % frames before stim/s to take baseline
 units = 'sec'; % specify units 'frames' or 'sec' 
 sampling_rate = 100; % sampling rate (frames/sec)
-stim_pulse_durs2_all = [10,0.25,0.1,0.02,0.001];
-stim_vals2_all = [10.25,arrayfun(@(x) defineStimTrain(10.5 - x,freq,10),...
-                                    stim_pulse_durs2_all(2:end),'UniformOutput',0)]; 
+stim_pulse_dur2 = 0.25; % sec
+intervs_ms = [0,5,10,20,50];
+intervs_start = intervs_ms*1e-3 + stim_pulse_dur2;
+stim_vals2_all = arrayfun(@(x) defineStimTrain(10.5 - x,freq,10),...
+                                    intervs_start,'UniformOutput',0); 
 exp_settings = ExperimentSettings(); 
-for i = 1:length(stim_pulse_durs2_all)
-    stim_pulse_dur2 = stim_pulse_durs2_all(i);
+for i = 1:length(stim_vals2_all)
     stim_vals2 = stim_vals2_all{i};
     exp_settings(i) = ExperimentSettings(stim_vals,stim_wind,baseline_wind,...
                                       units,sampling_rate,'stim_vals2',stim_vals2,...
@@ -54,7 +55,8 @@ end
 ps.recenterROIs = 0;
 ps.transform_type = 'none'; % 'none' or 'displace'         
 ps.registration_rec = fullfile(data_fold,exp_date,reporter,dish,...
-    sprintf('%gmABi_50VpmG_10s/%gmABi_50VpmG_10s.fits',supra_amp,supra_amp)); 
+    sprintf('%gmABi_50VpmG_%gs_interv0ms/%gmABi_50VpmG_%gs_interv0ms.fits',...
+            supra_amp,stim_pulse_dur2,supra_amp,stim_pulse_dur2)); 
 ps.show_roi_labels = 1; 
 ps.close_img_after_save = 0;   
 ps.roi_func_fig_size = [19.8 22]; 
@@ -68,10 +70,10 @@ ps.analysis_funcs = {'peaks','peak_times','poststim_ints','decay_fit'};
 ps.spike_window = 0.08;
 ps.blank_frame_inds = 1;
 %%
-supra_amp = 3; 
-pulse_ind = 1; 
-ps.condition = sprintf('%gmABi_50VpmG_%gs',...
-            supra_amp,stim_pulse_durs2_all(pulse_ind));
+supra_amp = 2; 
+interv_ind = 1; 
+ps.condition = sprintf('%gmABi_50VpmG_%gms_interv%gms',...
+                    supra_amp,stim_pulse_dur2,intervs_ms(interv_ind)); 
 img_name = [ps.condition '.fits'];
 trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.32]; 
 trace_axis = gca;
@@ -133,10 +135,9 @@ roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                             ps.registration_rec);  
 
 data_suffix = 'train';
-pws = [stim_pulse_durs2_all];
-amps = [50*ones(1,length(unique(pws)))];
-conditions = arrayfun(@(x,y) sprintf('%gmABi_%gVpmG_%gs',supra_amp,x,y),amps,pws,'UniformOutput',0);
-
+conditions = arrayfun(@(x) sprintf('%gmABi_50VpmG_%gms_interv%gms',...
+                            supra_amp,stim_pulse_dur2*1e3,x),...
+                            intervs_ms,'UniformOutput',0);
 if regexp(ps.plot_func,'aligned')
     ps.x_lim = [-baseline_wind, 1.4];    
     ps.y_lim = []; 
@@ -158,14 +159,13 @@ out = plotTrials_multipleConditions(conditions,ps,[exp_settings],...
 % set(0,'DefaultFigureVisible','on') % to avoid window taking screen focus
 %%
 cond_inds = []; 
-pws = [stim_pulse_durs2_all];
-amps = [50*ones(1,length(unique(pws)))];
-cond_names = arrayfun(@(x,y) sprintf('%gmA_%gs',x,y),amps,pws,'UniformOutput',0);
+cond_names = arrayfun(@(x) sprintf('%gVpm_interv%gms',sub_amp,x),intervs_ms,...
+                'UniformOutput',0);
 sort_amp_ind = 1;
 save_figs = 1;
 norm_to_cont = 0;
 plot_roi_ind = 1; 
-plot_figs = [1,2,5:7]; % Select analysis figures to plot
+plot_figs = [1,2]; % Select analysis figures to plot
                       % 1 - Plot mean trace averaged across ROIs
                       % 2 - Plot mean traces averaged within ROIs
                       % 3 - Plot responses within specific ROI in single figure                      
@@ -201,7 +201,7 @@ else
                         summary_fig_fold);
 end
 %%
-pw_labels = [sprintf('%g s',pws(1)),numericVec2chars(pws(2:end)*1e3,'%g ms')];
+interv_labels = numericVec2chars(intervs_ms,'%g ms');
 % mean across APs within train and trials
 mean_dF_rois = cellfun(@(x) mean(x,[4 5]),out.deltaF_F0_aligned2_all,'UniformOutput',0); % mean within ROis
 
@@ -214,9 +214,10 @@ fig = figure;
 b = bar(peak_change_all,'FaceColor',0.8*[1 1 1],'EdgeColor','k');
 box off; 
 ax = gca;
-ax.XTick = 1:length(pw_labels);
-ax.XTickLabel = pw_labels;
+ax.XTick = 1:length(interv_labels);
+ax.XTickLabel = interv_labels;
 ax.YLabel.String = 'Peak change (%)';
+% ylim([0 55]);
 ax.YGrid = 'on';
 if save_figs
     printFig(fig,summary_fig_fold,'mean_peak_change')
@@ -236,9 +237,10 @@ hold on;
 errorbar(mean_peaks_rois_per_change,sem_peaks_rois_per_change,'ko')
 box off; 
 ax = gca;
-ax.XTick = 1:length(pw_labels);
-ax.XTickLabel = pw_labels;
+ax.XTick = 1:length(interv_labels);
+ax.XTickLabel = interv_labels;
 ax.YLabel.String = 'Peak change (%)';
+% ylim([0 55]);
 ax.YGrid = 'on';
 if save_figs
     printFig(fig,summary_fig_fold,'peak_change_mean_sem_rois')
@@ -246,7 +248,7 @@ end
 %% Plot peaks averaged across ROIs over time
 % mean across ROIs and trials
 % num_frames x num_trains x num_stim
-mean_dF_rois_train = cellfun(@(x) squeeze(mean(x,[2 5])),out.deltaF_F0_aligned2_all,...
+mean_dF_rois_train = cellfun(@(x) squeeze(mean(x(:,:,:,:,2),[2 5])),out.deltaF_F0_aligned2_all,...
                                 'UniformOutput',0); 
 peaks_rois_train = cellfun(@(x) squeeze(max(x,[],1)),mean_dF_rois_train,...
                             'UniformOutput',0);
@@ -257,23 +259,24 @@ plot_peaks_str = 'norm_mean'; % 'abs' or 'norm_mean'
 if strcmp(plot_peaks_str,'norm_mean')
     plot_peaks = peaks_rois_train_nmean;
     ylabel_str = {'Peak GluSnFR3 \Delta F/F_{0}','(norm. mean before)'};
-    mean_ys_before = ones(1,length(pws));    
+    mean_ys_before = ones(1,length(intervs_ms));    
     fig_name = 'peak_vs_time_norm_mean_before';
-    yax_lims = [];
+    yax_lims = [0.5 1.7];
 else
     plot_peaks = cellfun(@(x) x*100,peaks_rois_train,'UniformOutput',0);
     ylabel_str = 'Peak GluSnFR3 \Delta F/F_{0} (%)';
     mean_ys_before = cellfun(@(x) 100*mean(x(1,:)),peaks_rois_train,'UniformOutput',1);
     fig_name = 'peak_vs_time_abs';
-    yax_lims = [];    
+    yax_lims = [0 12];
+    % yax_lims = [];
 end
 mean_ys_during = cellfun(@(x) mean(x(2,:)),plot_peaks,'UniformOutput',1);
 
 fig = figure('Units','inches'); 
 % fig.Position(3:4) = [7.7 8.2]; % 5 x 1 fig
 fig.Position(3:4) = [18 4]; % 1 x 5 fig
-for i = 1:length(pws)    
-    subplot(1,length(pws),i);
+for i = 1:length(intervs_ms)    
+    subplot(1,length(intervs_ms),i);
     plot(1:exp_settings(1).num_stim,plot_peaks{i}(1,:),'-ko'); % before
     hold on;
     plot(exp_settings(1).num_stim + 1:2*exp_settings(1).num_stim,...
@@ -289,7 +292,7 @@ for i = 1:length(pws)
     if ~isempty(yax_lims)
         ylim(yax_lims);
     end
-    title(pw_labels{i});
+    title(interv_labels{i});
     xlabel('AP (#)')
 end
 if isempty(yax_lims)

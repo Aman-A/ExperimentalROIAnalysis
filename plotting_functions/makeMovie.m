@@ -62,15 +62,16 @@ in.time_text_y = 0.05; % factor of YLim to place time text
 in.time_color = 'w';
 in.font_size = 16; 
 in.t_rel_stim = 2; % 1 - make time relative to stim 1, 2 - make time relative to stim2
+in.show_time_str = 1; 
 in.pixel_size = []; % input if not using Recording object
 in.mask = []; 
 in.plot_mode = 'imagesc'; % 'imagesc' or 'surf'
 in = sl.in.processVarargin(in,varargin);
 
 %% Crop movie by ROI
-vals = vals(in.ROI(1):in.ROI(2),in.ROI(3):in.ROI(4),in.start_frame:in.end_frame);
+vals = vals(in.ROI(3):in.ROI(4),in.ROI(1):in.ROI(2),in.start_frame:in.end_frame);
 if ~isempty(in.mask) % crop mask as well
-    in.mask = in.mask(in.ROI(1):in.ROI(2),in.ROI(3):in.ROI(4));
+    in.mask = in.mask(in.ROI(3):in.ROI(4),in.ROI(1):in.ROI(2));
 end
 num_frames = size(vals,3);
 % Filter
@@ -125,7 +126,7 @@ for i = 1:num_frames
         if i == 1
             I = imagesc(ax,valsi); 
         else
-            
+             I.CData = valsi; 
         end
     else
         if i == 1
@@ -148,12 +149,14 @@ for i = 1:num_frames
     colormap(ax,cmap);
     ax.YDir = in.YDir;    
     colorbar; 
-    if i == 1
-        time_str = text(ax.XLim(1)+diff(ax.XLim)*in.time_text_x,ax.YLim(1) + diff(ax.YLim)*in.time_text_y,...
-                sprintf('t = %.2f sec',t(i)),'Color',in.time_color,...
-                'FontSize',in.font_size);
-    else
-        time_str.String = sprintf('t = %.2f sec',t(i));
+    if in.show_time_str
+        if i == 1
+            time_str = text(ax.XLim(1)+diff(ax.XLim)*in.time_text_x,ax.YLim(1) + diff(ax.YLim)*in.time_text_y,...
+                    sprintf('t = %.2f sec',t(i)),'Color',in.time_color,...
+                    'FontSize',in.font_size);
+        else
+            time_str.String = sprintf('t = %.2f sec',t(i));
+        end
     end
     if ~isempty(stim_vals1)
         if any(i==stim_vals1)
@@ -188,6 +191,9 @@ for i = 1:num_frames
         end
     end
     if in.sbar_len > 0 && i == 1
+        if isempty(in.pixel_size)
+            in.pixel_size = recording.pixel_size;
+        end
         addScaleBar(in.pixel_size,size(vals,[1 2]),ax,'sbar_len',in.sbar_len,...
                     'x_factor',in.sbar_x_factor,'y_factor',in.sbar_y_factor,...
                     'sbar_orientation','vert','text_x_factor',in.sbar_text_x_factor,...

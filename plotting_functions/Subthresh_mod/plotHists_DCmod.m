@@ -25,14 +25,21 @@ in = sl.in.processVarargin(in,varargin);
 
 if in.norm_to_before   
     % Normalize to mean of peaks before DC
-    peaks_during = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_during,peaks_before,'UniformOutput',0);
-    peaks_after = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_after,peaks_before,'UniformOutput',0);
-    peaks_before = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_before,peaks_before,'UniformOutput',0);
+    peaks_during = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_during,...
+                                           peaks_before,'UniformOutput',0);        
+    if in.plot_after
+        peaks_after = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_after,...
+                                           peaks_before,'UniformOutput',0);
+    end
+    peaks_before = cellfun(@(x,y) x./mean(y,2,'omitnan'),peaks_before,...
+                                           peaks_before,'UniformOutput',0);
 end
 if in.plot_means % take mean of all peaks within ROI
     peaks_before = cellfun(@(x) mean(x,2,'omitnan'),peaks_before,'UniformOutput',0);
     peaks_during = cellfun(@(x) mean(x,2,'omitnan'),peaks_during,'UniformOutput',0);
-    peaks_after = cellfun(@(x) mean(x,2,'omitnan'),peaks_after,'UniformOutput',0);
+    if in.plot_after
+        peaks_after = cellfun(@(x) mean(x,2,'omitnan'),peaks_after,'UniformOutput',0);
+    end
 end
 fig = gcf;
 num_amps = length(peaks_before);
@@ -41,12 +48,14 @@ for i = 1:num_amps
     % Remove nans
     peaks_beforei = peaks_before{i}(~isnan(peaks_before{i}));
     peaks_duringi = peaks_during{i}(~isnan(peaks_during{i}));    
-    peaks_afteri = peaks_after{i}(~isnan(peaks_after{i}));
+    if in.plot_after
+        peaks_afteri = peaks_after{i}(~isnan(peaks_after{i}));
+    end
     
     if in.plot_diffs
-        peaks_duringi_diff = peaks_duringi - peaks_beforei;
-        peaks_afteri_diff = peaks_afteri - peaks_beforei;
+        peaks_duringi_diff = peaks_duringi - peaks_beforei;        
         if in.plot_after
+            peaks_afteri_diff = peaks_afteri - peaks_beforei;
             min_pkij = min([peaks_duringi_diff,peaks_afteri_diff],[],'all','omitnan');
             max_pkij = max([peaks_duringi_diff,peaks_afteri_diff],[],'all','omitnan');
         else
@@ -55,7 +64,9 @@ for i = 1:num_amps
         end
         edges = linspace(min_pkij,max_pkij,in.nbins);
         Nd = histcounts(peaks_duringi_diff,edges,'Normalization',in.hist_norm);
-        Na = histcounts(peaks_afteri_diff,edges,'Normalization',in.hist_norm);
+        if in.plot_after
+            Na = histcounts(peaks_afteri_diff,edges,'Normalization',in.hist_norm);
+        end
     else
         if in.plot_after
             max_pkij = max([peaks_beforei,peaks_duringi,peaks_afteri],[],'all','omitnan');
@@ -65,7 +76,9 @@ for i = 1:num_amps
         edges = linspace(0,max_pkij,in.nbins);
         Nb = histcounts(peaks_beforei,edges,'Normalization',in.hist_norm);
         Nd = histcounts(peaks_duringi,edges,'Normalization',in.hist_norm);
-        Na = histcounts(peaks_afteri,edges,'Normalization',in.hist_norm);        
+        if in.plot_after
+            Na = histcounts(peaks_afteri,edges,'Normalization',in.hist_norm);        
+        end
     end
     x = edges(1:end-1) + (edges(2)-edges(1))/2;        
     if ~(in.norm_to_before && in.plot_means) && ~in.plot_diffs
@@ -96,6 +109,9 @@ for i = 1:num_amps
         if in.norm_to_before
             plot([1 1],[0 1],'--','Color',0.6*[1 1 1]);
         end
+        if i == 1
+            ylabel(ax,'Proportion');
+        end
     end    
     if ~isempty(in.num_dishes_per_amp)
         text(ax,ax.XLim(1)+0.2*range(ax.XLim),0.2,sprintf('n = %g boutons\n%g dishes',...
@@ -104,7 +120,7 @@ for i = 1:num_amps
     end
 end
 if ~strcmp(in.hist_norm,'cdf')
-    setAxesUniformLim(fig,'YLim');
+    setAxesUniformLim(fig,'YLim');    
 end
 if in.save_fig
     fig_name = sprintf('peaks_%s_%gROIs_mean%g_norm%g',in.hist_norm,...

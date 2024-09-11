@@ -63,6 +63,7 @@ num_vars = length(plot_vars);
 sort_inds = fliplr(1:num_vars);
 dc_inds = [1,length(plot_vars)];
 flipped_amp_rois = false(num_rois_total,1);
+% Sort within ROI
 for i = 1:num_rois_total
     % [b,~,~,~,stats] = regress(peak_mod_during_per(i,:)',[plot_amps',ones(length(plot_amps),1)]);
     % Rsqi = stats(1); pi = stats(3);
@@ -89,6 +90,10 @@ for i = 1:num_rois_total
         out.peaks_during_mat(i,:,:) = out.peaks_during_mat(i,:,num_vars:-1:1);
         out.success_before_mat(i,:,:) = out.success_before_mat(i,:,num_vars:-1:1);
         out.success_during_mat(i,:,:) = out.success_during_mat(i,:,num_vars:-1:1);
+        out.mean_peaks_before_mat_tr(i,:,:) = out.mean_peaks_before_mat_tr(i,:,num_vars:-1:1);
+        out.mean_peaks_during_mat_tr(i,:,:) = out.mean_peaks_during_mat_tr(i,:,num_vars:-1:1);
+        out.mean_peaks_before_mat_tr_norm(i,:,:) = out.mean_peaks_before_mat_tr_norm(i,:,num_vars:-1:1);
+        out.mean_peaks_during_mat_tr_norm(i,:,:) = out.mean_peaks_during_mat_tr_norm(i,:,num_vars:-1:1);
         if include_after
             out.peak_mod_after(i,:) = fliplr(out.peak_mod_after(i,:));
             out.peak_mod_after_per(i,:) = fliplr(out.peak_mod_after_per(i,:));
@@ -96,6 +101,8 @@ for i = 1:num_rois_total
             out.mean_peaks_after(i,:) = fliplr(out.mean_peaks_after(i,:));
             out.peaks_after_mat(i,:,:) = out.peaks_after_mat(i,:,num_vars:-1:1);
             out.success_after_mat(i,:,:) = out.success_after_mat(i,:,num_vars:-1:1);
+            out.mean_peaks_after_mat_tr(i,:,:) = out.mean_peaks_after_mat_tr(i,:,num_vars:-1:1);
+            out.mean_peaks_after_mat_tr_norm(i,:,:) = out.mean_peaks_after_mat_tr_norm(i,:,num_vars:-1:1);
         end
         for j = 1:floor(num_vars/2) % flip data from each amp with opposite polarity, skip middle if odd number of amps (non-paired)
             % Peaks before 
@@ -140,6 +147,7 @@ for i = 1:num_rois_total
         flipped_amp_rois(i) = true;
     end
 end
+% Sort within cell (average across ROIs within cell)
 num_dishes = length(out.num_rois);
 flipped_amp_cells = false(num_dishes,1);
 for i = 1:num_dishes    
@@ -162,12 +170,18 @@ for i = 1:num_dishes
         out.peak_mod_during_cell_diff(i,:) = fliplr(out.peak_mod_during_cell_diff(i,:)); % flip polarity
         out.mean_peaks_before_cell(i,:) = fliplr(out.mean_peaks_before_cell(i,:));
         out.mean_peaks_during_cell(i,:) = fliplr(out.mean_peaks_during_cell(i,:));
+        out.mean_peaks_before_cell_tr(i,:,:) = out.mean_peaks_before_cell_tr(i,:,num_vars:-1:1);
+        out.mean_peaks_during_cell_tr(i,:,:) = out.mean_peaks_during_cell_tr(i,:,num_vars:-1:1);
+        out.mean_peaks_before_cell_tr_norm(i,:,:) = out.mean_peaks_before_cell_tr_norm(i,:,num_vars:-1:1);
+        out.mean_peaks_during_cell_tr_norm(i,:,:) = out.mean_peaks_during_cell_tr_norm(i,:,num_vars:-1:1);
         flipped_amp_cells(i) = true;
         if include_after
             out.peak_mod_after_cell(i,:) = fliplr(out.peak_mod_after_cell(i,:)); % flip polarity
             out.peak_mod_after_cell_per(i,:) = fliplr(out.peak_mod_after_cell_per(i,:)); % flip polarity
             out.peak_mod_after_cell_diff(i,:) = fliplr(out.peak_mod_after_cell_diff(i,:)); % flip polarity
             out.mean_peaks_after_cell(i,:) = fliplr(out.mean_peaks_after_cell(i,:));
+            out.mean_peaks_after_cell_tr(i,:,:) = out.mean_peaks_after_cell_tr(i,:,num_vars:-1:1);
+            out.mean_peaks_after_cell_tr_norm(i,:,:) = out.mean_peaks_after_cell_tr_norm(i,:,num_vars:-1:1);
         end
     end
 end

@@ -16,8 +16,8 @@ function plotBarPlot_ErrBars_Points(data,varargin)
 in.x_vals = []; 
 in.plot_err = 'sem'; % 'std' or 'sem' to use st dev or standard error for error bars
 in.bar_labels = {}; % cell array of string labels for bars
-in.bar_cols = {}; 
-in.bar_alphas = {};
+in.bar_cols = [0.4 0.4 0.4]; 
+in.bar_alphas = 0.4;
 in.font_name = 'Arial';
 in.font_size = 16; 
 in.jitter_amount = 0.05; 
@@ -66,10 +66,12 @@ end
 if ~isempty(in.bar_cols)
     if ~iscell(in.bar_cols) && size(in.bar_cols,1) == 1 % uniform bar color
         in.bar_cols = repmat({in.bar_cols},n_bars,1);
+    elseif ~iscell(in.bar_cols) && size(in.bar_cols,1) == size(data,2) % RGB array
+        in.bar_cols = mat2cell(in.bar_cols,ones(1,size(in.bar_cols,1)),3);
     end
 end
 if ~isempty(in.bar_alphas)
-    if length(in.bar_alphas) == 1 % uniform bar alpha
+    if isscalar(in.bar_alphas) % uniform bar alpha
         in.bar_alphas = repmat(in.bar_alphas,n_bars,1);
     end
 end
@@ -89,7 +91,7 @@ box(ax,'off');
 % data points
 if in.plot_pts 
     if in.connect_pts
-        l = plot(x_vals,data_mat,'-o','LineWidth',0.5);
+        l = plot(x_vals,data_mat,'LineWidth',0.5,'Marker',in.pt_marker);
         if ~isempty(in.pt_cols)
             if size(in.pt_cols,1) == 1; in.pt_cols = repmat(in.pt_cols,length(l),1); end;                 
             for i = 1:length(l)

@@ -6,16 +6,27 @@ function trials_data = plotTrials(img_names,exp_settings,roiset_filename,...
 in = plotTrialSettings; % get defaults from plotTrialSettings
 in = sl.in.processVarargin(in,varargin); 
 %% Get file names within condition if not input
-if isempty(img_names) % assume all .fits files are relevant trial data
-    if isempty(in.filedir) % construct default experiment file path to this condition
-        filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
-        img_names = getImagesWithinDir(filedir); 
-    else % use input path to find all trials for this condition
-        filedir = in.filedir; 
-        img_names = getImagesWithinDir(filedir); 
-        % append full path
+% if isempty(img_names) % assume all .fits files are relevant trial data
+%     if isempty(in.filedir) % construct default experiment file path to this condition
+%         filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
+%         img_names = getImagesWithinDir(filedir); 
+%     else % use input path to find all trials for this condition
+%         filedir = in.filedir; 
+%         img_names = getImagesWithinDir(filedir); 
+%         % append full path
+%         img_names = fullfile(filedir,img_names); 
+%     end   
+% end
+if isempty(in.filedir) % construct default experiment file path to this condition
+    filedir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,in.condition);            
+else
+    filedir = in.filedir; 
+end
+if isempty(img_names)
+    img_names = getImagesWithinDir(filedir); 
+    if ~isempty(in.filedir) % use manually defined file directory
         img_names = fullfile(filedir,img_names); 
-    end   
+    end
 end
 if ischar(img_names)
    img_names = {img_names};  
@@ -131,9 +142,9 @@ if isempty(in.analysis_funcs)
 else
    analysis_funcs = in.analysis_funcs; 
 end
-if ~exist('filedir','var')
-    filedir = datai.recording.filedir;
-end
+% if ~exist('filedir','var')
+%     filedir = datai.recording.filedir;
+% end
 % Analyze traces
 if isfield(datai.func_output,'deltaF_F0_aligned')        
     deltaF_F0_aligned = trialsCell2Mat(deltaF_F0_aligned); % [num_frames x num_stim x num_trials]
@@ -171,7 +182,8 @@ if strcmp(in.roi_func_mode,'combine')
                                             'fwhm_spline_interp',in.fwhm_spline_interp,...
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
                                             'spike_thresh',in.spike_thresh,...
-                                            'spike_window',in.spike_window);          
+                                            'spike_window',in.spike_window,...
+                                            'spike_min_amp',in.spike_min_amp);          
         if isfield(analysis,'peaks')
             mean_peak_deltaF_F0 = analysis.mean_peak;
             std_peak_deltaF_F0 = analysis.std_peak; 
@@ -201,7 +213,8 @@ elseif strcmp(in.roi_func_mode,'separate')
                                             'fwhm_spline_interp',in.fwhm_spline_interp,...
                                             'train_peak_baseline_mode',train_peak_baseline_mode,...
                                             'spike_thresh',in.spike_thresh,...
-                                            'spike_window',in.spike_window);
+                                            'spike_window',in.spike_window,...
+                                            'spike_min_amp',in.spike_min_amp);
         if isfield(analysis,'peaks')
             mean_peak_deltaF_F0 = analysis.mean_peak;
             std_peak_deltaF_F0 = analysis.std_peak; 
@@ -215,6 +228,10 @@ elseif strcmp(in.roi_func_mode,'separate')
             std_peak_deltaF_F0 = concatFieldInStructArray(analysis,'std_peak'); % std across trials, within roi    
         end
     end    
+    if exp_settings(1).num_trains > 1
+    % reshape to num_rois x num_trains x num_stim x num_trials
+        bslines = cellfun(@(x) permute(x,[1 3 2]),bslines,'UniformOutput',0);
+    end
     bslines = cell2mat(reshape(bslines,1,1,1,num_trials)); % [num_rois x num_stim x num_trials]     
     deltaF_F0 = trialsCell2Mat(deltaF_F0);
     mean_deltaF_F0 = mean(deltaF_F0,[3 4],'omitnan'); 
@@ -258,7 +275,21 @@ if in.save_fig && in.overlay_trials && plot_trials
         fig_dir = fullfile(in.data_fold,in.exp_date,in.reporter,in.dish,...
                             in.condition,['figs_',roiset_filename_no_ext]);
     end
-    fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
+%     fig_name = sprintf('%s_%s_%s_%gtrials',in.condition,in.plot_func,in.roi_func_mode(1:3),num_trials);
+    fig_name = sprintf('%s_%s_%gtrials',in.plot_func,in.roi_func_mode(1:3),num_trials);
+    if isfield(analysis,'successful_spikes') && num_trials > 4 && exp_settings(1).num_stim == 1
+        trace_names = {trace_axis.Children.DisplayName};
+        for i = 1:num_trials
+            spiked = analysis.successful_spikes(i);
+            trace_ind = strcmp(img_names{i},trace_names);
+            l = trace_axis.Children(trace_ind);
+            if spiked
+                l.Color = [1 0 0 0.5];
+            else
+                l.Color = [0.4 0.4 0.4 0.5];
+            end
+        end
+    end
     printFig(trace_fig,fig_dir,fig_name);
 end
 end
