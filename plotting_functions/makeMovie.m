@@ -141,6 +141,8 @@ for i = 1:num_frames
     if i == 1
         if strcmp(in.colormap,'bluewhitered') || strcmp(in.colormap,'bwr')
             cmap = bluewhitered(1000);
+        elseif strcmp(in.colormap,'coolwarm')
+            cmap = coolwarm(1000);
         end    
     end
     colormap(ax,cmap);

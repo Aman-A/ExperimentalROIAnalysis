@@ -14,6 +14,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
         filepath char {mustBeTextScalar} % full path to file
         filepath_orig char {mustBeTextScalar} % full path to original file (e.g. before mot correction)
         format char {mustBeTextScalar}    % image file format
+        format_orig char {mustBeTextScalar}    % image file format
         pixel_size = 0.4; % size of individual pixel in µm (for scale bar) 
                           % default for Andor iXon Ultra 897 (Thor)
         bin_size = 1; % pixel binning (must be symmetric, i.e. 1x1, 2x2, etc.)
@@ -99,7 +100,8 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     end                
                 else
                    obj.format = in.format; 
-                end                        
+                end          
+                obj.format_orig = obj.format; 
                 % Build full path to file
                 obj.filepath = fullfile(obj.filedir,[obj.img_name,obj.format]); 
                 obj.filepath_orig = fullfile(obj.filedir,[obj.img_name,obj.format]); 
@@ -132,11 +134,14 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
             end
             if load_orig
                 load_filepath = obj.filepath_orig;
+                load_format = obj.format_orig; 
             else
                 load_filepath = obj.filepath;
+                load_format = obj.format; 
             end
+
             t_start = tic; 
-            if strcmp(obj.format,'.fits')
+            if strcmp(load_format,'.fits')
                 if exist(load_filepath,'file')
                     obj.vals = fitsread(load_filepath); 
                 else % try getting local data_fold and reconstruct path
@@ -151,7 +156,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                     end  
                     obj.vals = fitsread(obj.filepath); % now try loading again
                 end             
-            elseif strcmp(obj.format,'.tiff') || strcmp(obj.format,'.tif')   
+            elseif strcmp(load_format,'.tiff') || strcmp(load_format,'.tif')   
 %                   obj.vals = single(tiffreadVolume(load_filepath)); 
                 obj.vals = single(loadtiff(load_filepath));                
             else
