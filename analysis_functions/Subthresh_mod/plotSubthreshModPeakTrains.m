@@ -224,8 +224,8 @@ for j = 1:num_conds
         plot(ax,ax.XLim,mean(mean_train{1}(:,:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
     end
 end
-% setAxesUniformLim(fig,'YLim',[0.7 1.6]);       
-setAxesUniformLim(fig,'YLim');       
+setAxesUniformLim(fig,'YLim',[0.7 1.6]);       
+% setAxesUniformLim(fig,'YLim');       
 if ~isempty(in.cond_name)
     sgtitle(strrep(in.cond_name,'_',' '),'FontName',ax.FontName,'FontSize',ax.FontSize);
 end

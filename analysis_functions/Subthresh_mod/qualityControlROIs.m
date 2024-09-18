@@ -90,7 +90,11 @@ if qc_settings.bsline_btwn_trial_per ~= 0 && qc_settings.bsline_btwn_trial_per >
     [~,trial1_ind] = min(trial1_times(plot_inds)); 
     % trial2_times = cellfun(@(x) x(end),data{i}.trial_times_all,'UniformOutput',1); % extract last trial within condition
     % [~,trial2_ind] = max(trial2_times(plot_data_inds{i}));       
-    mean_bslinesi = cellfun(@(x) squeeze(mean(x,[2 3])),data.baselines_all(plot_inds),'UniformOutput',0);    
+    if isequal(size(data.peaks_deltaF_F0_all{1}),size(data.baselines_all{1})) % new size, ntrains x nrois x nstim x ntrials, matches peaks
+        mean_bslinesi = cellfun(@(x) squeeze(mean(x,[1 3])),data.baselines_all(plot_inds),'UniformOutput',0);    
+    else % old nrois x nstim x ntrains x ntrials
+        mean_bslinesi = cellfun(@(x) squeeze(mean(x,[2 3])),data.baselines_all(plot_inds),'UniformOutput',0);    
+    end
     ntrials = cellfun(@(x) size(x,2),mean_bslinesi,'UniformOutput',1);
     if any(ntrials < max(ntrials))
         for i = 1:length(mean_bslinesi)

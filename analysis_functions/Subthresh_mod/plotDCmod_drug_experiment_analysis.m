@@ -19,9 +19,8 @@ in.plot_figs = 1:10; % 1 - mean peaks in control. vs each drug condition as line
                     % 4 - change in DC modulation within cell in control. vs each drug
                     % 5 - change in DC modulation within ROI in control. vs each drug
                     % 6 - CDFs of DC modulation across ROIs 
-                    % 7 - Mean stim-averaged traces before and during DC in
-                    % control and drug (overlaid)
-                    % 8 - Mean stim-averaged traces before and during DC in
+                    % 7 - Mean stim-averaged traces before and during DC OVERLAID in control and drug
+                    % 8 - Mean stim-averaged traces before and during DC SIDE BY SIDE in control and drug
                     % 9 - Mean stim-averaged traces before DC SIDE BY SIDE in control and all drug (same fig)
                     % 10 - peak vs. ap within trains
                     % control and drug (side by side)
@@ -612,7 +611,7 @@ if any(in.plot_figs == 7)
                 ax = gca;
             end
             % mean/sem before and during - control
-            if in.norm_traces == 2 % normalize within trial for all ROIs
+            if in.norm_traces == 2 % normalize within ROI by mean before
                 mean_dF_al2_during_mat = mean_dF_al2_during_mat./max(mean_dF_al2_before_mat,[],1);
                 mean_dF_al2_before_mat = mean_dF_al2_before_mat./max(mean_dF_al2_before_mat,[],1);
                 mean_dF_al2_during_drug_mat = mean_dF_al2_during_drug_mat./max(mean_dF_al2_before_drug_mat,[],1);

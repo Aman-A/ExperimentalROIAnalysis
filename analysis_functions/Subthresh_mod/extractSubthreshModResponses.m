@@ -57,7 +57,7 @@ for i = 1:num_dishes
             max_num_peaks(j) = max(max_num_peaks(j),...
                 prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)            
             max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{data_ind},1));
-            max_num_trials(j) = max(max_num_trials(j),max(cellfun(@length,data{1}.img_names,'UniformOutput',1)));
+            max_num_trials(j) = max(max_num_trials(j),max(cellfun(@length,data{1}.img_names,'UniformOutput',1)));                    
         end
     end
 end
@@ -98,8 +98,8 @@ for i = 1:num_dishes
         include_after = 0;
     end 
     for jp = 1:length(plot_vars)  % index within output dataset for plotting/analysis      
-        if any(plot_vars(jp) == subthresh_lvls{i})                        
-            jd = plot_data_inds{i}(jp);                                                         
+        if any(plot_vars(jp) == subthresh_lvls{i})  
+            jd = plot_data_inds{i}(jp);
             peaksij = peaksi{jd}; % 3 x num_rois x 20 x num_trials
             dF_al2ij = dF_al2i{jd}; 
             meansij = meansi{jd};
