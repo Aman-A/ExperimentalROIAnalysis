@@ -1,22 +1,31 @@
 function [tout,meany] = averagePeakAlignedTraces(t,y,stim_index,dim,...
                                             varargin)
+% dim : scalar
+%       dimension to average over, 1st dim is time, any dimension > 1 and 
+%       < dim treated as separate set of peaks to average across
 % only works for <4 dim
 in.stim_wind = size(y,1) - stim_index;
 in.align_to = 'max';
 in = sl.in.processVarargin(in,varargin);
 ydims = size(y); 
 dim_inds = 2:length(ydims);
-ntraces = prod(ydims(dim_inds(dim_inds~=dim)));
-t_all = cell(ydims(dim_inds(dim_inds~=dim)));
-y_all = cell(ydims(dim_inds(dim_inds~=dim)));
-pk_inds = zeros(ydims(dim_inds(dim_inds~=dim)));
+mean_traces_dims = ydims(dim_inds(dim_inds<dim));
+if isscalar(mean_traces_dims)
+    mean_traces_dims = [1,mean_traces_dims];
+elseif isempty(mean_traces_dims)
+    mean_traces_dims = [1,1];
+end
+ntraces = prod(mean_traces_dims);
+t_all = cell(mean_traces_dims);
+y_all = cell(mean_traces_dims);
+pk_inds = zeros(mean_traces_dims);
 for i = 1:ntraces
-    [indi,indj] = ind2sub(ydims(dim_inds(dim_inds~=dim)),i); % subscripts of this trace    
+    [indi,indj] = ind2sub(mean_traces_dims,i); % subscripts of this trace    
 %     yindsi = {indi,indj}; % build indexing array for y_all
-    indsi = arrayfun(@(x) 1:x,ydims(2:end),'UniformOutput',0); % build indexing arrays
+    indsi = arrayfun(@(x) 1:x,ydims(2:end),'UniformOutput',0); % build indexing arrays        
     if length(dim_inds) == 2
-        indsi(dim_inds~=dim) = {indi};
-    else
+        indsi(dim_inds~=dim) = {indj};
+    elseif length(dim_inds) == 3
         indsi(dim_inds~=dim) = {indi,indj};
     end
     yi = squeeze(y(:,indsi{:}));

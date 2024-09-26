@@ -71,7 +71,11 @@ data_out = cell(size(data));
 for i = 1:num_dishes
     % Apply quality control to ROIs
     if strcmp(in.qc_settings,'off')
-        datai = removeROIsExpData(data{i},in.exclude_rois{i});
+        if length(in.exclude_rois) == num_dishes
+            datai = removeROIsExpData(data{i},in.exclude_rois{i});
+        else
+            datai = data{i}; 
+        end
     else
         if in.print_level > 0
             fprintf('***dish %g***\n',i);

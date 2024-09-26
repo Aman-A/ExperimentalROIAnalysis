@@ -20,12 +20,12 @@ in.roi_func_mode = 'combine';
 in.roi_ind = 1; % only relevant if roi_func_mode 'separate'
 in.amp_cols = {'b','r'};
 in.pol_cols = flipud([ 0.6445         0    0.1484 % for 8
-%             0.8398    0.1875    0.1523
+            0.8398    0.1875    0.1523
             0.9531    0.4258    0.2617
-%             0.9883    0.6797    0.3789
-%             0.6680    0.8477    0.9102
+            0.9883    0.6797    0.3789
+            0.6680    0.8477    0.9102
             0.4531    0.6758    0.8164
-%             0.2695    0.4570    0.7031
+            0.2695    0.4570    0.7031
             0.1914    0.2109    0.5820]);
 in.norm_AP_peak = 0; 
 in.mean_AP_peak_align = 0; 
@@ -33,6 +33,7 @@ in.align_AP_to = 'none';
 in.inset_size = [0.4 0.2]; % works for 2 panels, AP figure
 in.inset_y_scale_factor = 0.3; % works for 2 panels, AP figure
 in.ap_fig_size = [7.2 6]; % inches, AP figure
+in.init_dF_wind = [0 0.01]; % window for initial polarization (10 ms)
 in.dF_ss_wind = [0.3 0.5]; % window to compute steady state in polarization trials
 in.plot_pol_x_vals = 'polarization'; % 'polarization' or 'current', specifies which to use for x values
 in.ap_height_est = [60;120]; % mV - range of AP heights
@@ -115,21 +116,29 @@ for i = 1:length(AP_data.(dF_field))
     else
         si = successful_spikes{i}; 
     end        
-    yi = indicator_dir*AP_data.(dF_field){i}(:,in.roi_ind,:,:); 
-    for j = 1:AP_data.exp_settings(1).num_trains
-        yi(:,in.roi_ind,j,~logical(si(j,:))) = nan; % blank traces with no AP
-        if any(~si(in.roi_ind,j,:))
-            fprintf('%g missed spikes for amp %g, train %g of %g\n',sum(~si(j,:),'all'),...
-                    amps(i),j,AP_data.exp_settings(1).num_trains); 
+    yi = indicator_dir*AP_data.(dF_field){i}(:,in.roi_ind,:,:,:);    
+    yi = squeeze(yi);
+    if strcmp(dF_field,'deltaF_F0_aligned_all')                
+        yi(:,~si) = nan;
+        mean_dim = 2; 
+    elseif strcmp(dF_field,'deltaF_F0_aligned2_all')
+        for j = 1:AP_data.exp_settings(1).num_trains
+            yi(:,j,~si(j,:)) = nan; % blank traces with no AP
+            if any(~si(j,:))
+                fprintf('%g missed spikes for amp %g, train %g of %g\n',sum(~si(j,:),'all'),...
+                        amps(i),j,AP_data.exp_settings(1).num_trains); 
+            end
         end
+        mean_dim = 3; 
     end
     if in.mean_AP_peak_align
         [tAPs{i},meanAPs{i}] = averagePeakAlignedTraces(tAP,yi,...
-                                     AP_data.exp_settings(1).baseline_wind + 1,4); 
+                                     AP_data.exp_settings(1).baseline_wind + 1,mean_dim); 
     else
         meanAPs{i} = squeeze(mean(yi,[2 4],'omitnan'));
     end    
 end
+
 if in.mean_AP_peak_align
     % keep min shared time points across traces
     nbefore = min(cellfun(@(x) sum(x<0),tAPs,...
@@ -171,8 +180,15 @@ dF_ss_norm_mV = dF_ss.*pol_scaling_factor;
 % [b,~,~,~,stats] = regress(dF_ss_norm',[pol_amps']);
 % b = [0;b];
 Rsq = stats(1); p = stats(3); 
-pol_gain_mV_est = (in.ap_height_est/100)*b(2); % estimated polarization per mA
-pol_gain_mV_est_E = pol_gain_mV_est/in.E_per_mA;
+pol_gain_mV_est = (in.ap_height_est/100)*b(2); % estimated polarization gain per unit stimulation
+% polarization in mV per V/m based on E-field calibration
+if strcmp(in.units,'mA') 
+    pol_gain_mV_est_E = pol_gain_mV_est/in.E_per_mA;
+elseif strcmp(in.units,'V/m') 
+    pol_gain_mV_est_E = pol_gain_mV_est;
+else
+    error('Unit handling not defined for %s',in.units);
+end
 amp_labels = repmat({'depolarizing'},1,length(amps));
 if b(2) < 0 % positive current hyperpolarizing
     amp_labels(amps > 0) = repmat({'hyperpolarizing'},1,sum(amps > 0));
@@ -628,7 +644,7 @@ if any(in.plot_figs == 5)
 end
 %% Plot polarization rise and decay time constant fits 
 if any(in.plot_figs==6)
-    margins = [0.05,0.05];
+    margins = [0.1,0.05]; % [vertical, horizontal]
     fig = figure('Units','inches');
     fig.Position = [0.6 0.6 15 7];
     for i = 1:length(pol_amps)
@@ -685,7 +701,7 @@ if any(in.plot_figs==6)
 %         ylim(ax1,100*max(abs(pol_rise),[],'all')*[-1.1 1.1]);
 %         ylim(ax2,100*max(abs(pol_decay),[],'all')*[-1.1 1.1]);
     end
-    % setAxesUniformLim(fig,'YLim');
+    setAxesUniformLim(fig,'YLim');
     if save_figs
         printFig(fig,fig_fold,sprintf('Polarization_tau%g_fits_smooth%g',...
                 in.tau_fit_order,in.pol_smooth_wind))
