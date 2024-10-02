@@ -60,7 +60,7 @@ end
 if in.print_level > 0
     fprintf('Mean +/- %s:\n',in.plot_err);
     for i = 1:length(mean_data)
-        fprintf('  %g: %.2f +/- %.2f\n',i,mean_data(i),err_bars(i))
+        fprintf('  %g: %.4f +/- %.4f\n',i,mean_data(i),err_bars(i))
     end
 end
 if ~isempty(in.bar_cols)

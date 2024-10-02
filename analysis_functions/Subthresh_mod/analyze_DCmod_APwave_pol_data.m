@@ -639,7 +639,11 @@ if any(in.plot_figs == 5)
     fprintf('Y-intercept (%g %%), estimated range: %.1f to %.1f mV\n',b(1),...
         (in.ap_height_est(1)/100)*b(1),(in.ap_height_est(2)/100)*b(1))
     if save_figs
-        printFig(fig,fig_fold,'Polarization_vs_current_est')
+        if strcmp(in.units,'mA')
+            printFig(fig,fig_fold,'Polarization_vs_current_est');
+        else
+            printFig(fig,fig_fold,'Polarization_vs_current_est_mA');
+        end
     end
 end
 %% Plot polarization rise and decay time constant fits 
@@ -655,7 +659,7 @@ if any(in.plot_figs==6)
             plot(ax1,t_rise,100*sign(dF_ss(i))*rise_fitobjs{i}(t_rise),'r--');
         end
         % title(ax1,sprintf('%g %s: rise',pol_amps(i),in.units),'FontWeight','normal')        
-        title(ax1,sprintf('%g %s',pol_amps(i),in.units),'FontWeight','normal')        
+        title(ax1,sprintf('%.1f %s',pol_amps(i),in.units),'FontWeight','normal')        
 %         ylabel(ax1,'\Delta F/F_{0} (%)')        
 %         ax2 = subplot_tight(length(pol_amps),2,2*i,[0.1,0.1]);
         ax2 = subplot_tight(2,length(pol_amps),length(pol_amps)+i,margins);
