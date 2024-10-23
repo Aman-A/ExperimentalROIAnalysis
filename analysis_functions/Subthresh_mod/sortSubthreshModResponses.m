@@ -11,7 +11,7 @@ in.flipped_amp_cells = [];
 in.remove_nonbi_mod = 0; % 1 to remove non-biphasic modulated (faciltiated or suppressed by both E-field polarities)                     
 in = sl.in.processVarargin(in,varargin);
 out = subthresh_mod_responses; 
-if ~isempty(out.peaks_after)
+if isfield(out,'peaks_after') && ~isempty(out.peaks_after)
     include_after = 1; 
 else
     include_after = 0; 
@@ -92,9 +92,7 @@ for i = 1:num_rois_total
         out.mean_peaks_before_dF(i,:) = fliplr(out.mean_peaks_before_dF(i,:));
         out.mean_peaks_during_dF(i,:) = fliplr(out.mean_peaks_during_dF(i,:));
         out.peaks_before_mat(i,:,:) = out.peaks_before_mat(i,:,num_vars:-1:1);
-        out.peaks_during_mat(i,:,:) = out.peaks_during_mat(i,:,num_vars:-1:1);        
-        out.success_before_mat(i,:,:) = out.success_before_mat(i,:,num_vars:-1:1);
-        out.success_during_mat(i,:,:) = out.success_during_mat(i,:,num_vars:-1:1);        
+        out.peaks_during_mat(i,:,:) = out.peaks_during_mat(i,:,num_vars:-1:1);                       
         out.mean_peaks_before_mat_tr(i,:,:) = out.mean_peaks_before_mat_tr(i,:,num_vars:-1:1);
         out.mean_peaks_during_mat_tr(i,:,:) = out.mean_peaks_during_mat_tr(i,:,num_vars:-1:1);
         out.mean_peaks_before_mat_tr_norm(i,:,:) = out.mean_peaks_before_mat_tr_norm(i,:,num_vars:-1:1);
@@ -103,11 +101,16 @@ for i = 1:num_rois_total
         out.mean_peaks_during_tr_dF(i,:,:) = out.mean_peaks_during_tr_dF(i,:,num_vars:-1:1);
         out.mean_peaks_before_tr_dF_norm(i,:,:) = out.mean_peaks_before_tr_dF_norm(i,:,num_vars:-1:1);
         out.mean_peaks_during_tr_dF_norm(i,:,:) = out.mean_peaks_during_tr_dF_norm(i,:,num_vars:-1:1);
+        % dF traces
         out.mean_dF_al2_before(:,i,:) = out.mean_dF_al2_before(:,i,num_vars:-1:1);
         out.mean_dF_al2_during(:,i,:) = out.mean_dF_al2_during(:,i,num_vars:-1:1);
         out.mean_dF_al2_before_tr(:,i,:,:) = out.mean_dF_al2_before_tr(:,i,:,num_vars:-1:1);
         out.mean_dF_al2_during_tr(:,i,:,:) = out.mean_dF_al2_during_tr(:,i,:,num_vars:-1:1);
-
+        % release success/failure
+        out.success_before_mat(i,:,:) = out.success_before_mat(i,:,num_vars:-1:1);
+        out.success_during_mat(i,:,:) = out.success_during_mat(i,:,num_vars:-1:1);
+        out.mean_success_before(i,:) = fliplr(out.mean_success_before(i,:));
+        out.mean_success_during(i,:) = fliplr(out.mean_success_during(i,:));
         if include_after
             out.peaks_mod_after(i,:) = fliplr(out.peaks_mod_after(i,:));
             out.peaks_mod_after_per(i,:) = fliplr(out.peaks_mod_after_per(i,:));
@@ -117,14 +120,17 @@ for i = 1:num_rois_total
             out.peaks_mod_after_dF_diff(i,:) = fliplr(out.peaks_mod_after_dF_diff(i,:));        
             out.mean_peaks_after(i,:) = fliplr(out.mean_peaks_after(i,:));
             out.mean_peaks_after_dF(i,:) = fliplr(out.mean_peaks_after_dF(i,:));
-            out.peaks_after_mat(i,:,:) = out.peaks_after_mat(i,:,num_vars:-1:1);
-            out.success_after_mat(i,:,:) = out.success_after_mat(i,:,num_vars:-1:1);
+            out.peaks_after_mat(i,:,:) = out.peaks_after_mat(i,:,num_vars:-1:1);            
             out.mean_peaks_after_mat_tr(i,:,:) = out.mean_peaks_after_mat_tr(i,:,num_vars:-1:1);
             out.mean_peaks_after_mat_tr_norm(i,:,:) = out.mean_peaks_after_mat_tr_norm(i,:,num_vars:-1:1);
             out.mean_peaks_after_tr_dF(i,:,:) = out.mean_peaks_after_tr_dF(i,:,num_vars:-1:1);
             out.mean_peaks_after_tr_dF_norm(i,:,:) = out.mean_peaks_after_tr_dF_norm(i,:,num_vars:-1:1);
+            % averaged traces
             out.mean_dF_al2_after(:,i,:) = out.mean_dF_al2_after(:,i,num_vars:-1:1);            
             out.mean_dF_al2_after_tr(:,i,:,:) = out.mean_dF_al2_after_tr(:,i,:,num_vars:-1:1);            
+            % release success/failure
+            out.success_after_mat(i,:,:) = out.success_after_mat(i,:,num_vars:-1:1);
+            out.mean_success_after(i,:) = fliplr(out.mean_success_after(i,:));
         end
         for j = 1:floor(num_vars/2) % flip data from each amp with opposite polarity, skip middle if odd number of amps (non-paired)
             % Peaks before 
@@ -186,24 +192,76 @@ for i = 1:num_dishes
     elseif in.sort_by_mode == 3
         flip_cell = in.flipped_amp_cells(i); 
     end
-    if flip_cell
+    if flip_cell        
+        flipped_amp_cells(i) = true;
+        % *** peaks from raw trace
+        % modulation calculated on average of peaks across ROIs within cell
         out.peaks_mod_during_cell(i,:) = fliplr(out.peaks_mod_during_cell(i,:)); % flip polarity
         out.peaks_mod_during_cell_per(i,:) = fliplr(out.peaks_mod_during_cell_per(i,:)); % flip polarity
         out.peaks_mod_during_cell_diff(i,:) = fliplr(out.peaks_mod_during_cell_diff(i,:)); % flip polarity
+        % modulation calculated by averaging within ROI modulation
+        out.peaks_mod_during_cell_wroi(i,:) = fliplr(out.peaks_mod_during_cell_wroi(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_per(i,:) = fliplr(out.peaks_mod_during_cell_wroi_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_diff(i,:) = fliplr(out.peaks_mod_during_cell_wroi_diff(i,:)); % flip polarity
+        % peaks averaged across trials, stim in trains, and ROIs
         out.mean_peaks_before_cell(i,:) = fliplr(out.mean_peaks_before_cell(i,:));
         out.mean_peaks_during_cell(i,:) = fliplr(out.mean_peaks_during_cell(i,:));
+        % peaks averaged across trials and ROIs for each stim in train
         out.mean_peaks_before_cell_tr(i,:,:) = out.mean_peaks_before_cell_tr(i,:,num_vars:-1:1);
         out.mean_peaks_during_cell_tr(i,:,:) = out.mean_peaks_during_cell_tr(i,:,num_vars:-1:1);
+        % peaks averaged across trials and ROIs for each stim in train,
+        % normalized to mean of before
         out.mean_peaks_before_cell_tr_norm(i,:,:) = out.mean_peaks_before_cell_tr_norm(i,:,num_vars:-1:1);
         out.mean_peaks_during_cell_tr_norm(i,:,:) = out.mean_peaks_during_cell_tr_norm(i,:,num_vars:-1:1);
-        flipped_amp_cells(i) = true;
-        if include_after
+        % *** peaks from averaged trace (_dF)
+        % modulation calculated on average of peaks across ROIs within cell
+        out.peaks_mod_during_cell_dF(i,:) = fliplr(out.peaks_mod_during_cell_dF(i,:)); % flip polarity
+        out.peaks_mod_during_cell_dF_per(i,:) = fliplr(out.peaks_mod_during_cell_dF_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_dF_diff(i,:) = fliplr(out.peaks_mod_during_cell_dF_diff(i,:)); % flip polarity
+        % modulation calculated by averaging within ROI modulation
+        out.peaks_mod_during_cell_wroi_dF(i,:) = fliplr(out.peaks_mod_during_cell_wroi_dF(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_dF_per(i,:) = fliplr(out.peaks_mod_during_cell_wroi_dF_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_dF_diff(i,:) = fliplr(out.peaks_mod_during_cell_wroi_dF_diff(i,:)); % flip polarity
+        % peaks averaged across trials, stim in trains, and ROIs
+        out.mean_peaks_before_cell_dF(i,:) = fliplr(out.mean_peaks_before_cell_dF(i,:));
+        out.mean_peaks_during_cell_dF(i,:) = fliplr(out.mean_peaks_during_cell_dF(i,:));
+        % peaks averaged across trials and ROIs for each stim in train
+        out.mean_peaks_before_cell_tr_dF(i,:,:) = out.mean_peaks_before_cell_tr_dF(i,:,num_vars:-1:1);
+        out.mean_peaks_during_cell_tr_dF(i,:,:) = out.mean_peaks_during_cell_tr_dF(i,:,num_vars:-1:1);
+        % peaks averaged across trials and ROIs for each stim in train,
+        % normalized to mean of before
+        out.mean_peaks_before_cell_tr_norm_dF(i,:,:) = out.mean_peaks_before_cell_tr_norm_dF(i,:,num_vars:-1:1);
+        out.mean_peaks_during_cell_tr_norm_dF(i,:,:) = out.mean_peaks_during_cell_tr_norm_dF(i,:,num_vars:-1:1);
+        
+        if include_after            
+            % modulation calculated on average of peaks across ROIs within cell
+            % raw peaks
             out.peaks_mod_after_cell(i,:) = fliplr(out.peaks_mod_after_cell(i,:)); % flip polarity
             out.peaks_mod_after_cell_per(i,:) = fliplr(out.peaks_mod_after_cell_per(i,:)); % flip polarity
             out.peaks_mod_after_cell_diff(i,:) = fliplr(out.peaks_mod_after_cell_diff(i,:)); % flip polarity
+            % peaks of averaged traces (_dF)
+            out.peaks_mod_after_cell_dF(i,:) = fliplr(out.peaks_mod_after_cell_dF(i,:)); % flip polarity
+            out.peaks_mod_after_cell_dF_per(i,:) = fliplr(out.peaks_mod_after_cell_dF_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_dF_diff(i,:) = fliplr(out.peaks_mod_after_cell_dF_diff(i,:)); % flip polarity
+            % modulation calculated by averaging within ROI modulation
+            % raw peaks
+            out.peaks_mod_after_cell_wroi(i,:) = fliplr(out.peaks_mod_after_cell_wroi(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_per(i,:) = fliplr(out.peaks_mod_after_cell_wroi_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_diff(i,:) = fliplr(out.peaks_mod_after_cell_wroi_diff(i,:)); % flip polarity
+            % peaks of averaged traces (_dF)
+            out.peaks_mod_after_cell_wroi_dF(i,:) = fliplr(out.peaks_mod_after_cell_wroi_dF(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_dF_per(i,:) = fliplr(out.peaks_mod_after_cell_wroi_dF_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_dF_diff(i,:) = fliplr(out.peaks_mod_after_cell_wroi_dF_diff(i,:)); % flip polarity
+            % peaks averaged across trials, stim in trains, and ROIs
             out.mean_peaks_after_cell(i,:) = fliplr(out.mean_peaks_after_cell(i,:));
+            out.mean_peaks_after_cell_dF(i,:) = fliplr(out.mean_peaks_after_cell_dF(i,:)); 
+            % peaks averaged across trials and ROIs for each stim in train
             out.mean_peaks_after_cell_tr(i,:,:) = out.mean_peaks_after_cell_tr(i,:,num_vars:-1:1);
-            out.mean_peaks_after_cell_tr_norm(i,:,:) = out.mean_peaks_after_cell_tr_norm(i,:,num_vars:-1:1);
+            out.mean_peaks_after_cell_tr_dF(i,:,:) = out.mean_peaks_after_cell_tr_dF(i,:,num_vars:-1:1);
+            % peaks averaged across trials and ROIs for each stim in train,
+            % normalized to mean of before
+            out.mean_peaks_after_cell_tr_norm(i,:,:) = out.mean_peaks_after_cell_tr_norm(i,:,num_vars:-1:1);        
+            out.mean_peaks_after_cell_tr_norm_dF(i,:,:) = out.mean_peaks_after_cell_tr_norm_dF(i,:,num_vars:-1:1);        
         end
     end
 end

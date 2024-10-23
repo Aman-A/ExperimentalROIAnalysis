@@ -45,7 +45,9 @@ in.norm_traces = 0; % 1 - average across ROIs then normalize mean peaks during t
 in.scalebar_xlen = 0.1; % sec
 in.scalebar_ylen = 0.05; % percent deltaF/F               
 in.trace_ylim = []; 
+in.cdf_figsize = [11.5 5.9];
 in.trace_figsize = [11.5 5.9];
+in.train_figsize = [23 4.4];
 in.remove_nonbi_mod = 0;
 in.analysis_fold = pwd; 
 in.spike_thresh = 3; % peak = 3xstd(baseline) above baseline for spike
@@ -54,6 +56,8 @@ in.exclude_dishes = [];
 in.train_plot_mode = 'normroi'; % abs, normroi, cell, cell_normroi, cell_sep, cell_normroi_sep
 in.train_add_regress = 0; 
 in.peak_mode = 'raw'; % 'raw' to use peaks of raw trace or 'dF' to use peaks from trial/stim averaged dF trace
+in.spike_window = 60*1e-3; % sec
+in.print_level = 1;
 [~,in.fig_fold] = fileparts(dataset_def_filename);
 in = sl.in.processVarargin(in,varargin);
 %%
@@ -98,12 +102,15 @@ end
 %% extract peaks and deltaF/F0 traces
 % Control condition
 out = extractSubthreshModResponses(data,def,in.plot_amps,in.min_num_trials_per_amp,...
-                                   in.spike_thresh,'qc_settings',in.qc_settings);
+                                   in.spike_thresh,'qc_settings',in.qc_settings,...
+                                   'print_level',in.print_level,...
+                                   'spike_window',in.spike_window);
 % extract peaks and deltaF/F0 traces from drug condition
 out_drug = extractSubthreshModResponses(drug_data,def,in.plot_amps,...
                                         in.min_num_trials_per_amp,in.spike_thresh,...
                                         'exclude_rois',out.exclude_rois,...
-                                        'print_level',0,'qc_settings','off');
+                                        'print_level',0,'qc_settings','off',...
+                                        'spike_window',in.spike_window);
 
 if in.sort_amps
     [out,flipped_amp_rois,flipped_amp_cells,removed_rois] = ...
@@ -118,7 +125,7 @@ end
 
 % peaks_before = out.peaks_before; 
 % peaks_during = out.peaks_during;
-dish_inds = out.dish_inds{1};
+dish_inds = out.dish_inds;
 dF_al2_before = out.dF_al2_before;
 dF_al2_during = out.dF_al2_during;
 num_rois_per_dish = out.num_rois; 
@@ -140,7 +147,8 @@ roi_in_dish_index = out.roi_in_dish_index;
 % dF_al2_during_drug = out_drug.dF_al2_during;
 ta = data{1}.exp_settings(1).getTimeVector(size(dF_al2_before{1},1));
 ta = ta - ta(data{1}.exp_settings(1).baseline_wind+1);
-spike_window = data{1}.plot_settings.spike_window; % used for peak calculation (sec)
+spike_window = in.spike_window; 
+% spike_window = data{1}.plot_settings.spike_window; % used for peak calculation (sec)
 spike_wind_inds = ta > 0 & ta < spike_window;
 % stim averaged traces in each roi
 % [num_time_points x num_rois x num_amps]
@@ -278,7 +286,8 @@ if any(in.plot_figs==2)
         % ax.XLim = [0.9 2.1];
         % paired t-test
         if length(dish_inds_drug{i}) > 2
-            [h,p] = ttest(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
+            [h,p1] = ttest(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
+            [p2,h] = ranksum(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
             if h
                 plot(ax,1.5,ax.YLim(2)*0.95,'r','Marker','*');
             end 
@@ -291,8 +300,11 @@ if any(in.plot_figs==2)
         fprintf('Within cell: Mean change (+/- SEM): %.3f +/- %.3f\n (n = %g boutons, %g cells)\n',...
                 mean(per_changei),std(per_changei)/sqrt(num_rois_drug(i)),num_rois_drug(i),length(dish_inds_drug{i}));
         if length(dish_inds_drug{i}) > 2
-            fprintf('    paired t-test p = %.3f\n',p);
+            fprintf('    paired t-test p = %.3f\n',p1);
+            fprintf('    Wilcoxon rank sum p = %.3f\n',p2);
         end
+        ax.FontName = 'Arial';
+        ax.FontSize = 22; 
     end
     setAxesUniformLim(fig,'YLim');
     if in.save_figs
@@ -314,8 +326,10 @@ if any(in.plot_figs == 3)
         end
         mean_peaks_cont_beforei = mean_peaks_cont_before_all(roi_inds_drug(:,i));
         mean_peaks_drug_beforei = mean_peaks_drug_before_all(roi_inds_drug(:,i));       
-        [Nc,edgesc] = histcounts(mean_peaks_cont_beforei,'BinWidth',in.cdf_bin_width,'Normalization','cdf');
-        [Nd,edgesd] = histcounts(mean_peaks_drug_beforei,'BinWidth',in.cdf_bin_width,'Normalization','cdf');
+        [Nc,edgesc] = histcounts(mean_peaks_cont_beforei,...
+                        'BinWidth',in.cdf_bin_width,'Normalization','cdf');
+        [Nd,edgesd] = histcounts(mean_peaks_drug_beforei,...
+                        'BinWidth',in.cdf_bin_width,'Normalization','cdf');
         plot(edgesc(1:end-1)+diff(edgesc(1:2))/2,Nc,'k','LineWidth',1.5);
         hold on;
         plot(edgesd(1:end-1)+diff(edgesd(1:2))/2,Nd,in.drug_cols{i},'LineWidth',1.5);
@@ -340,6 +354,7 @@ if any(in.plot_figs == 3)
         ax.FontName = 'Arial';
         ax.FontSize = 10; 
     end
+    % setAxesUniformLim(fig,'XLim',[0 0.8]);
     if in.save_figs
         printFig(fig,fig_fold,sprintf('mean_peaks_before_CDF_rnb%g_%gdishes_pk%s',...
                                       in.remove_nonbi_mod,num_dishes,in.peak_mode)); 
@@ -347,7 +362,7 @@ if any(in.plot_figs == 3)
 end
 %% Plot mean peaks before and during within cell in control vs. in drug
 % TODO
-%% Quantify modulation within cell in control vs. in drug 
+%% Quantify modulation within cell in control vs. in drug - bar plot
 if any(in.plot_figs == 4)
     fig = figure('Units','inches');
     fig.Position(3:4) = [11.5 5.9]; 
@@ -368,12 +383,27 @@ if any(in.plot_figs == 4)
                                                        peak_mod_drug_cell_peri),...
                                                        'var_names',...
                                                        {'Amp','Drug'});        
+            if ranovatbl.pValue(4) < 0.05
+                fprintf('   2-way RM ANOVA: Drug x amp interaction significant (p = %.2f)\n',...
+                    ranovatbl.pValue(4))
+            else
+                fprintf('   2-way RM ANOVA: Drug x amp interaction not significant (p = %.2f)\n',...
+                    ranovatbl.pValue(4))
+            end
         end
         % main effect of amp on % modulation (2)
         % main effect of drug on % modulation (3)
         % interaction (effect of amp changes with drug condition) (4)
         hi = zeros(length(in.plot_amps),1); % test null hypothesis (1 reject) on dc modulation within amplitude by drug i
         p_vali = zeros(length(in.plot_amps),1); % p values 
+        % x_vals = {[1 2],[4 5]};
+        % for k = 1:2
+        %     plotBarPlot_ErrBars_Points([peak_mod_cont_cell_peri(:,k),peak_mod_drug_cell_peri(:,k)],...
+        %                             'x_vals',x_vals{k},'connect_pts',1,...
+        %                             'bar_cols',{'k',in.drug_cols{i}},'pt_cols',0.4*[1 1 1],...
+        %                             'pt_marker','.','pt_size',100,'bar_alphas',0.4,...
+        %                             'bar_labels',{in.control_name,strrep(in.drug_names{i},'_',' ')});
+        % end
         for j = 1:length(in.plot_amps)
             l = plot(ax,x_vals(:,j),[peak_mod_cont_cell_peri(:,j),peak_mod_drug_cell_peri(:,j)],...
                  'LineWidth',0.25); hold on; % color [in.amp_cols(j,:), 0.4]
@@ -391,22 +421,21 @@ if any(in.plot_figs == 4)
                     mean_peakmodij(1),sem_peakmodij(1));
             fprintf('   Change in %s (mean +/- SEM): %.2f +/- %.2f %%\n',in.drug_names{i},...
                     mean_peakmodij(2),sem_peakmodij(2));  
-            if length(dish_inds_drug{i}) > 2
-                if ranovatbl.pValue(4) < 0.05
-                    fprintf('   2-way RM ANOVA: Drug x amp interaction significant (p = %.2f)\n',...
-                        ranovatbl.pValue(4))
-                end
+            if length(dish_inds_drug{i}) > 2                
                 % stats
-                [hi(j),p_vali(j)] = ttest(peak_mod_cont_cell_peri(:,j),peak_mod_drug_cell_peri(:,j),...
-                                   'Alpha',0.05); % use bonferroni correction
+                % [hi(j),p_vali(j)] = ttest(peak_mod_cont_cell_peri(:,j),peak_mod_drug_cell_peri(:,j),...
+                %                    'Alpha',0.05/length(in.plot_amps)); % use bonferroni correction
+                [p_vali(j),hi(j)] = signrank(peak_mod_cont_cell_peri(:,j),peak_mod_drug_cell_peri(:,j),...
+                                   'Alpha',0.05/length(in.plot_amps)); % use bonferroni correction
                 if hi(j)                
                     % calculate change in modulation (mean ± sem)
                     [delta_mod,var_mod] = calcPerErrWithVariance(mean_peakmodij(2),mean_peakmodij(1),...
                                                                 sem_peakmodij(2),sem_peakmodij(1)); 
-                    fprintf('   %.2f +/- %.2f change in modulation (p = %.3f)\n',...
+                    fprintf('   %.2f +/- %.2f change in modulation (p = %.3f, signrank)\n',...
                             delta_mod,var_mod,p_vali(j));
                 else
-                    fprintf('  No significant difference in DC modulation by %s\n',in.amp_labels{j})
+                    fprintf('  No significant difference in DC modulation by %s (p = %.3f, signrank)\n',...
+                            in.amp_labels{j},p_vali(j))
                 end             
             end
         end        
@@ -435,7 +464,7 @@ if any(in.plot_figs == 4)
                                 in.drug_names{1},in.remove_nonbi_mod,num_dishes,in.peak_mode)); 
     end
 end
-%% Quantify modulation within ROI in control vs. in drug 
+%% Quantify modulation within ROI in control vs. in drug - bar plot
 if any(in.plot_figs == 5)
     fig = figure('Units','inches');
     fig.Position(3:4) = [11.5 5.9];     
@@ -482,16 +511,19 @@ if any(in.plot_figs == 5)
             fprintf('   Change in %s (mean +/- SEM): %.2f +/- %.2f %%\n',in.drug_names{i},...
                     mean_peakmodij(2),sem_peakmodij(2));     
             % stats
-            [hi(j),p_vali(j)] = ttest(peak_mod_cont_peri(:,j),peak_mod_drug_peri(:,j),...
+            % [hi(j),p_vali(j)] = ttest(peak_mod_cont_peri(:,j),peak_mod_drug_peri(:,j),...
+            %                   'Alpha',0.05/length(in.plot_amps));
+            [p_vali(j),hi(j)] = signrank(peak_mod_cont_peri(:,j),peak_mod_drug_peri(:,j),...
                               'Alpha',0.05/length(in.plot_amps));
             if hi(j)                
                 % calculate change in modulation (mean ± sem)
                 [delta_mod,var_mod] = calcPerErrWithVariance(mean_peakmodij(2),mean_peakmodij(1),...
                                                             sem_peakmodij(2),sem_peakmodij(1)); 
-                fprintf('   %.2f +/- %.2f change in modulation (p = %.3f)\n',...
+                fprintf('   %.2f +/- %.2f change in modulation (p = %.3f, signrank)\n',...
                         delta_mod,var_mod,p_vali(j));
             else
-                fprintf('  No significant difference in DC modulation by %s\n',in.amp_labels{j})
+                fprintf('  No significant difference in DC modulation by %s (p = %.3f, signrank)\n',...
+                    in.amp_labels{j},p_vali(j))
             end 
         end        
         % add significance markers
@@ -507,7 +539,9 @@ if any(in.plot_figs == 5)
         if i == 1
             ylabel(ax,'Change in mean peak \Delta F/F_{0} (%)');
         end    
-        title(ax,strrep(in.drug_names{i},'_',' '));
+        if in.include_title
+            title(ax,strrep(in.drug_names{i},'_',' '));
+        end
     end
     if length(in.drug_names) > 1
         setAxesUniformLim(fig,'YLim');
@@ -517,11 +551,11 @@ if any(in.plot_figs == 5)
                                 in.drug_names{1},in.remove_nonbi_mod,num_dishes,in.peak_mode)); 
     end
 end
-%% Plot modulation within ROI in control vs. in drug as CDFs
+%% Plot modulation within ROI in control vs. in drug - CDFs
 if any(in.plot_figs == 6)             
     for i = 1:length(in.drug_names)
         fig = figure('Units','inches');
-        fig.Position(3:4) = [11.5 5.9];                
+        fig.Position(3:4) = in.cdf_figsize;                
         peak_mod_cont_peri = peak_mod_cont_per(roi_inds_drug(:,i),:);
         peak_mod_drug_peri = peak_mod_drug_per(roi_inds_drug(:,i),:);
         
@@ -537,16 +571,16 @@ if any(in.plot_figs == 6)
                                         in.cdf_bin_width*100,'Normalization','cdf');
             [Nd,edgesd] = histcounts(peak_mod_drug_peri(:,j),'BinWidth',...
                                     in.cdf_bin_width*100,'Normalization','cdf');
-            l1 = plot(edgesc(1:end-1)+diff(edgesc(1:2))/2,Nc,'k','LineWidth',1);
-            hold on;
-            l2 = plot(edgesd(1:end-1)+diff(edgesd(1:2))/2,Nd,in.drug_cols{i},'LineWidth',1);
-                
+            plot([0 0],[0 1],'--','Color',0.6*[1 1 1]); hold on;
+            l1 = plot(edgesc(1:end-1)+diff(edgesc(1:2))/2,Nc,'k','LineWidth',1);            
+            l2 = plot(edgesd(1:end-1)+diff(edgesd(1:2))/2,Nd,...
+                        'Color',in.drug_cols{i},'LineWidth',1);            
             % stats
             [p_vali(j),hi(j)] = signrank(peak_mod_cont_peri(:,j),...
                                         peak_mod_drug_peri(:,j),...
                                         'Alpha',0.05/length(in.plot_amps));                                    
             box(ax,'off');
-            ax.YLim = [0 1]; 
+            ax.YLim = [0 1];             
             if j == 1
                 ylabel(ax,'Proportion')
             end            
@@ -560,10 +594,19 @@ if any(in.plot_figs == 6)
             if j == length(in.plot_amps)
                 legend(ax,[l1,l2],{in.control_name,strrep(in.drug_names{i},'_',' ')},'Location','southeast');
             end            
+            if ax.XLim(2) > 500
+                ax.XLim(2) = 500; 
+            end
         end                
-        sgtitle(sprintf('%g boutons in %g cells',...
-                        num_rois_drug(i),length(dish_inds_drug{i})));        
-        setAxesUniformLim(fig,'XLim');
+        if in.include_title
+            sgtitle(sprintf('%g boutons in %g cells',...
+                            num_rois_drug(i),length(dish_inds_drug{i})));        
+        end
+        % if ax.XLim(2) > 500
+        %     setAxesUniformLim(fig,'XLim',[-100 500]);
+        % else
+        %     setAxesUniformLim(fig,'XLim');
+        % end
         if in.save_figs
             printFig(fig,fig_fold,sprintf('peak_mod_control_vs_%s_wROI_%gdishes_rnb%g_CDF_pk%s',...
                                 in.drug_names{i},num_dishes,in.remove_nonbi_mod,in.peak_mode));
@@ -698,6 +741,9 @@ if any(in.plot_figs == 8)
             if in.include_title
                 title(sprintf('%g %s',in.plot_amps(j),in.plot_amps_units))
             end
+            if in.norm_traces == 2
+                plot(ax.XLim,[1 1],'--','Color',0.6*[1 1 1]);
+            end
         end
         if isempty(in.trace_ylim)
             setAxesUniformLim(fig,'YLim');  
@@ -712,7 +758,7 @@ if any(in.plot_figs == 8)
         plot(fig.Children(end),[ta(1),ta(1),ta(1)+in.scalebar_xlen],[ax.YLim(2)-in.scalebar_ylen,ax.YLim(2),ax.YLim(2)],...
             'k','LineWidth',2); % 100 ms, 5% deltaF/F                
         sgtitle(sprintf('%g boutons in %g cells',...
-                        num_rois_drug(i),length(dish_inds_drug{i})));   
+                        num_rois_drug(i),length(dish_inds_drug{i})));           
         if in.save_figs
             printFig(fig,fig_fold,sprintf('dF_traces_control_vs_%s_%gdishes_rnb%g_norm%g_sbs',...
                 in.drug_names{i},num_dishes,in.remove_nonbi_mod,in.norm_traces));
@@ -819,7 +865,7 @@ if any(in.plot_figs == 10)
                 fig_name2 = '';
             end
             fig = figure('Units','inches');         
-            fig.Position(3:4) = [23 4.4]; 
+            fig.Position(3:4) = in.train_figsize; 
             [mean_train,var_train] = plotSubthreshModPeakTrains(outi,...
                                         in.train_plot_mode,'fig_name',fig_name,...
                                         'fig_fold',in.fig_fold,'cond_labels',in.amp_labels,...

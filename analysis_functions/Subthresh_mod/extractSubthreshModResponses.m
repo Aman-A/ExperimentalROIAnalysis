@@ -67,7 +67,8 @@ for i = 1:num_dishes
     % Apply quality control to ROIs
     if strcmp(in.qc_settings,'off')
         if length(in.exclude_rois) == num_dishes
-            datai = removeROIsExpData(data{i},in.exclude_rois{i});
+            datai = removeROIsExpData(data{i},in.exclude_rois{i},...
+                                        'print_level',in.print_level);
         else
             datai = data{i}; 
         end
@@ -162,7 +163,7 @@ for i = 1:num_dishes
                                                     nan([size(dF_al2ijk,...
                                                     [1,2]),max_num_peaks-size(dF_al2ijk,3)]))];                
                     % pad peak success/failure
-                    success{k,jp} = [[success{k,jp},nan(size(success{k,jp},1),...
+                    success{3,jp} = [[success{k,jp},nan(size(success{k,jp},1),...
                                                        max_num_peaks-size(success{k,jp},2))];...
                                         [nan(size(peaksij,2),num_peaksij),...
                                                  nan(size(peaksij,2),max_num_peaks-num_peaksij)]];      
@@ -201,12 +202,14 @@ for i = 1:num_dishes
         end
     end
 end
+assert(isequal(dish_inds{:}),'Number of ROIs differs between intensities')
+dish_inds = dish_inds{1}; 
 roi_in_dish_index = []; % numbering of ROIs after removing ROIs not passing QC
 roi_in_dish_index_id = []; % original index of ROIs within their respective dish
 for i = 1:num_dishes
     if ~isnan(num_rois(i))
-        roi_in_dish_index = [roi_in_dish_index;(1:(sum(dish_inds{1}==i)))'];
-        num_rois0 = sum(dish_inds{1}==i)+ sum(exclude_rois{i});% original number of ROIs
+        roi_in_dish_index = [roi_in_dish_index;(1:(sum(dish_inds==i)))'];
+        num_rois0 = sum(dish_inds==i)+ sum(exclude_rois{i});% original number of ROIs
         roi_ids0 = 1:num_rois0;     
         roi_in_dish_index_id = [roi_in_dish_index_id;roi_ids0(~exclude_rois{i})'];
     end
@@ -283,15 +286,24 @@ for k = 1:(2 + any(include_after))
     % (instead of raw trace)
     out.(['mean_peaks_' suffixes{k} '_tr_dF']) = ...
         squeeze(max(out.(['mean_dF_al2_' suffixes{k} '_tr'])(stim_ind:spike_wind_end,:,:,:),[],1));
-    % normalize to mean before (within ROI)
-    out.(['mean_peaks_' suffixes{k} '_tr_dF_norm']) = ...
+    % normalize to mean of trial-averaged peaks in before DC train (within ROI)
+
+    out.(['mean_peaks_' suffixes{k} '_tr_dF_norm']) = ...        
         out.(['mean_peaks_' suffixes{k} '_tr_dF'])./mean(out.mean_peaks_before_tr_dF,2,'omitnan');
+        
     % mean across trials and train (num_timepoints x num_rois x num_vars)
     out.(['mean_dF_al2_' suffixes{k}]) = squeeze(mean(dF_al2_tr_k,[3 4],'omitnan'));
     % mean peaks within ROI extracted from dF trace averaged across trial 
     % and within train
     out.(['mean_peaks_' suffixes{k} '_dF']) = ...
         squeeze(max(out.(['mean_dF_al2_' suffixes{k}])(stim_ind:spike_wind_end,:,:,:),[],1));
+    
+    % alternative: normalize using peak of mean before DC trace, rather than mean of
+    % trial-averaged peaksin before train
+    % out.(['mean_peaks_' suffixes{k} '_tr_dF_norm']) = ...        
+    %     out.(['mean_peaks_' suffixes{k} '_tr_dF'])./permute(max(out.mean_dF_al2_before(stim_ind:spike_wind_end,:,:),[],1),[2 1 3]);
+
+
     if k >= 2
         % ratio (during/before)
         out.(['peaks_mod_' suffixes{k} '_dF']) = ...
@@ -305,61 +317,68 @@ for k = 1:(2 + any(include_after))
     end
 end
 
-%% average within cell (TODO: REWRITE WITH LOOPS AS ABOVE)
-mean_peaks_before_cell = zeros(num_dishes,num_vars);
-mean_peaks_during_cell = zeros(num_dishes,num_vars);
-% mean across ROIs within cell
-mean_peaks_before_cell_tr = zeros(num_dishes,num_stim,num_vars);
-mean_peaks_during_cell_tr = zeros(num_dishes,num_stim,num_vars);
-% mean across ROIs within cell after normalizing within ROI to mean before
-mean_peaks_before_cell_tr_norm = zeros(num_dishes,num_stim,num_vars);
-mean_peaks_during_cell_tr_norm = zeros(num_dishes,num_stim,num_vars);
-% peak modulation calculated WITHIN ROI, then averaged within cell 
-out.peaks_mod_during_cell_wroi = zeros(num_dishes,num_vars); 
-out.peaks_mod_during_cell_wroi_diff = zeros(num_dishes,num_vars);
-out.peaks_mod_during_cell_wroi_per = zeros(num_dishes,num_vars);
-for i = 1:num_dishes
-    mean_peaks_before_cell(i,:) = squeeze(mean(out.peaks_before_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));
-    mean_peaks_during_cell(i,:) = squeeze(mean(out.peaks_during_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));       
-    mean_peaks_before_cell_tr(i,:,:) = squeeze(mean(out.mean_peaks_before_mat_tr(dish_inds{1}==i,:,:),1,'omitnan'));
-    mean_peaks_during_cell_tr(i,:,:) = squeeze(mean(out.mean_peaks_during_mat_tr(dish_inds{1}==i,:,:),1,'omitnan'));
-    mean_peaks_before_cell_tr_norm(i,:,:) = squeeze(mean(out.mean_peaks_before_mat_tr_norm(dish_inds{1}==i,:,:),1,'omitnan'));
-    mean_peaks_during_cell_tr_norm(i,:,:) = squeeze(mean(out.mean_peaks_during_mat_tr_norm(dish_inds{1}==i,:,:),1,'omitnan'));
-    out.peaks_mod_during_cell_wroi(i,:) = mean(out.peaks_mod_during(dish_inds{1}==i,:),1,'omitnan');
-    out.peaks_mod_during_cell_wroi_diff(i,:) = mean(out.peaks_mod_during_diff(dish_inds{1}==i,:),1,'omitnan');    
-    out.peaks_mod_during_cell_wroi_per(i,:) = mean(out.peaks_mod_during_per(dish_inds{1}==i,:),1,'omitnan');    
-end
-out.mean_peaks_before_cell = mean_peaks_before_cell;
-out.mean_peaks_during_cell = mean_peaks_during_cell;
-out.mean_peaks_before_cell_tr = mean_peaks_before_cell_tr;
-out.mean_peaks_during_cell_tr = mean_peaks_during_cell_tr;
-out.mean_peaks_before_cell_tr_norm = mean_peaks_before_cell_tr_norm;
-out.mean_peaks_during_cell_tr_norm = mean_peaks_during_cell_tr_norm; 
-out.peaks_mod_during_cell = out.mean_peaks_during_cell./out.mean_peaks_before_cell; % ratio (during/before)
-out.peaks_mod_during_cell_diff = out.mean_peaks_during_cell - out.mean_peaks_before_cell; % difference (during - before)
-out.peaks_mod_during_cell_per = 100*out.peaks_mod_during_cell_diff./out.mean_peaks_before_cell; % percent change 100*(during-before)/before
+%% average within cell
 
-if any(include_after)        
-    % average within cell
-    mean_peaks_after_cell = zeros(num_dishes,num_vars); 
-    mean_peaks_after_cell_tr = zeros(num_dishes,num_stim,num_vars);
-    mean_peaks_after_cell_tr_norm = zeros(num_dishes,num_stim,num_vars);
-    for i = 1:num_dishes
-        mean_peaks_after_cell(i,:) = squeeze(mean(out.peaks_after_mat(dish_inds{1}==i,:,:),[1 2],'omitnan'));    
-        mean_peaks_after_cell_tr(i,:,:) = squeeze(mean(out.mean_peaks_after_mat_tr(dish_inds{1}==i,:,:),1));
-        mean_peaks_after_cell_tr_norm(i,:,:) = squeeze(mean(out.mean_peaks_after_mat_tr_norm(dish_inds{1}==i,:,:),1));
+for k = 1:(2 + any(include_after)) 
+    % peaks from raw trace
+    % mean across ROIs, trials, and stim of train within cell
+    out.(['mean_peaks_' suffixes{k} '_cell']) = zeros(num_dishes,num_vars);
+    % mean across ROIs/trials at each stim of train within cell
+    out.(['mean_peaks_' suffixes{k} '_cell_tr']) = zeros(num_dishes,num_stim,num_vars);
+    % mean across ROIs/trials at each stim of train within cell after normalizing within ROI to mean before
+    out.(['mean_peaks_' suffixes{k} '_cell_tr_norm']) = zeros(num_dishes,num_stim,num_vars);
+    % peaks from averaged trace (_dF)
+    % mean across ROIs, trials, and stim of train within cell
+    out.(['mean_peaks_' suffixes{k} '_cell_dF']) = zeros(num_dishes,num_vars);
+    % mean across ROIs/trials at each stim of train within cell
+    out.(['mean_peaks_' suffixes{k} '_cell_tr_dF']) = zeros(num_dishes,num_stim,num_vars);
+    % mean across ROIs/trials at each stim of train within cell after normalizing within ROI to mean before
+    out.(['mean_peaks_' suffixes{k} '_cell_tr_norm_dF']) = zeros(num_dishes,num_stim,num_vars);
+    if k >= 2
+        % peaks from raw trace
+        % peak modulation calculated WITHIN ROI, then averaged within cell 
+        out.(['peaks_mod_' suffixes{k} '_cell_wroi']) = zeros(num_dishes,num_vars); % ratio
+        out.(['peaks_mod_' suffixes{k} '_cell_wroi_diff']) = zeros(num_dishes,num_vars); % difference
+        out.(['peaks_mod_' suffixes{k} '_cell_wroi_per']) = zeros(num_dishes,num_vars); % percent change
+        % peaks from averaged trace (_dF)
+        % peak modulation calculated WITHIN ROI, then averaged within cell 
+        out.(['peaks_mod_' suffixes{k} '_cell_wroi_dF']) = zeros(num_dishes,num_vars); % ratio
+        out.(['peaks_mod_' suffixes{k} '_cell_wroi_dF_diff']) = zeros(num_dishes,num_vars); % difference
+        out.(['peaks_mod_' suffixes{k} '_cell_wroi_dF_per']) = zeros(num_dishes,num_vars); % percent change
     end
-    out.mean_peaks_after_cell = mean_peaks_after_cell;
-    out.mean_peaks_after_cell_tr = mean_peaks_after_cell_tr;
-    out.mean_peaks_after_cell_tr_norm = mean_peaks_after_cell_tr_norm;
-    out.peaks_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_before_cell; 
-    out.peaks_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_before_cell; 
-    out.peaks_mod_after_cell_per = 100*(out.peaks_mod_after_cell - 1); % percent change
-else
-    out.peaks_after = []; 
-    out.peaks_after_mat = []; 
-    out.success_after = []; 
-    out.success_after_mat = []; 
-    out.mean_peaks_after_cell = []; 
+    for i = 1:num_dishes
+        % peaks from raw trace
+        out.(['mean_peaks_' suffixes{k} '_cell'])(i,:) = mean(out.(['mean_peaks_' suffixes{k}])(dish_inds==i,:),1,'omitnan');
+        out.(['mean_peaks_' suffixes{k} '_cell_tr'])(i,:,:) = squeeze(mean(out.(['mean_peaks_' suffixes{k} '_mat_tr'])(dish_inds==i,:,:),1,'omitnan'));
+        out.(['mean_peaks_' suffixes{k} '_cell_tr_norm'])(i,:,:) = squeeze(mean(out.(['mean_peaks_' suffixes{k} '_mat_tr_norm'])(dish_inds==i,:,:),1,'omitnan'));
+        % peaks from averaged trace (_dF)
+        out.(['mean_peaks_' suffixes{k} '_cell_dF'])(i,:) = mean(out.(['mean_peaks_' suffixes{k} '_dF'])(dish_inds==i,:),1,'omitnan');
+        out.(['mean_peaks_' suffixes{k} '_cell_tr_dF'])(i,:,:) = squeeze(mean(out.(['mean_peaks_' suffixes{k} '_tr_dF'])(dish_inds==i,:,:),1,'omitnan'));
+        out.(['mean_peaks_' suffixes{k} '_cell_tr_norm_dF'])(i,:,:) = squeeze(mean(out.(['mean_peaks_' suffixes{k} '_tr_dF_norm'])(dish_inds==i,:,:),1,'omitnan'));
+        if k >= 2
+            % peak mod from raw trace
+            out.(['peaks_mod_' suffixes{k} '_cell_wroi'])(i,:) = mean(out.(['peaks_mod_' suffixes{k}])(dish_inds==i,:),1,'omitnan');
+            out.(['peaks_mod_' suffixes{k} '_cell_wroi_diff'])(i,:) = mean(out.(['peaks_mod_' suffixes{k} '_diff'])(dish_inds==i,:),1,'omitnan');
+            out.(['peaks_mod_' suffixes{k} '_cell_wroi_per'])(i,:) = mean(out.(['peaks_mod_' suffixes{k} '_per'])(dish_inds==i,:),1,'omitnan');
+            % peak mod from averaged trace (_dF)
+            out.(['peaks_mod_' suffixes{k} '_cell_wroi_dF'])(i,:) = mean(out.(['peaks_mod_' suffixes{k} '_dF'])(dish_inds==i,:),1,'omitnan');
+            out.(['peaks_mod_' suffixes{k} '_cell_wroi_dF_diff'])(i,:) = mean(out.(['peaks_mod_' suffixes{k} '_dF_diff'])(dish_inds==i,:),1,'omitnan');
+            out.(['peaks_mod_' suffixes{k} '_cell_wroi_dF_per'])(i,:) = mean(out.(['peaks_mod_' suffixes{k} '_dF_per'])(dish_inds==i,:),1,'omitnan');
+        end
+    end
+    if k >= 2
+        % peak modulation calculated on peaks averaged within cell (NOT
+        % normalized within ROI) using peaks from raw traces
+        out.(['peaks_mod_' suffixes{k} '_cell']) = out.(['mean_peaks_' suffixes{k} '_cell'])./out.mean_peaks_before_cell; % ratio (during/before)
+        out.(['peaks_mod_' suffixes{k} '_cell_diff']) = out.(['mean_peaks_' suffixes{k} '_cell']) - out.mean_peaks_before_cell; % difference (during - before)
+        out.(['peaks_mod_' suffixes{k} '_cell_per']) = 100*out.(['peaks_mod_' suffixes{k} '_cell_diff']) ./out.mean_peaks_before_cell; % percent change 100*(during-before)/before
+        % peak modulation calculated on peaks averaged within cell (NOT
+        % normalized within ROI) using peaks from stim/trial averaged
+        % traces
+        out.(['peaks_mod_' suffixes{k} '_cell_dF']) = out.(['mean_peaks_' suffixes{k} '_cell_dF'])./out.mean_peaks_before_cell_dF; % ratio (during/before)
+        out.(['peaks_mod_' suffixes{k} '_cell_dF_diff']) = out.(['mean_peaks_' suffixes{k} '_cell_dF']) - out.mean_peaks_before_cell_dF; % difference (during - before)
+        out.(['peaks_mod_' suffixes{k} '_cell_dF_per']) = 100*out.(['peaks_mod_' suffixes{k} '_cell_dF_diff']) ./out.mean_peaks_before_cell_dF; % percent change 100*(during-before)/before
+    end
 end
+
 end
