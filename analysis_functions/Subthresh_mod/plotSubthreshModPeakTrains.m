@@ -28,6 +28,7 @@ in.cond_label = 'Amplitude';
 in.leg_pos = [0.8890    0.6753    0.0912    0.2192];
 in.add_regress = 0; % add regression lines and plot for all conditions
 in.stim_times = []; 
+in.peak_mode = 'raw'; % 'raw' for peaks from raw trace or 'dF' for peaks from trial/stim averaged traces within ROI
 in = sl.in.processVarargin(in,varargin);
 
 plot_mode_options = {'abs','normroi','cell','cell_normroi','cell_sep','cell_normroi_sep'};
@@ -65,39 +66,58 @@ else
     include_after = 0;
     num_trains = 2; 
 end
+if strcmp(in.peak_mode,'raw')
+    mean_peaks_before_tr = subthresh_data.mean_peaks_before_mat_tr;
+    mean_peaks_during_tr = subthresh_data.mean_peaks_during_mat_tr;
+    mean_peaks_before_tr_norm = subthresh_data.mean_peaks_before_mat_tr_norm;
+    mean_peaks_during_tr_norm = subthresh_data.mean_peaks_during_mat_tr_norm;
+    if include_after
+        mean_peaks_after_tr = subthresh_data.mean_peaks_after_mat_tr;
+        mean_peaks_after_tr_norm = subthresh_data.mean_peaks_after_mat_tr_norm;
+    end
+else
+    mean_peaks_before_tr = subthresh_data.mean_peaks_before_tr_dF;
+    mean_peaks_during_tr = subthresh_data.mean_peaks_during_tr_dF;
+    mean_peaks_before_tr_norm = subthresh_data.mean_peaks_before_tr_dF_norm;
+    mean_peaks_during_tr_norm = subthresh_data.mean_peaks_during_tr_dF_norm;
+    if include_after
+        mean_peaks_after_tr = subthresh_data.mean_peaks_after_tr_dF;
+        mean_peaks_after_tr_norm = subthresh_data.mean_peaks_after_tr_dF_norm;
+    end
+end
 if strcmp(plot_mode,'abs')
     % mean across rois (unnormalized)
-    mean_peaks_before_mat_tr_rois  = squeeze(mean(subthresh_data.mean_peaks_before_mat_tr(inds,:,:),1,'omitnan'));
-    mean_peaks_during_mat_tr_rois  = squeeze(mean(subthresh_data.mean_peaks_during_mat_tr(inds,:,:),1,'omitnan'));    
+    mean_peaks_before_mat_tr_rois  = squeeze(mean(mean_peaks_before_tr(inds,:,:),1,'omitnan'));
+    mean_peaks_during_mat_tr_rois  = squeeze(mean(mean_peaks_during_tr(inds,:,:),1,'omitnan'));    
     % sem across rois
-    sem_peaks_before_mat_tr_rois = squeeze(std(subthresh_data.mean_peaks_before_mat_tr(inds,:,:),0,1,'omitnan'))/sqrt(N);
-    sem_peaks_during_mat_tr_rois = squeeze(std(subthresh_data.mean_peaks_during_mat_tr(inds,:,:),0,1,'omitnan'))/sqrt(N);   
+    sem_peaks_before_mat_tr_rois = squeeze(std(mean_peaks_before_tr(inds,:,:),0,1,'omitnan'))/sqrt(N);
+    sem_peaks_during_mat_tr_rois = squeeze(std(mean_peaks_during_tr(inds,:,:),0,1,'omitnan'))/sqrt(N);   
     % organize in cell arrays
     mean_train = {mean_peaks_before_mat_tr_rois; % unnormalized
         mean_peaks_during_mat_tr_rois};
     var_train = {sem_peaks_before_mat_tr_rois;
         sem_peaks_during_mat_tr_rois};
     if include_after
-        mean_peaks_after_mat_tr_rois  = squeeze(mean(subthresh_data.mean_peaks_after_mat_tr(inds,:,:),1,'omitnan'));
-        sem_peaks_after_mat_tr_rois = squeeze(std(subthresh_data.mean_peaks_after_mat_tr(inds,:,:),0,1,'omitnan'))/sqrt(N);    
+        mean_peaks_after_mat_tr_rois  = squeeze(mean(mean_peaks_after_tr(inds,:,:),1,'omitnan'));
+        sem_peaks_after_mat_tr_rois = squeeze(std(mean_peaks_after_tr(inds,:,:),0,1,'omitnan'))/sqrt(N);    
         mean_train = [mean_train;mean_peaks_after_mat_tr_rois];
         var_train = [var_train;sem_peaks_after_mat_tr_rois];
     end
 elseif strcmp(plot_mode,'normroi')
     % mean and std/sem across ROIs (normalized)
-    mean_peaks_before_mat_tr_norm_rois = squeeze(mean(subthresh_data.mean_peaks_before_mat_tr_norm(inds,:,:),1,'omitnan'));
-    mean_peaks_during_mat_tr_norm_rois = squeeze(mean(subthresh_data.mean_peaks_during_mat_tr_norm(inds,:,:),1,'omitnan'));    
+    mean_peaks_before_mat_tr_norm_rois = squeeze(mean(mean_peaks_before_tr_norm(inds,:,:),1,'omitnan'));
+    mean_peaks_during_mat_tr_norm_rois = squeeze(mean(mean_peaks_during_tr_norm(inds,:,:),1,'omitnan'));    
     % sem across ROIs (normalized)
-    sem_peaks_before_mat_tr_norm_rois = squeeze(std(subthresh_data.mean_peaks_before_mat_tr_norm(inds,:,:),0,1,'omitnan'))/sqrt(N);
-    sem_peaks_during_mat_tr_norm_rois = squeeze(std(subthresh_data.mean_peaks_during_mat_tr_norm(inds,:,:),0,1,'omitnan'))/sqrt(N);    
+    sem_peaks_before_mat_tr_norm_rois = squeeze(std(mean_peaks_before_tr_norm(inds,:,:),0,1,'omitnan'))/sqrt(N);
+    sem_peaks_during_mat_tr_norm_rois = squeeze(std(mean_peaks_during_tr_norm(inds,:,:),0,1,'omitnan'))/sqrt(N);    
     % organize in cell arrays
     mean_train = {mean_peaks_before_mat_tr_norm_rois; % normalized within ROI
-        mean_peaks_during_mat_tr_norm_rois};
+                  mean_peaks_during_mat_tr_norm_rois};
     var_train = {sem_peaks_before_mat_tr_norm_rois;
-        sem_peaks_during_mat_tr_norm_rois};
+                  sem_peaks_during_mat_tr_norm_rois};
     if include_after
-        mean_peaks_after_mat_tr_norm_rois = squeeze(mean(subthresh_data.mean_peaks_after_mat_tr_norm(inds,:,:),1,'omitnan'));
-        sem_peaks_after_mat_tr_norm_rois = squeeze(std(subthresh_data.mean_peaks_after_mat_tr_norm(inds,:,:),0,1,'omitnan'))/sqrt(N);
+        mean_peaks_after_mat_tr_norm_rois = squeeze(mean(mean_peaks_after_tr_norm(inds,:,:),1,'omitnan'));
+        sem_peaks_after_mat_tr_norm_rois = squeeze(std(mean_peaks_after_tr_norm(inds,:,:),0,1,'omitnan'))/sqrt(N);
         mean_train = [mean_train;mean_peaks_after_mat_tr_norm_rois];
         var_train = [var_train;sem_peaks_after_mat_tr_norm_rois];
     end
@@ -224,7 +244,7 @@ for j = 1:num_conds
         plot(ax,ax.XLim,mean(mean_train{1}(:,:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
     end
 end
-setAxesUniformLim(fig,'YLim',[0.7 1.6]);       
+setAxesUniformLim(fig,'YLim',[0.6 1.5]);       
 % setAxesUniformLim(fig,'YLim');       
 if ~isempty(in.cond_name)
     sgtitle(strrep(in.cond_name,'_',' '),'FontName',ax.FontName,'FontSize',ax.FontSize);

@@ -11,7 +11,7 @@ in.flipped_amp_cells = [];
 in.remove_nonbi_mod = 0; % 1 to remove non-biphasic modulated (faciltiated or suppressed by both E-field polarities)                     
 in = sl.in.processVarargin(in,varargin);
 out = subthresh_mod_responses; 
-if ~isempty(out.peaks_after)
+if isfield(out,'peaks_after') && ~isempty(out.peaks_after)
     include_after = 1; 
 else
     include_after = 0; 
@@ -22,10 +22,10 @@ num_rois_total = sum(num_rois_per_dish,'omitnan');
 if isscalar(in.remove_nonbi_mod) && in.remove_nonbi_mod == 1 % TODO, MAKE SURE THIS WORKS FOR SORT_BY_MODE = 3 (INPUT ROIS TO FLIP)
     remove_rois = false(num_rois_total,1);
     for i = 1:num_rois_total
-        if sign(out.peak_mod_during_per(i,1)) == sign(out.peak_mod_during_per(i,end))
+        if sign(out.peaks_mod_during_per(i,1)) == sign(out.peaks_mod_during_per(i,end))
             % fprintf('Removing ROI %g mod at %g mA = %.1f %%, %g mA = %.1f %%\n',...
-            %         i,in.plot_amps(1),peak_mod_cont_per(i,1),...
-            %         in.plot_amps(end),peak_mod_cont_per(i,end));
+            %         i,in.plot_amps(1),peaks_mod_cont_per(i,1),...
+            %         in.plot_amps(end),peaks_mod_cont_per(i,end));
             remove_rois(i) = true;            
         end
     end        
@@ -65,44 +65,72 @@ dc_inds = [1,length(plot_vars)];
 flipped_amp_rois = false(num_rois_total,1);
 % Sort within ROI
 for i = 1:num_rois_total
-    % [b,~,~,~,stats] = regress(peak_mod_during_per(i,:)',[plot_amps',ones(length(plot_amps),1)]);
+    % [b,~,~,~,stats] = regress(peaks_mod_during_per(i,:)',[plot_amps',ones(length(plot_amps),1)]);
     % Rsqi = stats(1); pi = stats(3);
-    % lm = fitlm(plot_amps',peak_mod_during_per(i,:)')
+    % lm = fitlm(plot_amps',peaks_mod_during_per(i,:)')
     if in.sort_by_mode == 1
-        [~,max_ind] = max(abs(out.peak_mod_during_per(i,:)));
-        flip_roi = ( (out.peak_mod_during_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
-                ||  (out.peak_mod_during_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
+        [~,max_ind] = max(abs(out.peaks_mod_during_per(i,:)));
+        flip_roi = ( (out.peaks_mod_during_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
+                ||  (out.peaks_mod_during_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
     elseif in.sort_by_mode == 2
-        [~,max_ind] = max(abs(out.peak_mod_during_per(i,dc_inds)));
+        [~,max_ind] = max(abs(out.peaks_mod_during_per(i,dc_inds)));
         max_ind = dc_inds(max_ind);
-        flip_roi = ( (out.peak_mod_during_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
-                ||  (out.peak_mod_during_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
+        flip_roi = ( (out.peaks_mod_during_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
+                ||  (out.peaks_mod_during_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
     elseif in.sort_by_mode == 3        
         flip_roi = in.flipped_amp_rois(i); 
     end
     if flip_roi
-        out.peak_mod_during(i,:) = fliplr(out.peak_mod_during(i,:)); % flip polarity
-        out.peak_mod_during_per(i,:) = fliplr(out.peak_mod_during_per(i,:)); % flip polarity
-        out.peak_mod_during_diff(i,:) = fliplr(out.peak_mod_during_diff(i,:));        
+        out.peaks_mod_during(i,:) = fliplr(out.peaks_mod_during(i,:)); % flip polarity
+        out.peaks_mod_during_per(i,:) = fliplr(out.peaks_mod_during_per(i,:)); % flip polarity
+        out.peaks_mod_during_diff(i,:) = fliplr(out.peaks_mod_during_diff(i,:));        
+        out.peaks_mod_during_dF(i,:) = fliplr(out.peaks_mod_during_dF(i,:)); % flip polarity
+        out.peaks_mod_during_dF_per(i,:) = fliplr(out.peaks_mod_during_dF_per(i,:)); % flip polarity
+        out.peaks_mod_during_dF_diff(i,:) = fliplr(out.peaks_mod_during_dF_diff(i,:));        
         out.mean_peaks_before(i,:) = fliplr(out.mean_peaks_before(i,:));
         out.mean_peaks_during(i,:) = fliplr(out.mean_peaks_during(i,:));
+        out.mean_peaks_before_dF(i,:) = fliplr(out.mean_peaks_before_dF(i,:));
+        out.mean_peaks_during_dF(i,:) = fliplr(out.mean_peaks_during_dF(i,:));
         out.peaks_before_mat(i,:,:) = out.peaks_before_mat(i,:,num_vars:-1:1);
-        out.peaks_during_mat(i,:,:) = out.peaks_during_mat(i,:,num_vars:-1:1);
-        out.success_before_mat(i,:,:) = out.success_before_mat(i,:,num_vars:-1:1);
-        out.success_during_mat(i,:,:) = out.success_during_mat(i,:,num_vars:-1:1);
+        out.peaks_during_mat(i,:,:) = out.peaks_during_mat(i,:,num_vars:-1:1);                       
         out.mean_peaks_before_mat_tr(i,:,:) = out.mean_peaks_before_mat_tr(i,:,num_vars:-1:1);
         out.mean_peaks_during_mat_tr(i,:,:) = out.mean_peaks_during_mat_tr(i,:,num_vars:-1:1);
         out.mean_peaks_before_mat_tr_norm(i,:,:) = out.mean_peaks_before_mat_tr_norm(i,:,num_vars:-1:1);
         out.mean_peaks_during_mat_tr_norm(i,:,:) = out.mean_peaks_during_mat_tr_norm(i,:,num_vars:-1:1);
+        out.mean_peaks_before_tr_dF(i,:,:) = out.mean_peaks_before_tr_dF(i,:,num_vars:-1:1);
+        out.mean_peaks_during_tr_dF(i,:,:) = out.mean_peaks_during_tr_dF(i,:,num_vars:-1:1);
+        out.mean_peaks_before_tr_dF_norm(i,:,:) = out.mean_peaks_before_tr_dF_norm(i,:,num_vars:-1:1);
+        out.mean_peaks_during_tr_dF_norm(i,:,:) = out.mean_peaks_during_tr_dF_norm(i,:,num_vars:-1:1);
+        % dF traces
+        out.mean_dF_al2_before(:,i,:) = out.mean_dF_al2_before(:,i,num_vars:-1:1);
+        out.mean_dF_al2_during(:,i,:) = out.mean_dF_al2_during(:,i,num_vars:-1:1);
+        out.mean_dF_al2_before_tr(:,i,:,:) = out.mean_dF_al2_before_tr(:,i,:,num_vars:-1:1);
+        out.mean_dF_al2_during_tr(:,i,:,:) = out.mean_dF_al2_during_tr(:,i,:,num_vars:-1:1);
+        % release success/failure
+        out.success_before_mat(i,:,:) = out.success_before_mat(i,:,num_vars:-1:1);
+        out.success_during_mat(i,:,:) = out.success_during_mat(i,:,num_vars:-1:1);
+        out.mean_success_before(i,:) = fliplr(out.mean_success_before(i,:));
+        out.mean_success_during(i,:) = fliplr(out.mean_success_during(i,:));
         if include_after
-            out.peak_mod_after(i,:) = fliplr(out.peak_mod_after(i,:));
-            out.peak_mod_after_per(i,:) = fliplr(out.peak_mod_after_per(i,:));
-            out.peak_mod_after_diff(i,:) = fliplr(out.peak_mod_after_diff(i,:));        
+            out.peaks_mod_after(i,:) = fliplr(out.peaks_mod_after(i,:));
+            out.peaks_mod_after_per(i,:) = fliplr(out.peaks_mod_after_per(i,:));
+            out.peaks_mod_after_diff(i,:) = fliplr(out.peaks_mod_after_diff(i,:));        
+            out.peaks_mod_after_dF(i,:) = fliplr(out.peaks_mod_after_dF(i,:));
+            out.peaks_mod_after_dF_per(i,:) = fliplr(out.peaks_mod_after_dF_per(i,:));
+            out.peaks_mod_after_dF_diff(i,:) = fliplr(out.peaks_mod_after_dF_diff(i,:));        
             out.mean_peaks_after(i,:) = fliplr(out.mean_peaks_after(i,:));
-            out.peaks_after_mat(i,:,:) = out.peaks_after_mat(i,:,num_vars:-1:1);
-            out.success_after_mat(i,:,:) = out.success_after_mat(i,:,num_vars:-1:1);
+            out.mean_peaks_after_dF(i,:) = fliplr(out.mean_peaks_after_dF(i,:));
+            out.peaks_after_mat(i,:,:) = out.peaks_after_mat(i,:,num_vars:-1:1);            
             out.mean_peaks_after_mat_tr(i,:,:) = out.mean_peaks_after_mat_tr(i,:,num_vars:-1:1);
             out.mean_peaks_after_mat_tr_norm(i,:,:) = out.mean_peaks_after_mat_tr_norm(i,:,num_vars:-1:1);
+            out.mean_peaks_after_tr_dF(i,:,:) = out.mean_peaks_after_tr_dF(i,:,num_vars:-1:1);
+            out.mean_peaks_after_tr_dF_norm(i,:,:) = out.mean_peaks_after_tr_dF_norm(i,:,num_vars:-1:1);
+            % averaged traces
+            out.mean_dF_al2_after(:,i,:) = out.mean_dF_al2_after(:,i,num_vars:-1:1);            
+            out.mean_dF_al2_after_tr(:,i,:,:) = out.mean_dF_al2_after_tr(:,i,:,num_vars:-1:1);            
+            % release success/failure
+            out.success_after_mat(i,:,:) = out.success_after_mat(i,:,num_vars:-1:1);
+            out.mean_success_after(i,:) = fliplr(out.mean_success_after(i,:));
         end
         for j = 1:floor(num_vars/2) % flip data from each amp with opposite polarity, skip middle if odd number of amps (non-paired)
             % Peaks before 
@@ -153,35 +181,87 @@ flipped_amp_cells = false(num_dishes,1);
 for i = 1:num_dishes    
     if isnan(out.num_rois(i)); continue; end 
     if in.sort_by_mode == 1
-        [~,max_ind] = max(abs(out.peak_mod_during_cell_per(i,:)));
-        flip_cell = ( (out.peak_mod_during_cell_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
-            ||  (out.peak_mod_during_cell_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
+        [~,max_ind] = max(abs(out.peaks_mod_during_cell_per(i,:)));
+        flip_cell = ( (out.peaks_mod_during_cell_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
+            ||  (out.peaks_mod_during_cell_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
     elseif in.sort_by_mode == 2
-        [~,max_ind] = max(abs(out.peak_mod_during_cell_per(i,dc_inds)));
+        [~,max_ind] = max(abs(out.peaks_mod_during_cell_per(i,dc_inds)));
         max_ind = dc_inds(max_ind);
-        flip_cell = ( (out.peak_mod_during_cell_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
-            ||  (out.peak_mod_during_cell_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
+        flip_cell = ( (out.peaks_mod_during_cell_per(i,max_ind) > 0 && plot_amps(max_ind) < 0) ... % negative current facilitates
+            ||  (out.peaks_mod_during_cell_per(i,max_ind) < 0 && plot_amps(max_ind) > 0)); % or positive current suppresses            
     elseif in.sort_by_mode == 3
         flip_cell = in.flipped_amp_cells(i); 
     end
-    if flip_cell
-        out.peak_mod_during_cell(i,:) = fliplr(out.peak_mod_during_cell(i,:)); % flip polarity
-        out.peak_mod_during_cell_per(i,:) = fliplr(out.peak_mod_during_cell_per(i,:)); % flip polarity
-        out.peak_mod_during_cell_diff(i,:) = fliplr(out.peak_mod_during_cell_diff(i,:)); % flip polarity
+    if flip_cell        
+        flipped_amp_cells(i) = true;
+        % *** peaks from raw trace
+        % modulation calculated on average of peaks across ROIs within cell
+        out.peaks_mod_during_cell(i,:) = fliplr(out.peaks_mod_during_cell(i,:)); % flip polarity
+        out.peaks_mod_during_cell_per(i,:) = fliplr(out.peaks_mod_during_cell_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_diff(i,:) = fliplr(out.peaks_mod_during_cell_diff(i,:)); % flip polarity
+        % modulation calculated by averaging within ROI modulation
+        out.peaks_mod_during_cell_wroi(i,:) = fliplr(out.peaks_mod_during_cell_wroi(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_per(i,:) = fliplr(out.peaks_mod_during_cell_wroi_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_diff(i,:) = fliplr(out.peaks_mod_during_cell_wroi_diff(i,:)); % flip polarity
+        % peaks averaged across trials, stim in trains, and ROIs
         out.mean_peaks_before_cell(i,:) = fliplr(out.mean_peaks_before_cell(i,:));
         out.mean_peaks_during_cell(i,:) = fliplr(out.mean_peaks_during_cell(i,:));
+        % peaks averaged across trials and ROIs for each stim in train
         out.mean_peaks_before_cell_tr(i,:,:) = out.mean_peaks_before_cell_tr(i,:,num_vars:-1:1);
         out.mean_peaks_during_cell_tr(i,:,:) = out.mean_peaks_during_cell_tr(i,:,num_vars:-1:1);
+        % peaks averaged across trials and ROIs for each stim in train,
+        % normalized to mean of before
         out.mean_peaks_before_cell_tr_norm(i,:,:) = out.mean_peaks_before_cell_tr_norm(i,:,num_vars:-1:1);
         out.mean_peaks_during_cell_tr_norm(i,:,:) = out.mean_peaks_during_cell_tr_norm(i,:,num_vars:-1:1);
-        flipped_amp_cells(i) = true;
-        if include_after
-            out.peak_mod_after_cell(i,:) = fliplr(out.peak_mod_after_cell(i,:)); % flip polarity
-            out.peak_mod_after_cell_per(i,:) = fliplr(out.peak_mod_after_cell_per(i,:)); % flip polarity
-            out.peak_mod_after_cell_diff(i,:) = fliplr(out.peak_mod_after_cell_diff(i,:)); % flip polarity
+        % *** peaks from averaged trace (_dF)
+        % modulation calculated on average of peaks across ROIs within cell
+        out.peaks_mod_during_cell_dF(i,:) = fliplr(out.peaks_mod_during_cell_dF(i,:)); % flip polarity
+        out.peaks_mod_during_cell_dF_per(i,:) = fliplr(out.peaks_mod_during_cell_dF_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_dF_diff(i,:) = fliplr(out.peaks_mod_during_cell_dF_diff(i,:)); % flip polarity
+        % modulation calculated by averaging within ROI modulation
+        out.peaks_mod_during_cell_wroi_dF(i,:) = fliplr(out.peaks_mod_during_cell_wroi_dF(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_dF_per(i,:) = fliplr(out.peaks_mod_during_cell_wroi_dF_per(i,:)); % flip polarity
+        out.peaks_mod_during_cell_wroi_dF_diff(i,:) = fliplr(out.peaks_mod_during_cell_wroi_dF_diff(i,:)); % flip polarity
+        % peaks averaged across trials, stim in trains, and ROIs
+        out.mean_peaks_before_cell_dF(i,:) = fliplr(out.mean_peaks_before_cell_dF(i,:));
+        out.mean_peaks_during_cell_dF(i,:) = fliplr(out.mean_peaks_during_cell_dF(i,:));
+        % peaks averaged across trials and ROIs for each stim in train
+        out.mean_peaks_before_cell_tr_dF(i,:,:) = out.mean_peaks_before_cell_tr_dF(i,:,num_vars:-1:1);
+        out.mean_peaks_during_cell_tr_dF(i,:,:) = out.mean_peaks_during_cell_tr_dF(i,:,num_vars:-1:1);
+        % peaks averaged across trials and ROIs for each stim in train,
+        % normalized to mean of before
+        out.mean_peaks_before_cell_tr_norm_dF(i,:,:) = out.mean_peaks_before_cell_tr_norm_dF(i,:,num_vars:-1:1);
+        out.mean_peaks_during_cell_tr_norm_dF(i,:,:) = out.mean_peaks_during_cell_tr_norm_dF(i,:,num_vars:-1:1);
+        
+        if include_after            
+            % modulation calculated on average of peaks across ROIs within cell
+            % raw peaks
+            out.peaks_mod_after_cell(i,:) = fliplr(out.peaks_mod_after_cell(i,:)); % flip polarity
+            out.peaks_mod_after_cell_per(i,:) = fliplr(out.peaks_mod_after_cell_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_diff(i,:) = fliplr(out.peaks_mod_after_cell_diff(i,:)); % flip polarity
+            % peaks of averaged traces (_dF)
+            out.peaks_mod_after_cell_dF(i,:) = fliplr(out.peaks_mod_after_cell_dF(i,:)); % flip polarity
+            out.peaks_mod_after_cell_dF_per(i,:) = fliplr(out.peaks_mod_after_cell_dF_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_dF_diff(i,:) = fliplr(out.peaks_mod_after_cell_dF_diff(i,:)); % flip polarity
+            % modulation calculated by averaging within ROI modulation
+            % raw peaks
+            out.peaks_mod_after_cell_wroi(i,:) = fliplr(out.peaks_mod_after_cell_wroi(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_per(i,:) = fliplr(out.peaks_mod_after_cell_wroi_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_diff(i,:) = fliplr(out.peaks_mod_after_cell_wroi_diff(i,:)); % flip polarity
+            % peaks of averaged traces (_dF)
+            out.peaks_mod_after_cell_wroi_dF(i,:) = fliplr(out.peaks_mod_after_cell_wroi_dF(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_dF_per(i,:) = fliplr(out.peaks_mod_after_cell_wroi_dF_per(i,:)); % flip polarity
+            out.peaks_mod_after_cell_wroi_dF_diff(i,:) = fliplr(out.peaks_mod_after_cell_wroi_dF_diff(i,:)); % flip polarity
+            % peaks averaged across trials, stim in trains, and ROIs
             out.mean_peaks_after_cell(i,:) = fliplr(out.mean_peaks_after_cell(i,:));
+            out.mean_peaks_after_cell_dF(i,:) = fliplr(out.mean_peaks_after_cell_dF(i,:)); 
+            % peaks averaged across trials and ROIs for each stim in train
             out.mean_peaks_after_cell_tr(i,:,:) = out.mean_peaks_after_cell_tr(i,:,num_vars:-1:1);
-            out.mean_peaks_after_cell_tr_norm(i,:,:) = out.mean_peaks_after_cell_tr_norm(i,:,num_vars:-1:1);
+            out.mean_peaks_after_cell_tr_dF(i,:,:) = out.mean_peaks_after_cell_tr_dF(i,:,num_vars:-1:1);
+            % peaks averaged across trials and ROIs for each stim in train,
+            % normalized to mean of before
+            out.mean_peaks_after_cell_tr_norm(i,:,:) = out.mean_peaks_after_cell_tr_norm(i,:,num_vars:-1:1);        
+            out.mean_peaks_after_cell_tr_norm_dF(i,:,:) = out.mean_peaks_after_cell_tr_norm_dF(i,:,num_vars:-1:1);        
         end
     end
 end
@@ -213,9 +293,9 @@ function out = removeROIsSubthreshModResponses(out,remove_rois,include_after,plo
     % recalculate averages and differences
     out.mean_peaks_before = squeeze(mean(out.peaks_before_mat,2,'omitnan'));
     out.mean_peaks_during = squeeze(mean(out.peaks_during_mat,2,'omitnan'));
-    out.peak_mod_during = out.mean_peaks_during./out.mean_peaks_before; 
-    out.peak_mod_during_per = 100*(out.peak_mod_during - 1); % percent change
-    out.peak_mod_during_diff = out.mean_peaks_during - out.mean_peaks_before; % difference
+    out.peaks_mod_during = out.mean_peaks_during./out.mean_peaks_before; 
+    out.peaks_mod_during_per = 100*(out.peaks_mod_during - 1); % percent change
+    out.peaks_mod_during_diff = out.mean_peaks_during - out.mean_peaks_before; % difference
     
     % average within cell
     mean_peaks_before_cell = zeros(num_dishes,length(plot_vars));
@@ -226,9 +306,9 @@ function out = removeROIsSubthreshModResponses(out,remove_rois,include_after,plo
     end
     out.mean_peaks_before_cell = mean_peaks_before_cell;
     out.mean_peaks_during_cell = mean_peaks_during_cell;
-    out.peak_mod_during_cell = out.mean_peaks_during_cell./out.mean_peaks_before_cell;
-    out.peak_mod_during_cell_diff = out.mean_peaks_during_cell - out.mean_peaks_before_cell;
-    out.peak_mod_during_cell_per = 100*(out.peak_mod_during_cell - 1); % percent change
+    out.peaks_mod_during_cell = out.mean_peaks_during_cell./out.mean_peaks_before_cell;
+    out.peaks_mod_during_cell_diff = out.mean_peaks_during_cell - out.mean_peaks_before_cell;
+    out.peaks_mod_during_cell_per = 100*(out.peaks_mod_during_cell - 1); % percent change
     if include_after
         out.peaks_after = cellfun(@(x) x(~remove_rois,:),out.peaks_after,...
                                 'UniformOutput',0);
@@ -236,9 +316,9 @@ function out = removeROIsSubthreshModResponses(out,remove_rois,include_after,plo
                                 'UniformOutput',0);
         out.peaks_after_mat = out.peaks_after_mat(~remove_rois,:,:);             
         out.mean_peaks_after = squeeze(mean(out.peaks_after_mat,2,'omitnan'));
-        out.peak_mod_after = out.mean_peaks_after./out.mean_peaks_before;
-        out.peak_mod_after_per = 100*(out.peak_mod_after - 1); % percent change
-        out.peak_mod_after_diff = out.mean_peaks_after - out.mean_peaks_before; % difference
+        out.peaks_mod_after = out.mean_peaks_after./out.mean_peaks_before;
+        out.peaks_mod_after_per = 100*(out.peaks_mod_after - 1); % percent change
+        out.peaks_mod_after_diff = out.mean_peaks_after - out.mean_peaks_before; % difference
         out.success_after = cellfun(@(x) x(~remove_rois,:),out.success_after,'UniformOutput',0);
         out.success_after_mat = out.success_after_mat(~remove_rois,:,:);    
         % Average within cell
@@ -247,8 +327,8 @@ function out = removeROIsSubthreshModResponses(out,remove_rois,include_after,plo
             mean_peaks_after_cell(i,:) = squeeze(mean(out.peaks_after_mat(out.dish_inds{1}==i,:,:),[1 2],'omitnan'));
         end
         out.mean_peaks_after_cell = mean_peaks_after_cell;
-        out.peak_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_after_cell;
-        out.peak_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_after_cell;
-        out.peak_mod_after_cell_per = 100*(out.peak_mod_after_cell - 1); % percent change
+        out.peaks_mod_after_cell = out.mean_peaks_after_cell./out.mean_peaks_after_cell;
+        out.peaks_mod_after_cell_diff = out.mean_peaks_after_cell - out.mean_peaks_after_cell;
+        out.peaks_mod_after_cell_per = 100*(out.peaks_mod_after_cell - 1); % percent change
     end    
 end

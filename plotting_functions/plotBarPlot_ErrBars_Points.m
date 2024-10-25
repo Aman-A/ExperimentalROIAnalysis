@@ -60,7 +60,7 @@ end
 if in.print_level > 0
     fprintf('Mean +/- %s:\n',in.plot_err);
     for i = 1:length(mean_data)
-        fprintf('  %g: %.2f +/- %.2f\n',i,mean_data(i),err_bars(i))
+        fprintf('  %g: %.4f +/- %.4f\n',i,mean_data(i),err_bars(i))
     end
 end
 if ~isempty(in.bar_cols)
@@ -102,7 +102,17 @@ if in.plot_pts
         if isempty(in.pt_cols)
             s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
         else
-            s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+            if (iscell(in.pt_cols) && length(in.pt_cols) > 1) || (ismatrix(in.pt_cols) && size(in.pt_cols,1) > 1)
+                for i = 1:length(x_vals)
+                    if iscell(in.pt_cols)
+                        s = scatter(x_vals(i),data_mat(:,i),in.pt_size,in.pt_cols{i},in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+                    else
+                        s = scatter(x_vals(i),data_mat(:,i),in.pt_size,in.pt_cols(i,:),in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+                    end
+                end
+            else
+                s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+            end
         end
     end
 end

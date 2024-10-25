@@ -43,7 +43,7 @@ if nargin < 2 || isempty(stim_marker_mode)
     end    
 end
 if isempty(in.stim_leg_name)
-    if length(stim_frames) == 1
+    if isscalar(stim_frames)
         stim_leg_name = 'Stim';
     else
         stim_leg_name = 'Stim times'; 
@@ -51,6 +51,7 @@ if isempty(in.stim_leg_name)
 else
     stim_leg_name = in.stim_leg_name; 
 end
+
 leg_names = {ax.Children.DisplayName};
 ind_stim_times = strcmp(leg_names,stim_leg_name);
 if ~any(ind_stim_times) || in.add_more_pts % only plot if stim times don't already exist on this axis
@@ -83,5 +84,4 @@ else
         stimpoints_hand.YData = ax.YLim(2)*0.99*ones(1,length(stim_frames));
     end
 end
-
 end

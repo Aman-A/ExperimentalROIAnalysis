@@ -12,6 +12,7 @@ function rise_fit = fitExpRise(t,Y,rise_fit_order,varargin)
 
 % AUTHOR    : Aman Aberra 
 in.max_taur = 1; % sec
+in.min_taur = 0; % sec
 in.align_traces = 1; 
 in.print_level = 1; 
 in.include_offset = 0; 
@@ -51,7 +52,7 @@ for i = 1:Ntraces
         fit_eqn = 'a*(1 - exp(-x/b))';
         fit_fcn = @(a,x) a(1)*(1 - exp(-x*a(2)));
         upper_bounds = [1.1*peak_y,in.max_taur]; % replace first element in loop
-        lower_bounds = [min(y_fit),0];
+        lower_bounds = [min(y_fit),in.min_taur];
         if in.fit_mode == 1
             start_points = [0.8*peak_y,0.1*in.max_taur];
         else
@@ -63,7 +64,7 @@ for i = 1:Ntraces
         fit_eqn = 'a*(1 - b*exp(-x/c) + (1-b)*exp(-x/d))';
         fit_fcn = @(a,x) a(1)*(1 - a(2)*exp(-x*a(3)) + (1-a(2))*exp(-x*a(4)));
         upper_bounds = [1.1*peak_y,1,in.max_taur,in.max_taur];
-        lower_bounds = [min(y_fit),0,0,0];
+        lower_bounds = [min(y_fit),0,in.min_taur,in.min_taur];
         if in.fit_mode == 1
             start_points = [0.8*peak_y,0.8,0.1*in.max_taur,0.1*in.max_taur];
         else
