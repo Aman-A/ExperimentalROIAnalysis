@@ -26,7 +26,10 @@ in.save_fig = 0;
 in.x_labels = []; 
 in.fig_fold = '.';
 in.title_on = 1;
+in.legend_on = 1; 
 in.add_val_labels = 0;
+in.font_name = 'Arial';
+in.font_size = 18; 
 in = sl.in.processVarargin(in,varargin);
 %%
 mean_peaks_before = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_before,'UniformOutput',0));
@@ -174,15 +177,20 @@ else
     b = bar([per_nochange_rois,per_dec_rois,per_inc_rois]);
 end
 for i = 1:size(in.bar_cols,1)
-    b(i).FaceColor = in.bar_cols(i,:);
+    b(i).FaceColor = in.bar_cols(i,1:3);
+    if size(in.bar_cols,2) == 4
+        b(i).FaceAlpha = in.bar_cols(i,4);
+    end
 end
 ax = gca;
 ax.XTick = 1:size(mean_peaks_during_diff,2);
 if ~isempty(in.x_labels)
     ax.XTickLabel = in.x_labels;
 end
-legend({'No change','Decreased','Increased'},'Box','off',...
-        'Location','northoutside','Orientation','horizontal');
+if in.legend_on
+    legend({'No change','Decreased','Increased'},'Box','off',...
+            'Location','northoutside','Orientation','horizontal');
+end
 ylabel('% synapses');
 box off;
 if in.title_on
@@ -198,10 +206,12 @@ if in.add_val_labels && in.bar_mode == 1
         val_labels = numericVec2chars(yd(:,i),'%.0f%%');
         val_labels(yd(:,i) < 4) = {''};
         text(xt(i)*ones(size(basepos(:,i))), basepos(:,i), val_labels, ...
-            'HorizontalAlignment','center','FontName','Arial','FontSize',18)
+            'HorizontalAlignment','center','FontName',in.font_name,'FontSize',in.font_size)
     end
 end
 ax.YLim = [0 105];
+ax.FontName = in.font_name; 
+ax.FontSize = in.font_size; 
 if in.save_fig
     printFig(fig,in.fig_fold,sprintf('per_change_rois_bar%g_%s',in.bar_mode,in.plot_test));
 end
@@ -220,7 +230,9 @@ if include_after && in.plot_after
     if ~isempty(in.x_labels)
         ax.XTickLabel = in.x_labels;
     end
-    legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
+    if in.legend_on
+        legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
+    end
     ylabel('% ROIs');
     box off;
     title(sprintf('Proportion of %g ROIs modulated after DC',max(num_rois)))

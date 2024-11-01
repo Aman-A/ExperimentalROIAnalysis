@@ -134,6 +134,10 @@ mean_dF_trials = mean_dF_trials(:,:,1:2,:); % just use single and first of paire
 % normalize to 0 mA within sets of 3 sweeps (most recent control sweep)
 stim_frame = exp_settings_all(1).baseline_wind + 1;
 peaks_dF = max(mean_dF_trials(stim_frame:end,:,:,:),[],1);
+peaks_dF_trials = cellfun(@(x) squeeze(max(x(stim_frame:end,:,1:2,:),[],1)),...
+                    dF_aligned_all,'UniformOutput',0);
+peaks_dF_trials = cell2mat(reshape(peaks_dF_trials,1,1,1,length(peaks_dF_trials))); % num_rois x [1AP, 2AP] x num_trials x [0,50]
+
 mean_dF_norm_trial = mean_dF_trials./peaks_dF(1,:,1,:); % normalize to stim 1 within condition
 peaks_dF_norm = peaks_dF./peaks_dF(1,:,1,:);
 % Paired pulse ratio (PPR) with DC off and on in all ROIs
@@ -256,3 +260,80 @@ else
         'FontName','Arial','HorizontalAlignment','center')
 end
 printFig(fig,'.',sprintf('peaks_ppr_bar_%s',data_suff));
+%% Check for run down
+mean_peaks_dF_trials_1AP = squeeze(mean(peaks_dF_trials(:,1,:,:),1)); % [0, 50V/m]
+std_peaks_dF_trials_1AP = squeeze(std(peaks_dF_trials(:,1,:,:),0,1)); % [0, 50V/m]
+mean_peaks_dF_trials_2AP = squeeze(mean(peaks_dF_trials(:,2,:,:),1)); % [0, 50V/m]
+std_peaks_dF_trials_2AP = squeeze(std(peaks_dF_trials(:,2,:,:),0,1)); % [0, 50V/m]
+fig = figure; 
+subplot(2,1,1);
+for i = 1:2
+    shadedErrorBar(1:size(mean_peaks_dF_trials_1AP,1),mean_peaks_dF_trials_1AP(:,i),...
+                std_peaks_dF_trials_1AP(:,1)/sqrt(num_rois),'lineProps',{'Color',stim_cols{i}});
+    hold on;
+end
+box off; 
+ylabel('Mean peak \DeltaF/F_{0}')
+legend({'0 V/m','50 V/m'},'Box','off','Location','NorthWest','NumColumns',2);
+subplot(2,1,2);
+for i = 1:2
+    shadedErrorBar(1:size(mean_peaks_dF_trials_1AP,1),mean_peaks_dF_trials_1AP(:,i),...
+                std_peaks_dF_trials_1AP(:,1)/sqrt(num_rois),'lineProps',{'Color',stim_cols{i}});
+    hold on;
+end
+box off;
+xlabel('Trial number');
+ylabel('Mean peak \DeltaF/F_{0}')
+title('2 AP')
+printFig(fig,'.',sprintf('peaks_vs_trial_%s',data_suff));
+%% compare start to end
+start_wind = 1:5; 
+end_wind = 16:20; 
+
+peaks_dF_rois_start_1AP = squeeze(mean(peaks_dF_trials(:,1,start_wind,:),3)); % [0, 50
+mean_peaks_start_1AP = mean(peaks_dF_rois_start_1AP,1);
+std_peaks_start_1AP = std(peaks_dF_rois_start_1AP,0,1);
+peaks_dF_rois_start_2AP = squeeze(mean(peaks_dF_trials(:,2,start_wind,:),3)); % [0, 50
+mean_peaks_start_2AP = mean(peaks_dF_rois_start_2AP,1);
+std_peaks_start_2AP = std(peaks_dF_rois_start_2AP,0,1);
+peaks_dF_rois_end_1AP = squeeze(mean(peaks_dF_trials(:,1,end_wind,:),3)); % [0, 50
+mean_peaks_end_1AP = mean(peaks_dF_rois_end_1AP,1);
+std_peaks_end_1AP = std(peaks_dF_rois_end_1AP,0,1);
+peaks_dF_rois_end_2AP = squeeze(mean(peaks_dF_trials(:,2,end_wind,:),3)); % [0, 50
+mean_peaks_end_2AP = mean(peaks_dF_rois_end_2AP,1);
+std_peaks_end_2AP = std(peaks_dF_rois_end_2AP,0,1);
+
+fig = figure; 
+for i = 1:size(peaks_dF_rois_start_1AP,2)
+    ax = subplot(2,1,i);
+    plotBarPlot_ErrBars_Points([peaks_dF_rois_start_1AP(:,i),...
+                                peaks_dF_rois_end_1AP(:,i),...
+                                peaks_dF_rois_start_2AP(:,i),...
+                                peaks_dF_rois_end_2AP(:,i)],...
+                                'plot_pts',1,'bar_cols',{'k','r','k','r'},...
+                                'bar_labels',{''},'pt_cols',0.4*[1 1 1]);
+    hold on;
+    [p1,h1] = signrank(peaks_dF_rois_start_1AP(:,i),peaks_dF_rois_end_1AP(:,i));
+    if h1
+        plot(1.5,ax.YLim(2)*0.99,'*r');
+    end
+    fprintf('stim %g: 1AP, p= %.2f\n',i,p1);
+    [p2,h2] = signrank(peaks_dF_rois_start_2AP(:,i),peaks_dF_rois_end_2AP(:,i));
+    if h2
+        plot(3.5,ax.YLim(2)*0.99,'*r');
+    end
+    fprintf('stim %g: 2AP, p= %.2f\n',i,p2);
+    if i == size(peaks_dF_rois_start_1AP,2)
+        ax.XTickLabel = {sprintf('1AP_{1-%g}',start_wind(end)),...
+                        sprintf('1AP_{%g-%g}',end_wind(1),end_wind(end)),...
+                        sprintf('2AP_{1-%g}',start_wind(end)),...
+                        sprintf('2AP_{%g-%g}',end_wind(1),end_wind(end))};
+    end
+    ylabel('Mean peak \DeltaF/F_{0}')
+    if i == 1
+        title('0 V/m');
+    else
+        title('50 V/m');
+    end
+end
+printFig(fig,'.',sprintf('peaks_start_vs_end_trials_bar_%s',data_suff));

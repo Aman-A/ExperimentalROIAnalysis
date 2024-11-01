@@ -33,7 +33,9 @@ in.plot_xlabel = 'Current (mA)';
 in.convert_to_per = 0; 
 in.remove_neg_vals = 0; 
 in.connect_medians = 0; 
-in.violin_color = [1 0 0];
+in.before_color = 0.4*[1 1 1];
+in.during_color = [1 0 0];
+in.after_color = [0 0 1]; 
 in.font_name = 'Arial';
 in.font_size = 18; 
 in = sl.in.processVarargin(in,varargin);
@@ -86,8 +88,11 @@ else
         x_vals = [-0.2 0.2];
     end
 end
-fig = gcf;
 num_conds = length(peaks_before);
+if (isnumeric(in.during_color) && size(in.during_color,1) == 1)
+    in.during_color = repmat({in.during_color},1,num_conds);
+end
+fig = gcf;
 med_before = zeros(1,num_conds);
 med_during = zeros(1,num_conds);
 if in.plot_after
@@ -131,24 +136,24 @@ for i = 1:num_conds
         %                 'distributionColors',0.8*ones(1,3),'markerSize',...
         %                 in.pt_markerSize); hold on;
         % end
-        hV1 = Violin(peaks_beforei,i+x_vals(1),'ViolinColor',0.4*[1 1 1],'Width',in.width,...
-                   'BoxColor',0.4*[1 1 1],'BoxWidth',in.width,...
+        hV1 = Violin(peaks_beforei,i+x_vals(1),'ViolinColor',in.before_color,'Width',in.width,...
+                   'BoxColor',in.before_color,'BoxWidth',in.width,...
                    'ShowData',logical(in.plot_pts),'ShowNotches',false,...
                    'DataMarkerSize',in.pt_markerSize); hold on; 
         if strcmp(in.y_mode,'loglinlog')
             apply_loglinlog_Violin(hV1,in.linlimit);
         end
     end
-    hV2 = Violin(peaks_duringi,i+x_vals(2),'ViolinColor',in.violin_color,'Width',in.width,...
-                   'BoxColor',in.violin_color,'BoxWidth',in.width,...
+    hV2 = Violin(peaks_duringi,i+x_vals(2),'ViolinColor',in.during_color{i},'Width',in.width,...
+                   'BoxColor',in.during_color{i},'BoxWidth',in.width,...
                    'ShowData',logical(in.plot_pts),'ShowNotches',false,...
                    'DataMarkerSize',in.pt_markerSize); hold on; 
     if strcmp(in.y_mode,'loglinlog')
         apply_loglinlog_Violin(hV2,in.linlimit);
     end
     if in.plot_after
-        hV3 = Violin(peaks_afteri,i+x_vals(3),'ViolinColor',[0 0 1],'Width',in.width,...
-                   'BoxColor',[0 0 1],'BoxWidth',in.width,...
+        hV3 = Violin(peaks_afteri,i+x_vals(3),'ViolinColor',in.after_color,'Width',in.width,...
+                   'BoxColor',in.after_color,'BoxWidth',in.width,...
                    'ShowData',logical(in.plot_pts),'ShowNotches',false,...
                    'DataMarkerSize',in.pt_markerSize); 
         if strcmp(in.y_mode,'loglinlog')
@@ -201,9 +206,17 @@ if in.connect_medians
     if ~(in.norm_to_before && in.plot_means) && ~in.plot_diffs
         plot((1:num_conds)+x_vals(1),med_before,'k');
     end
-    plot((1:num_conds)+x_vals(2),med_during,'Color',in.violin_color);
+    if iscell(in.during_color)
+        plot((1:num_conds)+x_vals(2),med_during,'Color','k');
+    else
+        plot((1:num_conds)+x_vals(2),med_during,'Color',in.during_color);
+    end
     if in.plot_after
-        plot((1:num_conds)+x_vals(3),med_after,'b');
+        if iscell(in.during_color)
+         plot((1:num_conds)+x_vals(3),med_after,'Color',0.4*[1 1 1]);
+        else
+            plot((1:num_conds)+x_vals(3),med_after,'Color',in.after_color);
+        end
     end
 end
 if strcmp(in.y_mode,'log')
