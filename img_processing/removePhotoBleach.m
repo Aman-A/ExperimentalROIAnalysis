@@ -1,4 +1,4 @@
-function [Fc,pbleach] = removePhotoBleach(F,varargin)
+function [Fc,pbleach,varargout] = removePhotoBleach(F,varargin)
 %REMOVEPHOTOBLEACH Removes photobleaching from fluorescence traces
 
 %   Inputs 
@@ -40,23 +40,30 @@ if in.method == 1
 %     a = 1;
 %     pbleach = filter(b,a,pbleach)
     Fc = F./pbleach;
+    varargout = {};
 elseif in.method == 2
 %     error('Not implemented yet')
     meanF = mean(F,2,'omitnan');
-    meanF = smooth(meanF,in.interp_interval); % smooth with moving average
-    fit_eqn = 'a*exp(-x/b)';    
-    upper_bounds = [max(meanF),length(meanF)]; % max photobleaching time constant 10 sec
-    lower_bounds = [0,0];
-    start_points = [max(meanF)*0.8,length(meanF)/2];
+%     meanF = smooth(meanF,in.interp_interval); % smooth with moving
+%     average  (slow)
+    meanF = movmean(meanF,in.interp_interval,'omitnan');
+%     fit_eqn = 'a*exp(-x/b) + c';    
+    fit_eqn = 'a*(b*exp(-x/c) + (1-b)*exp(-x/d)) + e';   
+    upper_bounds = [1.1*max(meanF),1,length(meanF),...
+                        length(meanF),max(meanF)]; % max photobleaching time constant 10 sec
+    lower_bounds = [0,0,0,0,-max(meanF)];
+    start_points = [max(meanF),0.9,length(meanF)/2,...
+                        length(meanF)/2,meanF(end)];
     s = fitoptions('Method','NonlinearLeastSquares',...
                            'Lower',lower_bounds,...
                            'Upper',upper_bounds,...
                            'Startpoint',start_points);
     f = fittype(fit_eqn,'options',s); 
     t_fit = (1:size(meanF,1))'-1;
-    [fitobj,gof,~] = fit(t_fit,meanF,f);
+    [fitobj,gof,~] = fit(t_fit(~isnan(meanF)),meanF(~isnan(meanF)),f);
     pbleach = fitobj(t_fit);
     Fc = F - pbleach; 
+    varargout = {fitobj,gof};
 end
 
 end

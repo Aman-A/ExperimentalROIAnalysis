@@ -42,7 +42,7 @@ function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
 % AUTHOR    : Aman Aberra 
 in.print_level = 1;
 in.rem_pbleach = 0;
-in.rem_pbleach_method = 1; % 1 - Cohen method, smooths based on min value every interp_interval
+in.rem_pbleach_method = []; % 1 - Cohen method, smooths based on min value every interp_interval
 in.rem_pbleach_skip_initial_frames = 3; % remove frames before photobleach correction
 in.align_use_train_baseline = 1; % if num_trains > 1, in addition to 
                                  % aligning traces to trains, calcROIfuncs 
@@ -154,6 +154,9 @@ if in.rem_pbleach
     else
         max_stim_interval = max(diff(stim_frames(:)));
     end
+    if isempty(in.rem_pbleach_method)
+        in.rem_pbleach_method = in.rem_pbleach; % use flag for method value
+    end
     if in.rem_pbleach_method == 1 % method from Adam Cohen rem_pbleach code
         interp_interval = min(round(max_stim_interval*1.2),size(output.mean,1));
     elseif in.rem_pbleach_method == 2
@@ -172,7 +175,7 @@ if in.rem_pbleach
     baseline_new = mean(output.mean(baseline_wind_inds(:,1,1),:),1,'omitnan');    
     if any(strcmp(funcs,'deltaF_F0'))
         output.deltaF_F0_raw = output.deltaF_F0;         
-        output.deltaF_F0 = (output.mean - baseline_new)./baseline_new; 
+        output.deltaF_F0 = (output.mean - baseline_new)./abs(baseline_new); 
     end
     if any(strcmp(funcs,'deltaF'))
         output.deltaF_raw = output.deltaF; 
@@ -303,7 +306,7 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
         if ind == 1
             output_new.deltaF_F0 = zeros(size(img,3),num_masks); % rows are for each stimulus, columns for rois        
         end
-        output_new.deltaF_F0(:,ind) = (output_mean - baseline)./baseline;
+        output_new.deltaF_F0(:,ind) = (output_mean - baseline)./abs(baseline);
     end
 end
 end

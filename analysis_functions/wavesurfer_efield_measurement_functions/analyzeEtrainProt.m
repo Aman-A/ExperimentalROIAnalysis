@@ -32,7 +32,7 @@ if strcmp(stim.TypeString,'SquarePulse')
                                     min(del,pulse_dur/2),'sec',fs,...
                                     'stim_pulse_dur',pulse_dur);
 elseif strcmp(stim.TypeString,'SquarePulseTrain')
-    pulse_dur = str2dboule(stim.PulseDuration);    
+    pulse_dur = str2double(stim.PulseDuration);    
     freq = 1/str2double(stim.Period);    
     stim_vals = defineStimTrain(del,freq,dur);
     exp_settings = ExperimentSettings(stim_vals,min(end_time,pulse_dur*2),...
