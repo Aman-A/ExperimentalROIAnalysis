@@ -14,7 +14,7 @@ function [data_raw,def_raw,drug_data_raw,out,out_drug,varargout] = plotDCmod_dru
 
 % AUTHOR    : Aman Aberra 
 in.plot_figs = 1:10; % 1 - mean peaks in control. vs each drug condition as line/scatter plot
-                    % 2 - mean peaks within cell in control. vs each drug condition as line/scatter plot
+                    % 2 - mean peaks within cell in control. vs each drug condition as bar/scatter plot
                     % 3 - mean peaks in control. vs each drug condition as CDFs
                     % 4 - change in DC modulation within cell in control. vs each drug
                     % 5 - change in DC modulation within ROI in control. vs each drug
@@ -61,7 +61,8 @@ in.print_level = 1;
 [~,in.fig_fold] = fileparts(dataset_def_filename);
 in = sl.in.processVarargin(in,varargin);
 %%
-fig_fold = fullfile(in.analysis_fold,in.fig_fold);
+% fig_fold = fullfile(in.analysis_fold,in.fig_fold);
+fig_fold = in.fig_fold; 
 if isempty(in.data_raw) % load/make dataset
     dataset_def_file = fullfile(in.analysis_fold,'..','dataset_files',dataset_def_filename);
     opts = struct();
@@ -187,8 +188,8 @@ end
 % 'df')
 mean_peaks_cont_before_cell = out.mean_peaks_before_cell; 
 mean_peaks_drug_before_cell =  out_drug.mean_peaks_before_cell;
-mean_peaks_cont_before_cell_all =  mean(mean_peaks_cont_before_cell,2);
-mean_peaks_drug_before_cell_all =  mean(mean_peaks_drug_before_cell,2);
+mean_peaks_cont_before_cell_all =  mean(mean_peaks_cont_before_cell,2,'omitnan');
+mean_peaks_drug_before_cell_all =  mean(mean_peaks_drug_before_cell,2,'omitnan');
 % Calculate peak modulation within cell
 peak_mod_cont_cell_per = out.peaks_mod_during_cell_per;
 peak_mod_drug_cell_per = out_drug.peaks_mod_during_cell_per;
@@ -275,7 +276,8 @@ if any(in.plot_figs==2)
                                 'x_vals',[1 2],'connect_pts',1,...
                                 'bar_cols',{'k',in.drug_cols{i}},'pt_cols',0.4*[1 1 1],...
                                 'pt_marker','.','pt_size',100,'bar_alphas',0.4,...
-                                'bar_labels',{in.control_name,strrep(in.drug_names{i},'_',' ')});
+                                'bar_labels',{in.control_name,strrep(in.drug_names{i},'_',' ')},...
+                                'plot_err','sem');
         % plotBarPlot_ErrBars_Points(100*mean_peaks_drug_beforei,'x_vals',[4 5],'connect_pts',1,...
         %                         'bar_cols',in.drug_cols{i},'pt_cols',in.drug_cols{i},...
         %                         'pt_marker','.','pt_size',100,'bar_alphas',0.4)                
@@ -283,14 +285,24 @@ if any(in.plot_figs==2)
         if i == 1
             ylabel(ax,'Mean peak \Delta F/F_{0} (%)');
         end
-        % ax.XLim = [0.9 2.1];
+        ax.XLim = [0.9 2.1];
         % paired t-test
         if length(dish_inds_drug{i}) > 2
-            [h,p1] = ttest(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
-            [p2,h] = ranksum(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
+            [h1,p1] = ttest(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
+            [p2,h2] = signrank(mean_peaks_cont_beforei,mean_peaks_drug_beforei);
+            if ~kstest(mean_peaks_cont_beforei) && ~kstest(mean_peaks_drug_beforei) % h = 0 for both control/drug = normal distribution
+                h = h1; 
+                is_normal = 1;
+            else
+                is_normal = 0;
+                h = h2; % use non-parametric
+            end
             if h
                 plot(ax,1.5,ax.YLim(2)*0.95,'r','Marker','*');
             end 
+            fprintf('%s: kstest for normality = %g\n',in.drug_names{i},is_normal);
+            fprintf('  Difference in cell-averaged peaks, 2-sided paired t-test p-value = %.3f\n',p1);
+            fprintf('  Difference in cell-averaged peaks, 2-sided, paired Wilcoxon signed-rank test p-value = %.3f\n',p2)
         end
         if in.include_title
             title(sprintf('%g boutons in %g cells',num_rois_drug(i),length(dish_inds_drug{i})))
@@ -317,7 +329,7 @@ if any(in.plot_figs == 3)
     fprintf('********CDF of mean peaks before DC, effect of drug********\n')
     fig = figure('Units','inches');
     % fig.Position(3:4) = [11.5 5.9]; 
-    fig.Position(3:4) = [5 2.25]; 
+    fig.Position(3:4) = in.cdf_figsize; 
     for i = 1:length(in.drug_names)
         if length(in.drug_names) > 1
             ax = subplot(1,length(in.drug_names),i);           
@@ -354,7 +366,7 @@ if any(in.plot_figs == 3)
         ax.FontName = 'Arial';
         ax.FontSize = 10; 
     end
-    % setAxesUniformLim(fig,'XLim',[0 0.8]);
+    % setAxesUniformLim(fig,'XLim',[0 0.8]);    
     if in.save_figs
         printFig(fig,fig_fold,sprintf('mean_peaks_before_CDF_rnb%g_%gdishes_pk%s',...
                                       in.remove_nonbi_mod,num_dishes,in.peak_mode)); 

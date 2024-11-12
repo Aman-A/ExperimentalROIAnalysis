@@ -25,7 +25,7 @@ xbin=linspace(bins1(1),bins1(2),length(ycount1));
 
 %Fitting histogram data with a single Gaussian function
 if nargin < 3
-    param0=[max(ycount1);mean(y);std(y)]; % initial parameters
+    param0=[max(ycount1);mean(y,'omitnan');std(y,0,'omitnan')]; % initial parameters
 end
 [params,~,~,~,MSE,ErrorModelInfo] = nlinfit(xbin,ycount1,@Gaussian,param0); % nonlinear least-squares regression
 % sigma01=params(3); % noise level in deconvolved trace

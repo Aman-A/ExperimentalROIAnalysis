@@ -40,7 +40,7 @@ in.bsline_std_rois = []; % precalculated STD of baseline signal in each ROI
 in = sl.in.processVarargin(in,varargin);
 %% Get baseline variability
 if isempty(in.bsline_std_rois)
-    std_all = std(deltaF_F0,0,1);
+    std_all = std(deltaF_F0,0,1,'omitnan');
 else
     std_all = in.bsline_std_rois;
 end
@@ -86,7 +86,7 @@ for i = 1:num_rois
     peaks_roi_bs = bootstrapEvents(peaks_roi,in.N_bootstrap,noisei);
     % Find peaks of bootstrapped distribution
     binsize = std_tracei/in.num_bins_per_std_B;
-    nbin_bs = round((max(roi_tracei)-min(roi_tracei))/binsize);
+    nbin_bs = round((max(roi_tracei,[],'omitnan')-min(roi_tracei,[],'omitnan'))/binsize);
     [ycount_bs,bins_bs] = histcounts(peaks_roi_bs,nbin_bs);
     if in.smooth_bs_dist
         ycount_bs = smooth(ycount_bs); % smooth with 5 pt moving average
@@ -119,10 +119,11 @@ for i = 1:num_rois
     opts = struct(); 
     opts.MaxIter = 200;  
     try
-    [param_multimodal_bs ,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(bins_bs,...
-                                            ycount_bs,fit_func,param0,opts);
-    catch
-        fprintf('Fitting for ROI %g produced error, skipping\n',i)
+        if isrow(ycount_bs); ycount_bs = ycount_bs'; end; 
+        [param_multimodal_bs ,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(bins_bs,...
+                                                ycount_bs,fit_func,param0,opts);
+    catch ME
+        fprintf('Fitting for ROI %g produced error: %s, skipping\n',i,ME.identifier)
         continue; 
     end
     rsq_adj_all(i) = calcAdjustedRsq(ycount_bs,...

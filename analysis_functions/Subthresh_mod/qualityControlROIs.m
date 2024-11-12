@@ -28,6 +28,7 @@ elseif strcmp(qc_settings,'off')
 end
 peaks = data.peaks_deltaF_F0_all;
 dF_al2 = data.deltaF_F0_aligned2_all;  
+plot_inds = plot_inds(~isnan(plot_inds)); % remove nans
 peaksi = peaks(plot_inds);
 dF_al2i = dF_al2(plot_inds);
 exclude_rois = false(data.rois_all{1}{1}.num_rois,1);

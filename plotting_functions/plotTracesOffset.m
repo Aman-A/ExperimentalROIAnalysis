@@ -20,11 +20,11 @@ in.font_size = 10;
 in.sbar_str = ''; 
 in = sl.in.processVarargin(in,varargin);
 if isempty(in.ax)
-    ax = gca;
-    hold(ax,'on');
+    ax = gca;    
 else
-    ax = in.ax; 
+    ax = in.ax;     
 end
+hold(ax,'on');
 % Sort traces
 if ~all(in.sort_traces==0)
     if length(in.sort_traces) == 1

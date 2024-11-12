@@ -172,7 +172,7 @@ end
 %% Plot
 fig = gcf;
 if in.bar_mode == 1 % stacked bars
-    b = bar([per_nochange_rois,per_dec_rois,per_inc_rois],'stacked');
+    b = bar([per_dec_rois,per_nochange_rois,per_inc_rois],'stacked');
 else
     b = bar([per_nochange_rois,per_dec_rois,per_inc_rois]);
 end
@@ -188,7 +188,9 @@ if ~isempty(in.x_labels)
     ax.XTickLabel = in.x_labels;
 end
 if in.legend_on
-    legend({'No change','Decreased','Increased'},'Box','off',...
+    % legend({'No change','Decreased','Increased'},'Box','off',...
+    %         'Location','northoutside','Orientation','horizontal');
+    legend({'Decreased','No change','Increased'},'Box','off',...
             'Location','northoutside','Orientation','horizontal');
 end
 ylabel('% synapses');

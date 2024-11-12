@@ -61,12 +61,12 @@ else
         roiset_filename_no_ext = getROIset_name(def.roiset_filename{i},...
                                                  def.transform_type{i},...
                                                   def.registration_rec{i});  
-        summary_data_file = sprintf('%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
+        summary_data_file_nosuffix = sprintf('%s_%s_%s_%s_%s',def.exp_date{i},def.reporter{i},def.dish{i},...
                                        roi_func_mode,roiset_filename_no_ext);
         if ~isempty(in.summary_data_file_suffix) % append suffix
-            summary_data_file = [summary_data_file '_' in.summary_data_file_suffix];
+            summary_data_file = [summary_data_file_nosuffix '_' in.summary_data_file_suffix];
         elseif any(strcmp(def.Properties.VariableNames,'data_suffix')) && ~isempty(def.data_suffix{i})             
-            summary_data_file = [summary_data_file '_' def.data_suffix{i}];                    
+            summary_data_file = [summary_data_file_nosuffix '_' def.data_suffix{i}];                    
         end
         summary_data_filepath = fullfile(exp_data_fold,[summary_data_file '.mat']);
         if exist(summary_data_filepath,'file')
@@ -99,7 +99,7 @@ else
                         data_file = sprintf('%s_%s_%s_%s_%s_%s.mat',def.exp_date{i},def.reporter{i},def.dish{i},...
                                        roi_func_mode,roiset_filename_no_ext,def.(suffixes{j}){i});
                     else
-                        data_file = [summary_data_file '_' def.(suffixes{j}){i} '.mat']; 
+                        data_file = [summary_data_file_nosuffix '_' def.(suffixes{j}){i} '.mat']; 
                     end
                     data_filepath = fullfile(exp_data_fold,data_file);
                     if exist(data_filepath,'file')

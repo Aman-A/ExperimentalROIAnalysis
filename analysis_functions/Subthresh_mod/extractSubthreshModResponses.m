@@ -38,8 +38,14 @@ num_rois = nan(1,num_dishes);
 max_num_peaks = zeros(1,num_vars); % max number of peaks across all dishes
 max_num_trials = zeros(1,num_vars);
 max_Nt_al2 = zeros(1,num_vars); % max number of time points for deltaF_F0_aligned2 across all dishes
+include_after = zeros(1,num_dishes);
 plot_data_inds = cell(1,num_dishes);
 for i = 1:num_dishes    
+    if data{i}.exp_settings(1).num_trains == 3 % size(data{i}.peaks_deltaF_F0_all{1},1)
+        include_after(i) = 1;        
+    else
+        include_after(i) = 0;        
+    end 
     for j = 1:num_vars
         if any(subthresh_lvls{i} == plot_vars(j))    
             data_inds = find(subthresh_lvls{i}==plot_vars(j));
@@ -50,13 +56,14 @@ for i = 1:num_dishes
                 prod(size(data{i}.peaks_deltaF_F0_all{data_ind},[3 4]))); % subthresh_lvls{i}==plot_vars(j)            
             max_Nt_al2(j) = max(max_Nt_al2(j),size(data{i}.deltaF_F0_aligned2_all{data_ind},1));
             max_num_trials(j) = max(max_num_trials(j),max(cellfun(@length,data{1}.img_names,'UniformOutput',1)));                    
+        else
+            plot_data_inds{i} = [plot_data_inds{i};nan];
         end
     end
 end
 % max_num_peaks = repmat(max(max_num_peaks),1,num_vars);
 max_num_peaks = max(max_num_peaks); % use same number of peaks for all conditions
 max_Nt_al2 = max(max_Nt_al2); 
-include_after = zeros(1,num_dishes);
 if isempty(in.exclude_rois)
     exclude_rois = cell(1,num_dishes);
 else
@@ -91,13 +98,9 @@ for i = 1:num_dishes
         fprintf('Skipping dish %g, only %g ROIs (< %g)\n',i,num_roisi,in.min_rois_included);
         continue; % skip this dish
     end
-    num_rois(i) = num_roisi;
-    if size(peaksi{1},1) == 3
-        include_after(i) = 1;        
-    else
-        include_after(i) = 0;        
-    end 
+    num_rois(i) = num_roisi;    
     for jp = 1:num_vars  % index within output dataset for plotting/analysis      
+        dish_inds{jp} = [dish_inds{jp};i*ones(num_roisi,1)];
         if any(plot_vars(jp) == subthresh_lvls{i})  
             jd = plot_data_inds{i}(jp);
             peaksij = peaksi{jd}; % 3 x num_rois x 20 x num_trials
@@ -106,7 +109,7 @@ for i = 1:num_dishes
             % bslinesij = baselines_alli{jd};
             num_trials  = size(peaksij,4);                   
             num_peaksij = prod(size(peaksij,[3 4]));
-            dish_inds{jp} = [dish_inds{jp};i*ones(num_roisi,1)];
+            % dish_inds{jp} = [dish_inds{jp};i*ones(num_roisi,1)];
             if num_trials >= min_num_trials_per_lvl                            
                 % add peaks from this experiment, fill with nans if fewer than
                 % max number of trials 
@@ -163,8 +166,8 @@ for i = 1:num_dishes
                                                     nan([size(dF_al2ijk,...
                                                     [1,2]),max_num_peaks-size(dF_al2ijk,3)]))];                
                     % pad peak success/failure
-                    success{3,jp} = [[success{k,jp},nan(size(success{k,jp},1),...
-                                                       max_num_peaks-size(success{k,jp},2))];...
+                    success{3,jp} = [[success{3,jp},nan(size(success{3,jp},1),...
+                                                       max_num_peaks-size(success{3,jp},2))];...
                                         [nan(size(peaksij,2),num_peaksij),...
                                                  nan(size(peaksij,2),max_num_peaks-num_peaksij)]];      
                 end                  
@@ -190,14 +193,14 @@ for i = 1:num_dishes
                 fprintf('No recordings at included amps in dish %g, excluding completely\n',i)
                 num_rois(i) = nan; 
             else
-                for k = 1:(2 + include_after(i))% loop over before, during, after stim period
+                for k = 1:(2 + any(include_after))% loop over before, during, after stim period
                     peaks{k,jp} = [peaks{k,jp};nan(num_roisi,max_num_peaks)];                
                     % bslines{k,jp} = [bslines{k,jp};nan(num_roisi,max_num_peaks)];                
                     dF_al2{k,jp} = [dF_al2{k,jp},nan(max_Nt_al2,num_roisi,...
                                                     max_num_peaks)];
-                    success{k,jp} = [success{k,jp};nan(num_roisi,max_num_peaks)];
-                    fprintf('No recordings for dish %g, %s = %g, padding with nans\n',i,in.plot_var,plot_vars(jp))
+                    success{k,jp} = [success{k,jp};nan(num_roisi,max_num_peaks)];                    
                 end
+                fprintf('No recordings for dish %g, %s = %g, padding with nans\n',i,in.plot_var,plot_vars(jp))
             end
         end
     end
