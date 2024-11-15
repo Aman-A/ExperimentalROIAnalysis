@@ -7,34 +7,35 @@
 % frames 151:200: trial 4 (condition 2)
 % (loaded from 200 frame recording)
 data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
-exp_date = '241022';
+exp_date = '241114';
 reporter = 'GluSnFR3_SynmRuby';
-dish = 'dish1';
+dish = 'dish5';
 
 cond_suffs = {'0VpmG','50VpmG'}; % repeating order of trials and suffixes
 
 trial_len = 800; % length of individual trial 
-cond_fold = '3mABi_PPF';
-% rec_names = {'3mABi_PPF_9.fits'};
-rec_names = numericVec2chars(10:19,'3mABi_PPF_%g.fits');
-start_cond_trial_ind = 11; % trial number for first sweep within condition
+cond_fold = '2mABi_PPF';
+% rec_names = {'3mABi_PPF.fits'};
+% rec_names = [[cond_fold,'.fits'],numericVec2chars([1:3,5:10],sprintf('%s_%%g.fits',cond_fold))];
+rec_names = arrayfun(@(x) [reindexFileNameForAndor(cond_fold,x) '.fits'],...
+                            1:10,'UniformOutput',0);
+% rec_names = numericVec2chars(1:9,'3mABi_PPF_%g.fits');
+start_cond_trial_ind = 1; % trial number for first sweep within condition
 %%
 exp_fold = fullfile(data_fold,exp_date,reporter,dish);
 num_conditions = length(cond_suffs);
 output_folds = cellfun(@(x) sprintf('%s_%s',cond_fold,x),cond_suffs,'UniformOutput',0);
-for i = 1:length(output_folds)
-    if ~exist(fullfile(exp_fold,output_folds{i}),'dir')
-        mkdir(fullfile(exp_fold,output_folds{i}));
-    end
-end
 start_rec_trial_ind = 0; % trial index counter across recordings
 for i = 1:length(rec_names)
     reci = Recording(fullfile(exp_fold,cond_fold,rec_names{i}));
     reci.load(); 
-    num_trials_total = reci.imsize(3)/trial_len;
+    num_trials_total = reci.imsize(3)/trial_len;    
     % break into individual trials within recording
     for j = 1:num_trials_total
        cond_ind = mod(j-1,num_conditions)+1; % condition index
+       if ~exist(fullfile(exp_fold,output_folds{cond_ind}),'dir')
+           mkdir(fullfile(exp_fold,output_folds{cond_ind}));
+       end
        framesj = (trial_len*(j-1)+1):(j*trial_len);  % frame indices for this trial
        incond_trial_ind = start_cond_trial_ind + ...
                          floor(j/(num_conditions+0.1)) + ...
@@ -50,6 +51,6 @@ for i = 1:length(rec_names)
        fprintf('%g: Saved frames %g to %g to trial %g, %s to %s\n',j,framesj(1),framesj(end),...
                     incond_trial_ind,cond_suffs{cond_ind},recij_img_name);
     end  
-    start_rec_trial_ind = start_rec_trial_ind + 1; 
+    start_rec_trial_ind = start_rec_trial_ind + num_trials_total/num_conditions; 
 end
 fprintf('Done\n')

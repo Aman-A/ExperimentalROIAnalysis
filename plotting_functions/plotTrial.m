@@ -126,12 +126,7 @@ else
 %             fitswrite(rec.vals,motcorr_filename); 
 %             fprintf('Saved motion corrected recording to %s\n',motcorr_filename)
 %         end
-%     end   
-    %% Output peak image
-    [imgs,fig_hands] = diffImage(rec,exp_settings,in.show_diff_image,...
-                                'filt_width',in.filt_width,'peak_mode',in.peak_mode,...
-                                'cmap',in.diff_image_cmap,...
-                                'indicator_dir',in.indicator_dir);                          
+%     end                             
     %% Load saved ROIs
     if isempty(in.roiset_filedir)
        in.roiset_filedir = [rec.filedir filesep '..']; % default location
@@ -150,6 +145,11 @@ else
             rois.invert_y(rec.imsize); 
         end
     end
+    %% Output peak image
+    [imgs,fig_hands] = diffImage(rec,exp_settings,in.show_diff_image,...
+                                'filt_width',in.filt_width,'peak_mode',in.peak_mode,...
+                                'cmap',in.diff_image_cmap,...
+                                'indicator_dir',in.indicator_dir);   
     % Coregister Images and shift ROIs
     if ~strcmp(in.transform_type,'none') &&  ~isempty(in.transform_type)
         if ischar(in.registration_rec)
