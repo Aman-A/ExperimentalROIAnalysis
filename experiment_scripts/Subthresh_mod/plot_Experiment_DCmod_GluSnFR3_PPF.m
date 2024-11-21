@@ -1,15 +1,15 @@
 %% Experiment measuring effect of subthreshold pre-pulse on single AP vG-pH 
 % responses
 data_fold = fullfile(getDataFold('aman_thor'),'DC_mod_experiments'); 
-exp_date = '241022';
+exp_date = '241114';
 reporter = 'GluSnFR3_SynmRuby';
-dish = 'dish2';
-div = 21; 
+dish = 'dish5';
+div = 16; 
 
-% roiset_filename = 'RoiSet_auto_pos2.mat';
-roiset_filename = 'RoiSet_pc_pos0.zip';
+% roiset_filename = 'RoiSet_auto_pos0.mat';
+roiset_filename = 'RoiSet_pc_pos1_ppf.zip';
 
-supra_amp = 2.8; % mA - bipolar stimulus amp
+supra_amp = 2; % mA - bipolar stimulus amp
 
 sampling_rate = 100; % sampling rate (frames/sec)
 stim_wind = 0.4; % window
@@ -72,9 +72,10 @@ ps.analysis_funcs = {'peaks','peak_times','poststim_ints'};
 ps.blank_frame_inds = 1;
 %%
 cond_ind = 1; 
-ps.condition = sprintf('%gmABi_PPF_0VpmG',supra_amp);
+sub_amps = [0,50];
+ps.condition = sprintf('%gmABi_PPF_%gVpmG',supra_amp,sub_amps(cond_ind));
 img_name = [ps.condition '_1.fits'];
-trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1 0.4]; 
+trace_fig = figure('Units','normalized'); trace_fig.Position(1:2) = [1.1 0.3]; 
 trace_axis = gca;
 datai = plotTrial(img_name,exp_settings_all(cond_ind),roiset_filename,...
                    trace_axis,ps);
@@ -91,15 +92,15 @@ trials_data = plotTrials(img_names,exp_settings,roiset_filename,ps);
 %% Save summary data from all train trials as experiment output file
 ps.show_diff_image = []; % can include [1,2,3, 4]
 ps.load_processed_data = 1;
-ps.save_fig = 0; % 1 - save trials overlaid, 2- save individual trials as separate files
-ps.plot_func = 'none';
-ps.roi_func_mode = 'combine';
+ps.save_fig = 2; % 1 - save trials overlaid, 2- save individual trials as separate files
+ps.plot_func = 'deltaF_F0';
+ps.roi_func_mode = 'separate';
 roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                          ps.transform_type,...
-                                            ps.registration_rec);  
+                                         ps.registration_rec);  
 
 
-data_suff = '4mABi';
+data_suff = '50Vpm';
 amps = [0,50];
 conditions = arrayfun(@(x) sprintf('%gmABi_PPF_%gVpmG',supra_amp,x),...
                                     amps,'UniformOutput',0);
@@ -125,7 +126,7 @@ out = plotTrials_multipleConditions(conditions,ps,exp_settings_all,...
                                    'plot_overlaid',1);
 % set(0,'DefaultFigureVisible','on') % to avoid window taking screen focus
 %%
-keep_trials = [1:20]; 
+keep_trials = [1:19]; 
 dF_aligned_all = out.deltaF_F0_aligned_all; % {[nt x nrois x nstim x ntrials],..}
 mean_dF_trials = cellfun(@(x) mean(x(:,:,:,keep_trials),4),...
                     dF_aligned_all,'UniformOutput',0);
@@ -288,7 +289,7 @@ title('2 AP')
 printFig(fig,'.',sprintf('peaks_vs_trial_%s',data_suff));
 %% compare start to end
 start_wind = 1:5; 
-end_wind = 16:20; 
+end_wind = 6:10; 
 
 peaks_dF_rois_start_1AP = squeeze(mean(peaks_dF_trials(:,1,start_wind,:),3)); % [0, 50
 mean_peaks_start_1AP = mean(peaks_dF_rois_start_1AP,1);
@@ -317,12 +318,11 @@ for i = 1:size(peaks_dF_rois_start_1AP,2)
     if h1
         plot(1.5,ax.YLim(2)*0.99,'*r');
     end
-    fprintf('stim %g: 1AP, p= %.2f\n',i,p1);
     [p2,h2] = signrank(peaks_dF_rois_start_2AP(:,i),peaks_dF_rois_end_2AP(:,i));
     if h2
         plot(3.5,ax.YLim(2)*0.99,'*r');
-    end
-    fprintf('stim %g: 2AP, p= %.2f\n',i,p2);
+    end    
+    fprintf('%g V/m: 1AP, p = %.3f, 2AP, p= %.3f\n',amps(i),p1,p2);
     if i == size(peaks_dF_rois_start_1AP,2)
         ax.XTickLabel = {sprintf('1AP_{1-%g}',start_wind(end)),...
                         sprintf('1AP_{%g-%g}',end_wind(1),end_wind(end)),...
@@ -336,4 +336,5 @@ for i = 1:size(peaks_dF_rois_start_1AP,2)
         title('50 V/m');
     end
 end
-printFig(fig,'.',sprintf('peaks_start_vs_end_trials_bar_%s',data_suff));
+printFig(fig,'.',sprintf('peaks_%g-%g_vs_%g-%g_trials_bar_%s',...
+    start_wind(1),start_wind(end),end_wind(1),end_wind(end),data_suff));
