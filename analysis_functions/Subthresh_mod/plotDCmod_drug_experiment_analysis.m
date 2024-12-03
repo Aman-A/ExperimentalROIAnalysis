@@ -366,7 +366,7 @@ if any(in.plot_figs == 3)
         ax.FontName = 'Arial';
         ax.FontSize = 10; 
     end
-    % setAxesUniformLim(fig,'XLim',[0 0.8]);    
+    setAxesUniformLim(fig,'XLim',[0 0.8]);    
     if in.save_figs
         printFig(fig,fig_fold,sprintf('mean_peaks_before_CDF_rnb%g_%gdishes_pk%s',...
                                       in.remove_nonbi_mod,num_dishes,in.peak_mode)); 

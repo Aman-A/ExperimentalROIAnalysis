@@ -218,14 +218,18 @@ if in.save_fig
     printFig(fig,in.fig_fold,sprintf('per_change_rois_bar%g_%s',in.bar_mode,in.plot_test));
 end
 if include_after && in.plot_after
-    fig = gcf;
+    fig2 = figure('Units',fig.Units,'Position',fig.Position);
     if in.bar_mode == 1 % stacked bars
-        b = bar([per_nochange_rois_after,per_dec_rois_after,per_inc_rois_after],'stacked');
+        b = bar([per_dec_rois_after,per_nochange_rois_after,per_inc_rois_after],'stacked');
     else
         b = bar([per_nochange_rois_after,per_dec_rois_after,per_inc_rois_after]);
     end
+
     for i = 1:size(in.bar_cols,1)
-        b(i).FaceColor = in.bar_cols(i,:);
+        b(i).FaceColor = in.bar_cols(i,1:3);
+        if size(in.bar_cols,2) == 4
+            b(i).FaceAlpha = in.bar_cols(i,4);
+        end
     end
     ax = gca;
     ax.XTick = 1:size(mean_peaks_after,2);
@@ -233,13 +237,33 @@ if include_after && in.plot_after
         ax.XTickLabel = in.x_labels;
     end
     if in.legend_on
-        legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
+        % legend({'No change','Decrease','Increase'},'Box','off','Location','bestoutside');
+        legend({'Decreased','No change','Increased'},'Box','off',...
+            'Location','northoutside','Orientation','horizontal');
     end
-    ylabel('% ROIs');
+    ylabel('% synapses');
     box off;
-    title(sprintf('Proportion of %g ROIs modulated after DC',max(num_rois)))
+    if in.title_on
+        title(sprintf('Proportion of %g ROIs modulated after DC',max(num_rois)))
+    end
+    if in.add_val_labels && in.bar_mode == 1
+        xt = ax.XTick;
+        % yd = reshape([b.YData],2,[])';
+        yd = reshape([b.YData],num_amps,[])';
+        barbase = cumsum([zeros(1,size(yd,2)); yd(1:end-1,:)],1);
+        basepos = yd/2 + barbase;
+        for i = 1:size(yd,2)
+            val_labels = numericVec2chars(yd(:,i),'%.0f%%');
+            val_labels(yd(:,i) < 4) = {''};
+            text(xt(i)*ones(size(basepos(:,i))), basepos(:,i), val_labels, ...
+                'HorizontalAlignment','center','FontName',in.font_name,'FontSize',in.font_size)
+        end
+    end
+    ax.YLim = [0 105];
+    ax.FontName = in.font_name;
+    ax.FontSize = in.font_size;
     if in.save_fig
-        printFig(fig,in.fig_fold,sprintf('per_change_rois_after_bar%g_%s',in.bar_mode,in.plot_test));
+        printFig(fig2,in.fig_fold,sprintf('per_change_rois_after_bar%g_%s',in.bar_mode,in.plot_test));
     end
 end
 end
