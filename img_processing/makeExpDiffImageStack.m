@@ -24,7 +24,7 @@ in.filt_width = 0;
 in.indicator_dir = 1; 
 in = sl.in.processVarargin(in,varargin); 
 % Format Experiment Settings
-if length(exp_settings) == 1
+if isscalar(exp_settings)
     exp_settings = repmat(exp_settings,length(trial_folders),1); % convert to object array
 else
     if iscell(exp_settings) % cell array of ExperimentSettings objects

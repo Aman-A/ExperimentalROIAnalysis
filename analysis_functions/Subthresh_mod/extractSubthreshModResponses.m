@@ -265,7 +265,7 @@ for i = 1:length(mat_prefixes)
     end
 end
 %% average raw peaks and deltaF traces within train separately
-num_rois_all = sum(num_rois);
+num_rois_all = sum(num_rois,'omitnan');
 num_stim = data{1}.exp_settings(1).num_stim;
 stim_ind = data{1}.exp_settings(1).baseline_wind + 1;
 spike_wind_end = stim_ind + data{1}.exp_settings(1).convert2Frames(in.spike_window);

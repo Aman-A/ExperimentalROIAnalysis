@@ -440,7 +440,10 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 update_roiobjs = 1;
             end
             if iscell(obj.x)
-                for i = 1:size(shift_vec,1)
+                if size(shift_vec,1) == 1
+                    shift_vec = repmat(shift_vec,obj.num_rois,1);
+                end
+                for i = 1:obj.num_rois
                     obj.x{i} = obj.x{i} + shift_vec(i,1);
                     obj.y{i} = obj.y{i} + shift_vec(i,2);
                 end
@@ -456,9 +459,17 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
             % Apply forward affine transformation using 3x3 matrix T, convention 
             % given in affine2d.m documentation: [x y 1] = [u v 1] * T, with
             % T given by [a b 0; c d 0; e f 1]; 
-            r_new = [obj.x, obj.y, ones(obj.num_rois,1)] * T;
-            obj.x = r_new(:,1); 
-            obj.y = r_new(:,2); 
+            if all(strcmp(obj.types,'Oval')) || all(strcmp(obj.types,'Circle'))
+                r_new = [obj.x, obj.y, ones(obj.num_rois,1)] * T;
+                obj.x = r_new(:,1); 
+                obj.y = r_new(:,2); 
+            elseif strcmp(obj.types{1},'Polygon') || strcmp(obj.types{1},'PolyLine')
+                for i = 1:obj.num_rois
+                    xy_new = [obj.x{i},obj.y{i},ones(length(obj.x{i}),1)] * T;
+                    obj.x{i} = xy_new(:,1);
+                    obj.y{i} = xy_new(:,2);
+                end
+            end
             obj.updateRoiObjs(); 
         end
         function removeROIs(obj,roi_inds)            

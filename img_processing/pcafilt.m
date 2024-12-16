@@ -1,4 +1,4 @@
-function [moviefilt, eigvecs, eigvals] = pcafilt(movie, npcs);
+function [moviefilt, eigvecs, eigvals] = pcafilt(movie, npcs)
 % function [moviefilt, eigvecs, eigvals] = pcafilt(movie, npcs);
 % uses time-domain PCA to de-noise a movie of a spike.
 % npcs is the number of principal components to keep.  npcs must be less

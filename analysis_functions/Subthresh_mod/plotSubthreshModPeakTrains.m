@@ -21,7 +21,8 @@ in.fig_name2 = 'peak_vs_APnum_slopes_bar';
 in.fig_fold = '.';
 in.include_inds = []; 
 in.line_cols = []; 
-in.train_cols = {'k','r','b'}; % before, during, after
+in.train_cols = {'k','r',0.6*[1 1 1]}; % before, during, after
+in.ylim = [0.6 1.4];
 in.plot_cond_inds = []; 
 in.cond_labels = {};
 in.cond_label = 'Amplitude';
@@ -29,6 +30,10 @@ in.leg_pos = [0.8890    0.6753    0.0912    0.2192];
 in.add_regress = 0; % add regression lines and plot for all conditions
 in.stim_times = []; 
 in.peak_mode = 'raw'; % 'raw' for peaks from raw trace or 'dF' for peaks from trial/stim averaged traces within ROI
+in.font_name = 'Arial';
+in.font_size = 12;
+in.show_title = 1; 
+in.show_legend = 1; 
 in = sl.in.processVarargin(in,varargin);
 
 plot_mode_options = {'abs','normroi','cell','cell_normroi','cell_sep','cell_normroi_sep'};
@@ -209,7 +214,7 @@ for j = 1:num_conds
             end
         else
             e = shadedErrorBar(xplot,mean_train{i}(:,jj),...
-                var_train{1}(:,jj),'lineProps',in.train_cols{i});
+                var_train{1}(:,jj),'lineProps',{'Color',in.train_cols{i}});
             hold on;
             es = [es,e];                        
         end
@@ -230,8 +235,8 @@ for j = 1:num_conds
     end
     
     if ~contains(plot_mode,'sep')
-        plot(ax,ax.XLim,mean(mean_train{1}(:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
-        if j == length(plot_cond_inds)
+        plot(ax,ax.XLim,mean(mean_train{1}(:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);        
+        if j == length(plot_cond_inds) && in.show_legend
             if include_after
                 legend([es(1).patch,es(2).patch,es(3).patch],'Before','During','After',...
                     'Position',in.leg_pos,'AutoUpdate','off');
@@ -243,10 +248,12 @@ for j = 1:num_conds
     else
         plot(ax,ax.XLim,mean(mean_train{1}(:,:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);
     end
+    ax.FontName = in.font_name;
+    ax.FontSize = in.font_size; 
 end
-setAxesUniformLim(fig,'YLim',[0.6 1.5]);       
+setAxesUniformLim(fig,'YLim',in.ylim);       
 % setAxesUniformLim(fig,'YLim');       
-if ~isempty(in.cond_name)
+if ~isempty(in.cond_name) && in.show_title
     sgtitle(strrep(in.cond_name,'_',' '),'FontName',ax.FontName,'FontSize',ax.FontSize);
 end
 %% Add regression analysis

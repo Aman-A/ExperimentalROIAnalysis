@@ -42,6 +42,7 @@ out.successful_spikes = cell(1,num_conditions);
 out.trial_times_all = cell(1,num_conditions);
 out.baselines_all = cell(1,num_conditions); 
 out.rois_all = cell(1,num_conditions); 
+out.imgs_all = cell(1,num_conditions);
 % Update img_names with img_names loaded in plotTrials
 img_names_new = cell(size(in.img_names)); 
 if ischar(roiset_filenames) || ~iscell(roiset_filenames)
@@ -125,6 +126,7 @@ for i = 1:num_conditions
     out.baselines_all{i} = permute(tdi.bslines,[2 1 3 4]);
     out.rois_all{i} = tdi.rois_all; 
     img_names_new{i} = tdi.img_names; 
+    out.imgs_all{i} = tdi.imgs;
 end
 % peaks_deltaF_F0_all = cell2mat(peaks_deltaF_F0_all);
 % get start time of first trial within condition relative to first trial
@@ -147,6 +149,7 @@ end
 out.roiset_filename_no_ext = getROIset_name(roiset_filename,...
                                              plot_settings.transform_type,...
                                                 plot_settings.registration_rec);  
+out.imgs_all = cellfun(@cell2mat,out.imgs_all,'UniformOutput',0);
 if in.save_summary_data    
     if isempty(in.summary_datafile)
         summary_datafile = sprintf('%s_%s_%s_%s_%s',plot_settings.exp_date,...

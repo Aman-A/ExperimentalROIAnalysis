@@ -15,9 +15,13 @@ function plotBarPlot_ErrBars_Points(data,varargin)
 % AUTHOR    : Aman Aberra 
 in.x_vals = []; 
 in.plot_err = 'sem'; % 'std' or 'sem' to use st dev or standard error for error bars
+in.err_bar_lw = 2; % error bar line width
 in.bar_labels = {}; % cell array of string labels for bars
 in.bar_cols = [0.4 0.4 0.4]; 
 in.bar_alphas = 0.4;
+in.bar_width = 0.8;
+in.bar_edgecolor = 'none';
+in.bar_linewidth = 0.5;
 in.font_name = 'Arial';
 in.font_size = 16; 
 in.jitter_amount = 0.05; 
@@ -77,7 +81,7 @@ if ~isempty(in.bar_alphas)
 end
 for i = 1:n_bars
     % plot mean as bar
-    b = bar(x_vals(i),mean_data(i),'EdgeColor','none'); hold on;       
+    b = bar(x_vals(i),mean_data(i),in.bar_width,'EdgeColor',in.bar_edgecolor); hold on;       
     if ~isempty(in.bar_cols)
         b.FaceColor = in.bar_cols{i}; 
     end
@@ -117,7 +121,7 @@ if in.plot_pts
     end
 end
 % error bars
-e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',2,...
+e = errorbar(x_vals,mean_data,err_bars,'ko','LineStyle','none','LineWidth',in.err_bar_lw,...
             'Marker','none');
 ax.XTick = x_vals;
 if ~isempty(in.bar_labels)

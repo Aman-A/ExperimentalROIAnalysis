@@ -71,6 +71,7 @@ classdef Violin < handle
         ShowMean    % whether to show mean indicator        
         SepOutlierPoints % whether to plot outlier points in different color (in scatter plot)
         DataMarkerSize % size of data points
+        MedianMarkerSize % size of data points
     end
 
     methods
@@ -192,9 +193,9 @@ classdef Violin < handle
             obj.MeanPlot.LineWidth = 1;
                              
             if ~isempty(lowhisker) && ~isempty(hiwhisker)
-                obj.WhiskerPlot = plot([pos pos], [lowhisker hiwhisker]);
+                obj.WhiskerPlot = plot([pos pos], [lowhisker hiwhisker],'LineWidth',0.5);
             end
-            obj.MedianPlot = scatter(pos, quartiles(2), [], [1 1 1], 'filled');
+            obj.MedianPlot = scatter(pos, quartiles(2), args.MedianMarkerSize, [1 1 1], 'filled');
 
             obj.NotchPlots = ...
                  scatter(pos, quartiles(2)-1.57*IQR/sqrt(length(data)), ...
@@ -386,6 +387,7 @@ classdef Violin < handle
             p.addParameter('ShowMean', false, isscalarlogical);
             p.addParameter('SepOutlierPoints',false,isscalarlogical)
             p.addParameter('DataMarkerSize',4,isscalarnumber);
+            p.addParameter('MedianMarkerSize',36,isscalarnumber);
             p.parse(data, pos, varargin{:});
             results = p.Results;
         end

@@ -224,7 +224,7 @@ classdef Recording < matlab.mixin.Copyable % Stack of images from recording
                 [~,exp_ind] = regexp(img_desc,'Exposure1 = ','ONCE');
                 s_ind = regexp(img_desc(exp_ind:end),'s');
                 if ~isempty(exp_ind) % get exposure time for HCImage multi-page tiff 
-                    obj.exposure_time = str2double(img_desc(exp_ind+1:exp_ind+s_ind-3));
+                    obj.exposure_time = str2double(img_desc(round(exp_ind+1):round(exp_ind+s_ind-3)));
                 end
             end
             obj.imsize = [info(1).Height,info(1).Width,length(info)];

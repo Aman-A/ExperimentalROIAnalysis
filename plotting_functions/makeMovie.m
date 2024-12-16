@@ -30,7 +30,8 @@ in.video_profile = 'MPEG-4';
 in.start_frame = 1;
 in.end_frame = size(vals,3);
 in.ROI = [1, size(vals,1),1, size(vals,2)]; % [lower y, upper y, left x, right x]
-in.movie_slow_down_factor = 0.5; % frames per second (e.g. for 1 kHz recording, 0.01 gives 10 fps)
+in.movie_slow_down_factor = 0.5; % movie_slow_down_factor *sampling rate = frames per second 
+                                 % (e.g. for 1 kHz recording, 0.01 gives 10 fps)
 in.sbar_len = 5; % microns
 in.sbar_x_factor = 0.7;
 in.sbar_y_factor = 0.2;
@@ -105,6 +106,8 @@ end
 %% Make movie
 if strcmp(in.colormap,'inferno')
     cmap = inferno(1000);
+elseif strcmp(in.colormap,'bluewhitered')
+    cmap = bluewhitered(1000,[],'lims',cax_lims);
 end
 fig = figure('Units',in.fig_units); 
 fig.Position(1:2) = [0.5 0.5];

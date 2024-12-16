@@ -44,15 +44,22 @@ else
     sbar_len = in.sbar_len; 
 end
 sbar_pixel_len = sbar_len/pixel_size; 
+if length(imsize) == 2
+    x_start = 0; y_start = 0;
+elseif isempty(imsize)
+    % use current axes limits
+    x_start = ax.XLim(1); y_start = ax.YLim(1); 
+    imsize = [range(ax.YLim),range(ax.XLim)];
+end
 if strcmp(in.sbar_orientation,'horz')
-    plot(ax,[in.x_factor*imsize(2),in.x_factor*imsize(2) + sbar_pixel_len],...
-            y_factor*imsize(1)*[1 1],...
+    plot(ax,x_start+[in.x_factor*imsize(2),in.x_factor*imsize(2) + sbar_pixel_len],...
+            y_start + y_factor*imsize(1)*[1 1],...
             'Color',in.color,'LineWidth',in.sbar_lw);
     text_x = in.x_factor*imsize(2) + sbar_pixel_len/2;
     text_y = text_y_factor*y_factor*imsize(1);
 elseif strcmp(in.sbar_orientation,'vert')
-    plot(ax,in.x_factor*[imsize(2),imsize(2)],...
-            [y_factor*imsize(1),y_factor*imsize(1)-sbar_pixel_len],...
+    plot(ax,x_start + in.x_factor*[imsize(2),imsize(2)],...
+            y_start + [y_factor*imsize(1),y_factor*imsize(1)-sbar_pixel_len],...
             'Color',in.color,'LineWidth',in.sbar_lw);
     text_y = in.y_factor*imsize(1) - text_y_factor*sbar_pixel_len;     
     text_x = in.text_x_factor*in.x_factor*imsize(2); 

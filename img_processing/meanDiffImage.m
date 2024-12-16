@@ -81,8 +81,8 @@ elseif isvector(peak_mode)
         for j = 1:num_stim
             peakj = mean(vals(:,:,(stim_frames(i,j)+peak_mode(1)):(stim_frames(i,j)+peak_mode(2))),3); % max at each pixel for stim j within train
             bslinej = mean(vals(:,:,(stim_frames(i,j)-baseline_wind):(stim_frames(i,j)-1)),3); % mean at each pixel
-            mean_diffi = mean_diffi + (peakj - bslinej)*indicator_dir;
-            %     mean_diff = mean_diff + (peaki - bslinei)./bslinei;
+            % mean_diffi = mean_diffi + (peakj - bslinej)*indicator_dir;
+            mean_diffi = mean_diffi + indicator_dir*(peakj - bslinej)./abs(bslinej);
         end
         mean_diffi = mean_diffi/num_stim; % average across stimuli within train
         mean_diff = mean_diff + mean_diffi;

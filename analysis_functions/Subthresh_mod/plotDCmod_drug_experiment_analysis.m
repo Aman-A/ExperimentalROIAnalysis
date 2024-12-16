@@ -33,6 +33,9 @@ in.control_name = 'Control';
 in.drug_names = {'1mM_KCl','4.5mM_KCl'};
 in.drug_cols = {'b','r'};
 in.include_title = 1; 
+in.include_legend = 1; 
+in.font_name = 'Arial';
+in.font_size = 16; 
 in.save_figs = 0;
 in.data_raw = []; 
 in.def_raw = []; 
@@ -45,9 +48,13 @@ in.norm_traces = 0; % 1 - average across ROIs then normalize mean peaks during t
 in.scalebar_xlen = 0.1; % sec
 in.scalebar_ylen = 0.05; % percent deltaF/F               
 in.trace_ylim = []; 
+in.bar_figsize = []; 
 in.cdf_figsize = [11.5 5.9];
 in.trace_figsize = [11.5 5.9];
 in.train_figsize = [23 4.4];
+in.train_ylim = [0.6 1.4]; 
+in.show_xlabels = 1;
+in.show_ylabels = 1;
 in.remove_nonbi_mod = 0;
 in.analysis_fold = pwd; 
 in.spike_thresh = 3; % peak = 3xstd(baseline) above baseline for spike
@@ -259,10 +266,14 @@ end
 %% Plot mean peaks before within cell in control. vs each drug condition as bar/line plot
 if any(in.plot_figs==2)
     fig = figure('Units','inches');
-    if length(in.drug_names) > 1
-        fig.Position(3:4) = [11.5 5.9]; 
+    if isempty(in.bar_figsize)
+        if length(in.drug_names) > 1
+            fig.Position(3:4) = [11.5 5.9]; 
+        else
+            fig.Position(3:4) = [4.3 6]; 
+        end
     else
-        fig.Position(3:4) = [4.3 6]; 
+        fig.Position(3:4) = in.bar_figsize;
     end
     for i = 1:length(in.drug_names)
         if length(in.drug_names) > 1
@@ -272,18 +283,25 @@ if any(in.plot_figs==2)
         end          
         mean_peaks_cont_beforei = mean_peaks_cont_before_cell_all(dish_inds_drug{i});
         mean_peaks_drug_beforei = mean_peaks_drug_before_cell_all(dish_inds_drug{i});       
+        if in.show_xlabels
+            bar_labels = {in.control_name,strrep(in.drug_names{i},'_',' ')};
+        else
+            bar_labels = {'',''}; 
+        end
         plotBarPlot_ErrBars_Points(100*[mean_peaks_cont_beforei,mean_peaks_drug_beforei],...
                                 'x_vals',[1 2],'connect_pts',1,...
                                 'bar_cols',{'k',in.drug_cols{i}},'pt_cols',0.4*[1 1 1],...
-                                'pt_marker','.','pt_size',100,'bar_alphas',0.4,...
-                                'bar_labels',{in.control_name,strrep(in.drug_names{i},'_',' ')},...
-                                'plot_err','sem');
+                                'pt_marker','none','pt_size',100,'bar_alphas',0.4,...
+                                'bar_labels',bar_labels,...
+                                'plot_err','sem','err_bar_lw',1);
         % plotBarPlot_ErrBars_Points(100*mean_peaks_drug_beforei,'x_vals',[4 5],'connect_pts',1,...
         %                         'bar_cols',in.drug_cols{i},'pt_cols',in.drug_cols{i},...
         %                         'pt_marker','.','pt_size',100,'bar_alphas',0.4)                
-        ax.XTickLabelRotation = 30; 
-        if i == 1
-            ylabel(ax,'Mean peak \Delta F/F_{0} (%)');
+        ax.XTickLabelRotation = 30;         
+        if in.show_ylabels
+            if i == 1
+                ylabel(ax,'Mean peak \Delta F/F_{0} (%)');
+            end
         end
         ax.XLim = [0.9 2.1];
         % paired t-test
@@ -298,11 +316,11 @@ if any(in.plot_figs==2)
                 h = h2; % use non-parametric
             end
             if h
-                plot(ax,1.5,ax.YLim(2)*0.95,'r','Marker','*');
+                % plot(ax,1.5,ax.YLim(2)*0.95,'r','Marker','*');
             end 
             fprintf('%s: kstest for normality = %g\n',in.drug_names{i},is_normal);
-            fprintf('  Difference in cell-averaged peaks, 2-sided paired t-test p-value = %.3f\n',p1);
-            fprintf('  Difference in cell-averaged peaks, 2-sided, paired Wilcoxon signed-rank test p-value = %.3f\n',p2)
+            % fprintf('  Difference in cell-averaged peaks, 2-sided paired t-test p-value = %.3f\n',p1);
+            % fprintf('  Difference in cell-averaged peaks, 2-sided, paired Wilcoxon signed-rank test p-value = %.3f\n',p2)
         end
         if in.include_title
             title(sprintf('%g boutons in %g cells',num_rois_drug(i),length(dish_inds_drug{i})))
@@ -315,13 +333,14 @@ if any(in.plot_figs==2)
             fprintf('    paired t-test p = %.3f\n',p1);
             fprintf('    Wilcoxon rank sum p = %.3f\n',p2);
         end
-        ax.FontName = 'Arial';
-        ax.FontSize = 22; 
+        ax.FontName = in.font_name;
+        ax.FontSize = in.font_size; 
     end
     setAxesUniformLim(fig,'YLim');
     if in.save_figs
         printFig(fig,fig_fold,sprintf('mean_peaks_before_bar_wcell_rnb%g_%gdishes_pk%s',...
-                                    in.remove_nonbi_mod,num_dishes,in.peak_mode)); 
+                                    in.remove_nonbi_mod,num_dishes,in.peak_mode),...
+                                    'formats',{'fig','png'},'resolutions',{'','-r600'}); 
     end
 end
 %% Plot mean peaks before within ROI in control. vs each drug condition as CDFs
@@ -884,7 +903,9 @@ if any(in.plot_figs == 10)
                                         'save_fig',in.save_figs,'cond_name',cond_name,...
                                         'include_inds',train_plot_inds,'add_regress',...
                                         in.train_add_regress,'fig_name2',fig_name2,...
-                                        'peak_mode',in.peak_mode);
+                                        'peak_mode',in.peak_mode,'font_name',in.font_name,...
+                                        'font_size',in.font_size,'show_title',in.include_title,...
+                                        'show_legend',in.include_legend,'ylim',in.train_ylim);
             train_data{i}{k} = [mean_train,var_train];
         end
     end

@@ -30,6 +30,8 @@ in.legend_on = 1;
 in.add_val_labels = 0;
 in.font_name = 'Arial';
 in.font_size = 18; 
+in.text_font_size = 8;
+in.show_ylabel = 1;
 in = sl.in.processVarargin(in,varargin);
 %%
 mean_peaks_before = cell2mat(cellfun(@(x) mean(x,2,'omitnan'),peaks_before,'UniformOutput',0));
@@ -193,7 +195,9 @@ if in.legend_on
     legend({'Decreased','No change','Increased'},'Box','off',...
             'Location','northoutside','Orientation','horizontal');
 end
-ylabel('% synapses');
+if in.show_ylabel
+    ylabel('% synapses');
+end
 box off;
 if in.title_on
     title(sprintf('Proportion of %g ROIs modulated by DC',max(num_rois)))
@@ -208,14 +212,16 @@ if in.add_val_labels && in.bar_mode == 1
         val_labels = numericVec2chars(yd(:,i),'%.0f%%');
         val_labels(yd(:,i) < 4) = {''};
         text(xt(i)*ones(size(basepos(:,i))), basepos(:,i), val_labels, ...
-            'HorizontalAlignment','center','FontName',in.font_name,'FontSize',in.font_size)
+            'HorizontalAlignment','center','FontName',in.font_name,'FontSize',in.text_font_size)
     end
 end
 ax.YLim = [0 105];
 ax.FontName = in.font_name; 
 ax.FontSize = in.font_size; 
+ax.XColor = 'k'; ax.YColor = 'k';
 if in.save_fig
-    printFig(fig,in.fig_fold,sprintf('per_change_rois_bar%g_%s',in.bar_mode,in.plot_test));
+    printFig(fig,in.fig_fold,sprintf('per_change_rois_bar%g_%s',in.bar_mode,in.plot_test),...
+        'formats',{'fig','png'},'resolutions',{'','-r600'});
 end
 if include_after && in.plot_after
     fig2 = figure('Units',fig.Units,'Position',fig.Position);
@@ -241,7 +247,9 @@ if include_after && in.plot_after
         legend({'Decreased','No change','Increased'},'Box','off',...
             'Location','northoutside','Orientation','horizontal');
     end
-    ylabel('% synapses');
+    if in.show_ylabel
+        ylabel('% synapses');
+    end
     box off;
     if in.title_on
         title(sprintf('Proportion of %g ROIs modulated after DC',max(num_rois)))
@@ -256,14 +264,17 @@ if include_after && in.plot_after
             val_labels = numericVec2chars(yd(:,i),'%.0f%%');
             val_labels(yd(:,i) < 4) = {''};
             text(xt(i)*ones(size(basepos(:,i))), basepos(:,i), val_labels, ...
-                'HorizontalAlignment','center','FontName',in.font_name,'FontSize',in.font_size)
+                'HorizontalAlignment','center','FontName',in.font_name,'FontSize',in.text_font_size)
         end
     end
     ax.YLim = [0 105];
     ax.FontName = in.font_name;
     ax.FontSize = in.font_size;
+    ax.XColor = 'k'; ax.YColor = 'k';
     if in.save_fig
-        printFig(fig2,in.fig_fold,sprintf('per_change_rois_after_bar%g_%s',in.bar_mode,in.plot_test));
+        printFig(fig2,in.fig_fold,...
+            sprintf('per_change_rois_after_bar%g_%s',in.bar_mode,in.plot_test),...
+            'formats',{'fig','png'},'resolutions',{'','-r600'});
     end
 end
 end

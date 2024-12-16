@@ -48,14 +48,14 @@ for i = 1:num_files
                            'Resolution',resi); 
         end
     elseif strcmp(formati,'eps')
-        exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']),...
-            'BackgroundColor',in.background_col,'ColorSpace',in.color_space);
-%         if exist('export_fig','file')        
-%             export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps','-cmyk');
-%         else
-% %             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
-%             exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
-%         end
+        % exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']),...
+        %     'BackgroundColor',in.background_col,'ColorSpace',in.color_space);
+        if exist('export_fig','file')        
+            export_fig(fig_handle,fullfile(file_dir,[file_name '.eps']),'-eps','-cmyk');
+        else
+%             print(fig_handle,fullfile(file_dir,[file_name '.eps']),'-depsc');
+            exportgraphics(fig_handle,fullfile(file_dir,[file_name '.eps']));
+        end
     elseif strcmp(formati,'tif') || strcmp(formati,'tiff')
         exportgraphics(fig_handle,fullfile(file_dir,[file_name '.tif']),...
           'BackgroundColor',in.background_col,'ColorSpace',in.color_space);
