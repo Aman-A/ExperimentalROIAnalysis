@@ -214,7 +214,7 @@ for j = 1:num_conds
             end
         else
             e = shadedErrorBar(xplot,mean_train{i}(:,jj),...
-                var_train{1}(:,jj),'lineProps',{'Color',in.train_cols{i}});
+                var_train{1}(:,jj),'lineProps',{'Color',in.train_cols{i},'LineWidth',0.5});
             hold on;
             es = [es,e];                        
         end
@@ -235,7 +235,8 @@ for j = 1:num_conds
     end
     
     if ~contains(plot_mode,'sep')
-        plot(ax,ax.XLim,mean(mean_train{1}(:,jj),'all')*[1 1],'--','Color',0.4*[1 1 1]);        
+        plot(ax,ax.XLim,mean(mean_train{1}(:,jj),'all')*[1 1],...
+            '--','Color',0.4*[1 1 1],'LineWidth',0.5);        
         if j == length(plot_cond_inds) && in.show_legend
             if include_after
                 legend([es(1).patch,es(2).patch,es(3).patch],'Before','During','After',...

@@ -23,18 +23,24 @@ end
 if nargin < 2
     x_or_y_lim = 'YLim';    
 end
-
+ax_strings = {'YLim','XLim'};
+other_ax = ax_strings{~strcmp(x_or_y_lim,ax_strings)};
 lims = [inf,-inf];
 axes_all = []; 
 if isempty(ax_inds)
     ax_inds = 1:length(fig.Children);
 end
+if isscalar(ax_inds) && isempty(ax_lims) % leave auto axes
+    return; 
+end
 for i = ax_inds
     if strcmp(fig.Children(i).Type,'axes')
+        other_axlimsi = fig.Children(i).(other_ax);
         axis(fig.Children(i),'auto');
         lims(1) = min(fig.Children(i).(x_or_y_lim)(1),lims(1));
         lims(2) = max(fig.Children(i).(x_or_y_lim)(2),lims(2));
         axes_all = [axes_all,fig.Children(i)];
+        fig.Children(i).(other_ax) = other_axlimsi;
     end
 end
 if ~isempty(ax_lims)

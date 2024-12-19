@@ -44,7 +44,7 @@ else
     sbar_len = in.sbar_len; 
 end
 sbar_pixel_len = sbar_len/pixel_size; 
-if length(imsize) == 2
+if length(imsize) >= 2
     x_start = 0; y_start = 0;
 elseif isempty(imsize)
     % use current axes limits

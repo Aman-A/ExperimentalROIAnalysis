@@ -47,6 +47,7 @@ in.AHP_mode = 1; % 0 - find AHP trough in each trace
 in.plot_width = 0.1; 
 in.frac_amps = 0.1:0.1:0.9;
 in.norm_AP_feats = 0; % 1 - plot % change in AP features, 2 - subtract 0 mA control trial, 0 - plot abs differences
+in.pol_smooth_method = 'movmean'; % methods for smoothdata function
 in.pol_smooth_wind = 30; 
 in.rise_fit_dur = 100; % duration in ms of polarization stimulus pulse to 
                       % use for fitting rise time constant 
@@ -310,7 +311,11 @@ pol_snrs = zeros(1,length(pol_amps));
 mean_pols_smooth = mean_pols;
 for i = 1:length(pol_amps)    
     if in.pol_smooth_wind > 0
-        yi = smooth(mean_pols(:,i),in.pol_smooth_wind); 
+        if strcmp(in.pol_smooth_method,'sgolay')
+            yi = smoothdata(mean_pols(:,i),in.pol_smooth_method,in.pol_smooth_wind,Degree=2); 
+        else
+            yi = smoothdata(mean_pols(:,i),in.pol_smooth_method,in.pol_smooth_wind); 
+        end
         mean_pols_smooth(:,i) = yi; 
     else
         yi = mean_pols(:,i);
@@ -574,7 +579,7 @@ if any(in.plot_figs == 4)
     % [b,a] = butter(1,fc/(fs_pol/2),'low');
     for i = 1:length(pol_amps)
         if in.pol_smooth_wind > 0
-            yi = 100*smooth(mean_pols(:,i),in.pol_smooth_wind);
+            yi = 100*smoothdata(mean_pols(:,i),in.pol_smooth_method,in.pol_smooth_wind);
     %         yi = 100*filtfilt(b,a,mean_pols(:,i));
         else
             yi = 100*mean_pols(:,i);

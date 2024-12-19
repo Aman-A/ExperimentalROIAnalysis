@@ -14,9 +14,10 @@ in = sl.in.processVarargin(in,varargin);
 % num_stim x num_amps
 peaks_beforei = cell2mat(cellfun(@(x) x(roi_ind,:)',peaks_before,'UniformOutput',0));
 peaks_duringi = cell2mat(cellfun(@(x) x(roi_ind,:)',peaks_during,'UniformOutput',0));
-mean_peaks_beforei = mean(peaks_beforei,1,'omitnan');
-mean_peaks_duringi = mean(peaks_duringi,1,'omitnan');
+mean_peaks_beforei = 100*mean(peaks_beforei,1,'omitnan');
+mean_peaks_duringi = 100*mean(peaks_duringi,1,'omitnan');
 num_stim = sum(~isnan(peaks_beforei),1);
+
 % dF/F traces averaged across stim
 dF_al2_beforei = cellfun(@(x) squeeze(x(:,roi_ind,:)),dF_al2_before,'UniformOutput',0);
 dF_al2_duringi = cellfun(@(x) squeeze(x(:,roi_ind,:)),dF_al2_during,'UniformOutput',0);

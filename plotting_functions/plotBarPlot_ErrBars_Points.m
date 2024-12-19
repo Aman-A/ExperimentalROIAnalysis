@@ -24,7 +24,7 @@ in.bar_edgecolor = 'none';
 in.bar_linewidth = 0.5;
 in.font_name = 'Arial';
 in.font_size = 16; 
-in.jitter_amount = 0.05; 
+in.jitter_amount = 0; 
 in.plot_pts = 1; 
 in.pt_size = 24; 
 in.pt_cols = []; % color data for scatter plot
@@ -95,7 +95,7 @@ box(ax,'off');
 % data points
 if in.plot_pts 
     if in.connect_pts
-        l = plot(x_vals,data_mat,'LineWidth',0.5,'Marker',in.pt_marker);
+        l = plot(x_vals,data_mat,'LineWidth',0.5,'Marker',in.pt_marker,'MarkerSize',in.pt_size);
         if ~isempty(in.pt_cols)
             if size(in.pt_cols,1) == 1; in.pt_cols = repmat(in.pt_cols,length(l),1); end;                 
             for i = 1:length(l)
@@ -103,19 +103,45 @@ if in.plot_pts
             end
         end
     else
+        if in.jitter_amount > 0
+            jitter_str = 'on';   
+            jitter_width = in.jitter_amount;
+            xjitter_str = 'rand';
+        else            
+            jitter_str = 'off';
+            jitter_width = 1; % placeholder
+            xjitter_str = 'none';
+        end 
         if isempty(in.pt_cols)
-            s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+            % s = scatter(x_vals,data_mat,in.pt_size,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+            for i = 1:length(x_vals)
+                s = swarmchart(repmat(x_vals(i),size(data_mat,1),1),data_mat(:,i),in.pt_size,in.pt_marker,...
+                                'jitter',jitter_str,'XJitterWidth',jitter_width,...
+                                'XJitter',xjitter_str);
+            end
         else
             if (iscell(in.pt_cols) && length(in.pt_cols) > 1) || (ismatrix(in.pt_cols) && size(in.pt_cols,1) > 1)
-                for i = 1:length(x_vals)
-                    if iscell(in.pt_cols)
-                        s = scatter(x_vals(i),data_mat(:,i),in.pt_size,in.pt_cols{i},in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
-                    else
-                        s = scatter(x_vals(i),data_mat(:,i),in.pt_size,in.pt_cols(i,:),in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
-                    end
+                % for i = 1:length(x_vals)
+                %     if iscell(in.pt_cols)
+                %         s = scatter(x_vals(i),data_mat(:,i),in.pt_size,...
+                %             in.pt_cols{i},in.pt_marker,...
+                %             'jitter',jitter_str,'XJitterWidth',jitter_width,...
+                %             'XJitter',xjitter_str);
+                %     else
+                %         s = scatter(x_vals(i),data_mat(:,i),in.pt_size,...
+                %             in.pt_cols(i,:),in.pt_marker,'jitter',jitter_str,...
+                %             'XJitterWidth',jitter_width,'XJitter',xjitter_str);
+                %     end
+                % end
+                for i = 1:length(x_vals)                    
+                    s = swarmchart(repmat(x_vals(i),size(data_mat,1),1),data_mat(:,i),in.pt_size,in.pt_cols,in.pt_marker,...
+                            'jitter',jitter_str,'XJitterWidth',jitter_width,...
+                            'XJitter',xjitter_str);
                 end
             else
-                s = scatter(x_vals,data_mat,in.pt_size,in.pt_cols,in.pt_marker,'jitter','on','jitterAmount',in.jitter_amount);
+                s = swarmchart(repmat(x_vals,size(data_mat,1),1),data_mat,in.pt_size,in.pt_cols,in.pt_marker,...
+                        'jitter',jitter_str,'XJitterWidth',jitter_width,...
+                        'XJitter',xjitter_str);
             end
         end
     end
