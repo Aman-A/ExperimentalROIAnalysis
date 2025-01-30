@@ -34,7 +34,7 @@ in.Multi_Gauss_threshold = 6; % minimum number of events to try multi gaussian f
 in.alpha_fit_dx = 0.01; % step size for test normalization values
 in.dx = 0.001; % fit function x step
 in.smooth_bs_dist = 0; % smooth bootstrapped peak distributions with 5 point moving average
-in.include_sat_param = 1; % include parameter for saturation of indicator at higher quanta
+in.include_sat_param = 0; % include parameter for saturation of indicator at higher quanta
 in.n_G = 3; % # of Gaussians to fit
 in.bsline_std_rois = []; % precalculated STD of baseline signal in each ROI
 in = sl.in.processVarargin(in,varargin);
@@ -93,7 +93,7 @@ for i = 1:num_rois
     end
     bins_bs = [bins_bs(1),bins_bs(end)]; 
     bins_bs = linspace(bins_bs(1),bins_bs(2),length(ycount_bs))'; 
-    [pk_y,pk_x] = findpeaks(ycount_bs,bins_bs,'MinPeakProminence',n_G,'NPeaks',n_G); % peaks
+    [pk_y,pk_x] = findpeaks(ycount_bs(bins_bs>=0),bins_bs(bins_bs>=0),'Npeaks',n_G); % peaks
     % Fit to multigaussian distribution
     max_ycount_bs = pk_y(1); 
     loc_max_ycount_bs = pk_x(1);     

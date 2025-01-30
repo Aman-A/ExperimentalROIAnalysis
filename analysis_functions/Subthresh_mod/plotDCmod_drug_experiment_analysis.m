@@ -278,6 +278,9 @@ if any(in.plot_figs == 1)
         per_changei = 100*(mean_peaks_drug_beforei-mean_peaks_cont_beforei)./mean_peaks_cont_beforei; 
         fprintf('Within ROI: Mean change (+/- SEM): %.3f +/- %.3f\n (n = %g boutons, %g cells)\n',...
                 mean(per_changei),std(per_changei)/sqrt(num_rois_drug(i)),num_rois_drug(i),length(dish_inds_drug{i}));
+        fprintf('    Median percent change (IQR): %.3f [%.3f,%.3f]\n',...
+                median(per_changei),quantile(per_changei,0.25),...
+                quantile(per_changei,0.75))
     end
     if in.save_figs
         printFig(fig,fig_fold,sprintf('mean_peaks_before_scatter_rnb%g_%gdishes_pk%s',...
@@ -401,6 +404,11 @@ if any(in.plot_figs == 3)
         % end 
         fprintf('Wilcoxon signed rank test, effect of %s drug on mean peak before DC (%g boutons in %g cells): p = %f\n',...
                     in.drug_names{i},num_rois_drug(i),length(dish_inds_drug{i}),p);
+        fprintf('  Median in control (IQR): %.3f [%.3f, %.3f]. In drug: %.3f [%.3f, %.3f]\n',...
+                median(mean_peaks_cont_beforei),quantile(mean_peaks_cont_beforei,0.25),...
+                quantile(mean_peaks_cont_beforei,0.75),median(mean_peaks_drug_beforei),...
+                quantile(mean_peaks_drug_beforei,0.25),quantile(mean_peaks_drug_beforei,0.75));
+        fprintf('  %.3f %% change in medians\n',100*(median(mean_peaks_drug_beforei)-median(mean_peaks_cont_beforei))./median(mean_peaks_cont_beforei))
         if in.include_legend
             legend(ax,{in.control_name,strrep(in.drug_names{i},'_',' ')},'Location','southeast');
         end
@@ -413,7 +421,8 @@ if any(in.plot_figs == 3)
     setAxesUniformLim(fig,'XLim',[0 80]);    
     if in.save_figs
         printFig(fig,fig_fold,sprintf('mean_peaks_before_CDF_rnb%g_%gdishes_pk%s',...
-                                      in.remove_nonbi_mod,num_dishes,in.peak_mode)); 
+                                      in.remove_nonbi_mod,num_dishes,in.peak_mode),...
+                  'formats',{'fig','png','eps'},'resolutions',{'','-r600',''}); 
     end
 end
 %% Plot mean peaks before and during within cell in control vs. in drug
@@ -795,16 +804,16 @@ if any(in.plot_figs == 8)
                 norm_factor = 1; norm_factor_drug = 1; 
             end
             % Plot
-            shadedErrorBar(ta,mean_dF_before/norm_factor,sem_dF_before/norm_factor,'lineProps','k'); 
+            shadedErrorBar(ta,mean_dF_before/norm_factor,sem_dF_before/norm_factor,'lineProps',{'Color','k','LineWidth',1}); 
             hold on; 
-            shadedErrorBar(ta+range(ta)+0.1,mean_dF_during/norm_factor,sem_dF_during/norm_factor,'lineProps',{'Color',in.amp_cols(j,:)});
+            shadedErrorBar(ta+range(ta)+0.1,mean_dF_during/norm_factor,sem_dF_during/norm_factor,'lineProps',{'Color',in.amp_cols(j,:),'LineWidth',1});
             % 
             shadedErrorBar(ta+2*(range(ta)+0.1),mean_dF_before_drug/norm_factor_drug,...
-                            sem_dF_before_drug/norm_factor_drug,'lineProps','k'); 
+                            sem_dF_before_drug/norm_factor_drug,'lineProps',{'Color',in.drug_cols{i},'LineWidth',1}); 
             hold on; 
             shadedErrorBar(ta+3*(range(ta)+0.1),mean_dF_during_drug/norm_factor_drug,...
                            sem_dF_during_drug/norm_factor_drug,...
-                           'lineProps',{'Color',in.amp_cols(j,:)});
+                           'lineProps',{'Color',in.amp_cols(j,:),'LineWidth',1});
             axis(ax,'off');            
             if in.include_title
                 title(sprintf('%g %s',in.plot_amps(j),in.plot_amps_units))
@@ -824,7 +833,7 @@ if any(in.plot_figs == 8)
         %     scalebar_ylen = 0.05; % 5% deltaF/F
         % end
         plot(fig.Children(end),[ta(1),ta(1),ta(1)+in.scalebar_xlen],[ax.YLim(2)-in.scalebar_ylen,ax.YLim(2),ax.YLim(2)],...
-            'k','LineWidth',2); % 100 ms, 5% deltaF/F                
+            'k','LineWidth',1.25); % 100 ms, 5% deltaF/F                
         sgtitle(sprintf('%g boutons in %g cells',...
                         num_rois_drug(i),length(dish_inds_drug{i})));           
         if in.save_figs
