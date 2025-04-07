@@ -52,6 +52,9 @@ else
     num_trains = size(stim_frames,1); % number of pulse trains
 end
 out = struct(); 
+if isempty(stim_frames)
+    return;
+end
 % Multi-train stimuli, align to train
 if num_trains > 1
     Nt = baseline_wind + stim_frames(1,end)-stim_frames(1,1) + stim_wind +  1; % number of frames/time points to include

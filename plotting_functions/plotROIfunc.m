@@ -40,7 +40,7 @@ else
     ax = in.ax; 
 end
 y = func_output.(func_name);
-if regexp(func_name,'mean','ONCE')
+if any(regexp(func_name,'mean','ONCE')) || any(regexp(func_name,'sum','ONCE'))
     if strcmp(func_output.roi_func_mode,'separate') && size(y,2) > 1
         non_nan_frames = find(~isnan(y(:,1)));
         y = y - y(non_nan_frames(1),:); % start all traces at 0 for plot

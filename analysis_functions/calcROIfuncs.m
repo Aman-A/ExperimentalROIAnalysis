@@ -11,7 +11,7 @@ function output = calcROIfuncs(recording,rois,funcs,exp_settings,...
 %           specifies position and size of all ROIs
 %   funcs : string or cell array
 %           single function (string) or list of functions (cell array) to
-%           apply, can be 'mean', 'std', 'deltaF_F0', or 'baseline'
+%           apply, can be 'mean', 'std', 'deltaF_F0', 'baseline', or 'sum'
 %   exp_settings : ExperimentSettings object
 %   uses fields: 
 %       bsline_wind : 1 x 2 integer vector or indices
@@ -187,7 +187,7 @@ if in.rem_pbleach
     end
 end
 %% Generate stim-aligned traces using means
-if any(strcmp(funcs,'mean'))
+if any(strcmp(funcs,'mean')) && ~isempty(stim_frames)
     baseline_wind = exp_settings.baseline_wind;
     align_output = calcStimAlignedResponses(output.mean,stim_frames,...
                                             baseline_wind,stim_wind,...
@@ -241,7 +241,7 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
 %             output_new.mean(:,ind) = squeeze(sum(img.*mask_T,[1 2],'omitnan'))/sum(mask,'all','omitnan');                
         else
             output_new.mean(:,ind) = squeeze(sum(img.*mask,[1 2],'omitnan'))/sum(mask,'all','omitnan');                
-        end
+        end    
     elseif strcmp(func,'median') % spatial median across all ROI pixels for each frame
         if ind == 1
             output_new.median = zeros(size(img,3),num_masks); % initialize
@@ -252,6 +252,11 @@ function output_new = apply_func(output,ind,func,img,mask,baseline_wind_inds)
             output_new.std = zeros(size(img,3),num_masks); % initialize
         end
         output_new.std(:,ind) = squeeze(std(img.*mask,0,[1 2],'omitnan')); 
+    elseif strcmp(func,'sum') % sum across all ROI pixels for each frame
+        if ind == 1
+            output_new.sum = zeros(size(img,3),num_masks); % initialize
+        end 
+        output_new.sum(:,ind) = squeeze(sum(img.*mask,[1 2],'omitnan'));        
     elseif strcmp(func,'baseline') % Baseline value within ROI pixels across baseline time window
         if ind == 1
             % rows are rois, columns for for each stimulus
