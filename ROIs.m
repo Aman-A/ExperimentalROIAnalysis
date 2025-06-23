@@ -104,11 +104,16 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                         obj.r0(i,:) = ROIarray{i}.vnRectBounds([1 3 2 4]);
                         obj.r(i,:) = obj.r0(i,:);
                     end                    
-                elseif strcmp(obj.types{1},'Polygon')
-                    obj.x0 = cellfun(@(x) [x.mnCoordinates(:,1);x.mnCoordinates(1,1)],... % add first point to end
-                                     ROIarray,'UniformOutput',0); % x coords
-                    obj.y0 = cellfun(@(x) [x.mnCoordinates(:,2);x.mnCoordinates(1,2)],...
-                                     ROIarray,'UniformOutput',0); % y coords
+                elseif strcmp(obj.types{1},'Polygon') || strcmp(obj.types{1},'Freehand')
+                    if ROIarray{1}.mnCoordinates(1,1) ~= ROIarray{1}.mnCoordinates(end,1)
+                        obj.x0 = cellfun(@(x) [x.mnCoordinates(:,1);x.mnCoordinates(1,1)],... % add first point to end
+                                         ROIarray,'UniformOutput',0); % x coords
+                        obj.y0 = cellfun(@(x) [x.mnCoordinates(:,2);x.mnCoordinates(1,2)],...
+                                         ROIarray,'UniformOutput',0); % y coords
+                    else
+                        obj.x0 = cellfun(@(x) x.mnCoordinates(:,1),ROIarray,'UniformOutput',0);
+                        obj.y0 = cellfun(@(x) x.mnCoordinates(:,2),ROIarray,'UniformOutput',0);
+                    end
                     obj.x = obj.x0; % current is same as original initially
                     obj.y = obj.y0; % current is same as original initially                                                   
                 elseif strcmp(obj.types{1},'PolyLine')
