@@ -80,7 +80,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                 ROIarray = {ROIarray};
             end
             roi_names = cellfun(@(x) x.strName,ROIarray,'UniformOutput',0)';      
-            [obj.names,sorted_inds] = sort(roi_names); %#ok<TRSRT>
+            % [obj.names,sorted_inds] = sort(roi_names); %#ok<TRSRT>
+            [obj.names,sorted_inds] = natsort(roi_names); 
             ROIarray = ROIarray(sorted_inds); 
             obj.types = cellfun(@(x) x.strType,ROIarray,'UniformOutput',0);            
             if all(strcmp(obj.types,obj.types{1})) % All ROIs have same shape
@@ -332,7 +333,7 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
 %                                Y >= ri(1,1,:) & Y <= ri(1,2,:), 3);                
 %                                       
                 end  
-            elseif all(strcmp(obj.types,'Polygon'))                
+            elseif all(strcmp(obj.types,'Polygon')) || all(strcmp(obj.types,'Freehand'))
                [xgrid, ygrid] = meshgrid(1:imsize(2), 1:imsize(1));
                 for i = 1:length(roi_inds)
                    xvi = obj.x{roi_inds(i)};
@@ -393,7 +394,8 @@ classdef ROIs < matlab.mixin.Copyable % Set of circular ROIs
                     x_ptsi = [ri(3),ri(3),ri(4),ri(4),ri(3)];
                     y_ptsi = [ri(1),ri(2),ri(2),ri(1),ri(1)];
                     xi = mean(x_ptsi); yi = mean(y_ptsi); % for label below
-                elseif strcmp(obj.types{i},'Polygon') || strcmp(obj.types{i},'PolyLine')
+                elseif strcmp(obj.types{i},'Polygon') || strcmp(obj.types{i},'PolyLine') ...
+                         || strcmp(obj.types{i},'Freehand')
                     if plot_current
                        x_ptsi = obj.x{i}; y_ptsi = obj.y{i}; 
                     else
