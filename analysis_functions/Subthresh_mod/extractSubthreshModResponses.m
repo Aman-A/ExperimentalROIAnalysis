@@ -16,6 +16,7 @@ in.spike_window = 60*1e-3; % sec
 in.spike_min_width = [20 80]*1e-3; % sec
 in.spike_min_amp = 0.06; % deltaF/F0
 in.plot_var = 'subthresh_amps'; % independent variable of experiment
+in.recalc_peaks = 0; 
 % Quality control criteria
 in.qc_settings = {}; % use defaults
 in.exclude_rois = {};
@@ -88,9 +89,21 @@ for i = 1:num_dishes
                                                      'exclude_rois',exclude_rois{i},...
                                                      'print_level',in.print_level);
     end
-    data_out{i} = datai; 
-    peaksi = datai.peaks_deltaF_F0_all;
+    data_out{i} = datai;     
     dF_al2i = datai.deltaF_F0_aligned2_all;     
+    if isfield(datai.plot_settings,'spike_window') && ...
+            datai.plot_settings.spike_window ~= in.spike_window || in.recalc_peaks
+        % recalculate peaks using in.spike_window
+        stim_frame = datai.exp_settings(1).baseline_wind+1;
+        spike_window = datai.exp_settings(1).convert2Frames(in.spike_window);
+        peaksi = cellfun(@(x) squeeze(max(x((stim_frame+1):(stim_frame+spike_window),:,:,:,:),[],1)),...
+                            dF_al2i,'UniformOutput',0);        
+        if i == 1
+            fprintf('Recalculating peaks with spike_window = %.3f sec\n',in.spike_window);
+        end
+    else
+        peaksi = datai.peaks_deltaF_F0_all;
+    end    
     % meansi = datai.means_all; 
     % baselines_alli = datai.baselines_all; 
     num_roisi = datai.rois_all{1}{1}.num_rois;    

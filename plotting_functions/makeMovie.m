@@ -44,6 +44,7 @@ in.stim_pulse_dur1 = [];
 in.stim1_x = 0.05; 
 in.stim1_y = 0.9; 
 in.stim1_marker = 'o';
+in.stim1_marker_size = 16;
 in.stim_vals2 = []; % stim times in sec
 in.stim_pulse_dur2 = []; 
 in.stim2_x = 0.05; 
@@ -53,6 +54,7 @@ in.rois = [];
 % Plot settings
 in.colormap = 'inferno';
 in.cax_lims = []; 
+in.gamma_fac = 1; % gamma factor for mapping of fluorescence values to colormap
 in.fig_units = 'inches';
 in.fig_size = [];
 in.YDir = 'normal';
@@ -78,6 +80,12 @@ num_frames = size(vals,3);
 % Filter
 if ~isempty(in.filt_size) && in.filt_size > 0
     vals = spatialFilter(vals,in.filt_size,in.filt_sigma);
+    fprintf('Applied spatial filter with size %g, width %g\n',in.filt_size,in.filt_sigma);
+end
+% Gamma correction
+if in.gamma_fac ~= 1
+    vals = vals.^in.gamma_fac;
+    fprintf('Applied %g gamma factor\n',in.gamma_fac);
 end
 % Get colorscale
 if isempty(in.cax_lims)
@@ -168,7 +176,8 @@ for i = 1:num_frames
         if i >= last_stim1 && i <= last_stim1 + stim_pulse_dur1
             if ~added_ps1
                 ps1 = plot(ax.XLim(1)+diff(ax.XLim)*in.stim1_x,ax.YLim(1) + diff(ax.YLim)*in.stim1_y,...
-                     'Marker','o','Color',in.time_color,'MarkerSize',24,'MarkerFaceColor','none');
+                     'Marker',in.stim1_marker,'Color',in.time_color,...
+                     'MarkerSize',in.stim1_marker_size,'MarkerFaceColor',in.time_color);
                 added_ps1 = 1; 
             else
                 ps1.Visible = 'on';
