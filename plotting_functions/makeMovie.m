@@ -38,6 +38,7 @@ in.sbar_y_factor = 0.2;
 in.sbar_text_x_factor = 1.2;
 in.sbar_text_y_factor = []; 
 in.sbar_color = 'w';
+in.sbar_show_text = 1; 
 in.rotate_movie = 0; % 
 in.stim_vals1 = []; % stim times in sec
 in.stim_pulse_dur1 = [];
@@ -69,6 +70,7 @@ in.show_time_str = 1;
 in.pixel_size = []; % input if not using Recording object
 in.mask = []; 
 in.plot_mode = 'imagesc'; % 'imagesc' or 'surf'
+in.show_colorbar = 0; 
 in = sl.in.processVarargin(in,varargin);
 
 %% Crop movie by ROI
@@ -159,7 +161,9 @@ for i = 1:num_frames
     end
     colormap(ax,cmap);
     ax.YDir = in.YDir;    
-    colorbar; 
+    if in.show_colorbar
+        colorbar; 
+    end
     if in.show_time_str
         if i == 1
             time_str = text(ax.XLim(1)+diff(ax.XLim)*in.time_text_x,ax.YLim(1) + diff(ax.YLim)*in.time_text_y,...
@@ -209,7 +213,8 @@ for i = 1:num_frames
         addScaleBar(in.pixel_size,size(vals,[1 2]),ax,'sbar_len',in.sbar_len,...
                     'x_factor',in.sbar_x_factor,'y_factor',in.sbar_y_factor,...
                     'sbar_orientation','vert','text_x_factor',in.sbar_text_x_factor,...
-                    'text_y_factor',in.sbar_text_y_factor,'color',in.sbar_color);
+                    'text_y_factor',in.sbar_text_y_factor,'color',in.sbar_color,...
+                    'show_text',in.sbar_show_text);
     end
     if ~isempty(in.rois) && i == 1
         in.rois.plot('y',ax,1,0);

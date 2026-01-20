@@ -18,11 +18,11 @@ ans =
     '/Users/f005dz9/Documents/ExperimentalROIAnalysis'
 ```
 
-Next, go to the `examples` folder to see examples and useful scripts. The `experiment_scripts` folder has specific scripts I use to analyze my experiments.
+Next, go to the `examples` folder to see examples and useful scripts. The adding`experiment_scripts` folder has specific scripts I use to analyze my experiments.
 
 # Toolbox Dependencies:
 
-Image Processing
-Signal Processing
-Curve fitting
-Statistics and Machine Learning
+- Image Processing
+- Signal Processing
+- Curve fitting
+- Statistics and Machine Learning

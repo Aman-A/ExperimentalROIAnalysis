@@ -111,6 +111,7 @@ tAP = tAP - tAP(AP_data.exp_settings(1).baseline_wind + 1);
 % Only average trials with successful AP 
 meanAPs = cell(1,length(AP_data.(dF_field)));
 tAPs = cell(1,length(AP_data.(dF_field)));
+mean_baselines = cell(1,length(AP_data.(dF_field)));
 for i = 1:length(AP_data.(dF_field))
     if strcmp(in.roi_func_mode,'separate')
         si = squeeze(successful_spikes{i}(in.roi_ind,:,:)); 
@@ -138,6 +139,8 @@ for i = 1:length(AP_data.(dF_field))
     else
         meanAPs{i} = squeeze(mean(yi,[2 4],'omitnan'));
     end    
+    baselinesi = squeeze(AP_data.baselines_all{i}(in.roi_ind,:,:));
+    mean_baselines{i} = mean(baselinesi,1);
 end
 
 if in.mean_AP_peak_align
@@ -200,6 +203,7 @@ amp_labels(amps == 0) = repmat({''},1,sum(amps==0));
 
 out.meanAPs = meanAPs;
 out.tAP = tAP; % time in ms
+out.mean_baselines = mean_baselines;
 out.mean_pols = mean_pols;
 out.tpol = tpol; 
 out.dF_ss = dF_ss; % steady state polarization at each current amplitude (dF/F0)
@@ -211,6 +215,7 @@ out.pol_gain_mV_est = pol_gain_mV_est; % polarization sensitivity for current (m
 out.pol_gain_mV_est_E = pol_gain_mV_est_E; % polarization sensitivity for E-field (mV per V/m), using input E_per_mA for this elec pair
 out.amp_labels = amp_labels;
 out.last_AP_cond_ind = last_AP_cond_ind;
+out.successful_spikes = successful_spikes;
 %% Calculate FWHMs, peaks, and AHPs
 mean_widths = zeros(num_trains,length(amps),length(in.frac_amps)); % [control; dc on]
 % mean_fwhm = zeros(2,length(amps)); % [control; dc on]

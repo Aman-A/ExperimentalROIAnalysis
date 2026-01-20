@@ -1,5 +1,5 @@
 function val_ind = value2ind(val,vec)
-%VALUE2IND Takes an input value val and vector vec, finds closest value in vector to
+%VALUE2IND(val,vec) Takes an input value val and vector vec, finds closest value in vector to
 %input val, returns the index of that value 
 %picks out first column if time input is actually a matrix, accomodates
 %for input of 'raw' array from event structure
